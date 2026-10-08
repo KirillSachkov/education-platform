@@ -54,8 +54,22 @@ gh workflow run integration.yml --repo KirillSachkov/education-platform --ref <b
 ```
 
 Tests use the hosted runner's native Docker and public upstream images. There is
-no DinD mirror, registry login, Ryuk disable or private image prefix. Optional CI
-execution does not replace the local integration evidence required for a change.
+no DinD mirror, registry login, Ryuk disable or private image prefix. FileService
+builds its job-local MinIO image from unmodified, pinned public source because the
+upstream container repository is unavailable. The source archive checksum and
+builder/runtime image digests are fixed in `scripts/ci/minio-test.Dockerfile`.
+MinIO retains its AGPL license; this test image is neither published nor deployed.
+
+Before local FileService integration tests, build the same fixture:
+
+```bash
+docker build -f scripts/ci/minio-test.Dockerfile -t minio/minio:latest scripts/ci
+```
+
+Acquire the [local runtime lease](agents/local-runtime.md) before this Docker build.
+The locally cached tag satisfies Testcontainers' default missing-image pull policy.
+This fixture tag is independent of immutable application release images. Optional
+CI execution does not replace the local integration evidence required for a change.
 
 ## Main images
 
