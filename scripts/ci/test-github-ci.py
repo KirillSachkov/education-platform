@@ -351,7 +351,9 @@ class WorkflowContract(unittest.TestCase):
         aggregate = workflow.split("  required-checks:\n", 1)[1].split("  publish-images:\n", 1)[0]
         self.assertIn("    if: always()", aggregate)
         import re
-        needs = re.search(r"    needs: \[([^\]]+)\]", aggregate).group(1).replace(" ", "").split(",")
+        needs_match = re.search(r"    needs:\s*\[([^\]]+)\]", aggregate, re.MULTILINE)
+        self.assertIsNotNone(needs_match, "aggregate must declare its mandatory dependencies")
+        needs = re.sub(r"\s+", "", needs_match.group(1)).rstrip(",").split(",")
         self.assertEqual({"select", "whitespace", *CONFIG["mandatory"]}, set(needs))
         publish = workflow.split("  publish-images:\n", 1)[1]
         for boundary in ("github.event_name == 'push'", "github.ref == 'refs/heads/main'", "github.repository == 'KirillSachkov/education-platform'"):

@@ -82,7 +82,7 @@
   ],
   "adaptedDigest": {
     "algorithm": "sha256-path-mode-content-v1",
-    "value": "428bd92e565c6370aff79e2699ba148bff22a8549a7a875964406bcdbf6b531b"
+    "value": "98e53230720246df805b639920411417b4d4976debe3bdca35b95987858a7c8b"
   },
   "lifecycle": {
     "health": "python3 scripts/ci/validate-agent-instructions.py && bash scripts/ci/test-agent-template-contract.sh",
