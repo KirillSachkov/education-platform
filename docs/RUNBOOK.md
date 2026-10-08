@@ -596,7 +596,7 @@ Resolver кэширует singleton 60 секунд. Если ты manually patc
 ## 9. Revisioned media binding cutover
 
 The FileService/AuthService/EducationContentService media-binding schema is a coordinated
-release boundary. Release metadata written by `.gitlab-ci.yml` contains
+release boundary. Release metadata retained by the trusted manual GitHub production workflow contains
 `MEDIA_BINDING_PROTOCOL=1`.
 
 On the first cutover, the production deploy job:

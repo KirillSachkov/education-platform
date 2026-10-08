@@ -27,35 +27,19 @@ Only secrets belong in Infisical/`.env`. Non-secret production config is in `app
 
 ## CI/CD Pipeline
 
-Self-hosted GitLab at `https://gitlab-sachkov.ru`. Registry: `gitlab-sachkov.ru:5050`.
+GitHub Actions runs affected PR checks and the required aggregate. Trusted main builds fourteen
+application images and an immutable digest manifest in GHCR. Standard hosted runners and bounded
+artifact retention are configured in `.github/workflows/ci.yml`.
 
-### Pipeline stages
+Production operations use the separate manual `.github/workflows/production.yml` on trusted main.
+An owner command selects the exact release; PRs and main builds do not deploy. The workflow uses
+independent SSH, verifies a private backup before migrations, checks health and image digests,
+then promotes release metadata. See [`docs/agents/release-pipelines.md`](agents/release-pipelines.md)
+and [`docs/github-production.md`](github-production.md) for release inputs and recovery behavior.
 
-The authority is [`docs/agents/release-pipelines.md`](agents/release-pipelines.md); in short:
-
-```
-MR to main (test stage, affected-only by changes:):
-  mr-main-gate, unit-tests, build-frontend, check-migrations, contract and harness jobs
-  integration-tests:all — optional manual full matrix
-
-push to main:
-  build-{service}         — Docker build + push of every service image
-  prepare-release-images  — promote images to the immutable commit tag
-  deploy-production       — MANUAL, run only on an owner command; deploys IMAGE_TAG=$CI_COMMIT_SHA
-  tag-release             — after deploy, tags the top released CHANGELOG version
-  rollback-production     — MANUAL, owner-authorized
-```
-
-### Key CI files
-- `.gitlab-ci.yml` — pipeline definition
-- `backend/nuget.config.ci` — public NuGet source configuration for CI
-- `docker-compose.prod.yml` — production compose (no `build:` sections, images from registry)
-
-### Release modes
-
-Один путь — подробно в [`docs/agents/release-pipelines.md`](agents/release-pipelines.md).
-Кратко: `короткая ветка от main → MR в main → merge владельцем → сборка образов на main →
-ручной deploy-production по команде владельца`. Срочный фикс идёт тем же путём с минимальным diff.
+`backend/nuget.config.ci` selects public NuGet sources. `docker-compose.prod.yml` has no build
+sections and requires the audited PostgreSQL image in `RESTORE_POSTGRES_IMAGE`. Production
+operations retain the approved immutable database digest and volume.
 
 ## Email
 
@@ -79,7 +63,9 @@ Run the latest backup through an isolated restore without touching production Po
 
 ```bash
 cd /opt/education-platform
-set -a && . ./.env && set +a
+# Supply BACKUP_S3_ACCESS_KEY and BACKUP_S3_SECRET_KEY from your secret manager.
+# Use the approved repository@sha256 digest; this placeholder is not executable.
+export RESTORE_POSTGRES_IMAGE='<approved PostgreSQL image>'
 ./scripts/restore-s3.sh --drill --latest
 ```
 
@@ -99,64 +85,16 @@ This command does not replace the live database. A real disaster recovery operat
 stop application writes, preserve the current state, validate the exact chosen archive with this
 drill, and only then restore it under incident control.
 
-### Self-hosted GitLab backup
+### Private GitLab archive recovery
 
-The GitLab host uses `gitlab-data-backup.timer` every day at 02:15 UTC. The wrapper creates an
-Omnibus backup with `registry,remote` skipped, validates the tar structure and database gzip,
-uploads it to `s3://example-private-backups/data/`, and confirms the remote size. An old local
-archive is removed only when its matching offsite object passes the same checks. GitLab's own
-`backup_keep_time` must remain `0`, because retention belongs to this verified wrapper.
+Historical GitLab data, repository history, uploads, registry contents and matching configuration
+remain in encrypted private recovery archives. The private recovery index pins object versions,
+checksums, GitLab CE version, expected counts and the age identity location. Archive restore uses
+an isolated disposable instance, matching secrets and edition, and no production volumes or ports.
 
-`gitlab-restore-drill.timer` downloads and validates the freshest offsite archive every Sunday at
-05:30 UTC. Both units invoke `gitlab-backup-alert@.service` on failure. Its populated environment
-file lives only on the host at `/etc/gitlab-backup/alert.env` with owner `root:root` and mode `600`.
-
-Useful checks on the GitLab host:
-
-```bash
-systemctl list-timers gitlab-data-backup.timer gitlab-restore-drill.timer
-systemctl start gitlab-data-backup.service
-systemctl start gitlab-restore-drill.service
-journalctl -u gitlab-data-backup.service -u gitlab-restore-drill.service
-```
-
-The full restore mode accepts only an explicitly named, labelled disposable container with an
-exact GitLab version and edition match. Current production backups are GitLab CE:
-
-```bash
-export GITLAB_RESTORE_LABEL=com.sachkov.gitlab-restore-drill=true
-docker volume create --label "$GITLAB_RESTORE_LABEL" gitlab-restore-config
-docker volume create --label "$GITLAB_RESTORE_LABEL" gitlab-restore-logs
-docker volume create --label "$GITLAB_RESTORE_LABEL" gitlab-restore-data
-
-docker run -d \
-  --name gitlab-restore-drill \
-  --hostname gitlab-restore-drill \
-  --label "$GITLAB_RESTORE_LABEL" \
-  --shm-size 256m \
-  -v gitlab-restore-config:/etc/gitlab \
-  -v gitlab-restore-logs:/var/log/gitlab \
-  -v gitlab-restore-data:/var/opt/gitlab \
-  gitlab/gitlab-ce:18.10.1-ce.0
-
-# Decrypt the recovery archive only on this trusted host, then install its
-# matching gitlab-secrets.json into the disposable config volume.
-docker cp /secure/recovery/gitlab-secrets.json \
-  gitlab-restore-drill:/etc/gitlab/gitlab-secrets.json
-docker exec -u 0 gitlab-restore-drill \
-  sh -c 'chown root:root /etc/gitlab/gitlab-secrets.json && chmod 600 /etc/gitlab/gitlab-secrets.json'
-docker exec gitlab-restore-drill gitlab-ctl reconfigure
-
-./scripts/gitlab-restore-drill.sh --execute \
-  --target-container gitlab-restore-drill \
-  --confirm-target gitlab-restore-drill \
-  --source-edition ce
-```
-
-Do not use bind mounts for `/etc/gitlab`, `/var/log/gitlab`, or `/var/opt/gitlab`, especially not
-the live host paths. The script requires all three named volumes to carry the restore-drill label,
-refuses a volume shared with any other container, and refuses known live container names. Remove
-the decrypted recovery file and disposable container/volumes after the drill.
+`scripts/gitlab-restore-drill.sh` and `ops/gitlab/` support archive recovery. They are outside the
+platform CI and production release path. Read the private recovery index before restoring an
+archive; confirm its full checksum and exact version before creating disposable resources.
 
 Полные восстановительные процедуры (потеря Redis, дрейф grants, stuck Wolverine envelopes
 и т.д.) — в [`docs/RUNBOOK.md`](RUNBOOK.md).

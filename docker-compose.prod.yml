@@ -648,10 +648,9 @@ services:
     # (RAG embeddings в AssignmentReviewService). Binary-совместим: volume
     # читается без миграции данных при rolling-restart.
     #
-    # Mirrored из Docker Hub в GitLab Container Registry чтобы обойти
-    # Docker Hub anonymous pull rate-limit (100 / 6h / IP). Пересинхронизация
-    # mirror'а — см. docs/RUNBOOK.md (раздел «Mirror Docker Hub images»).
-    image: gitlab-sachkov.ru:5050/miracle-generation/education-platform/postgres-pgvector:pg16
+    # Use the same audited image for the live database and isolated restore drills.
+    # The trusted workflow retains the approved immutable PostgreSQL digest.
+    image: ${RESTORE_POSTGRES_IMAGE:?set RESTORE_POSTGRES_IMAGE to the audited PostgreSQL image}
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}

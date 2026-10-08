@@ -128,7 +128,7 @@ jobs:
           bash scripts/ci/validate-nginx-contracts.sh
           bash scripts/ci/test-run-production-migrations.sh
           bash scripts/ci/test-production-rollback-guard.sh
-          bash scripts/ci/test-production-env-export.sh
+          bash scripts/tests/test-restore-s3.sh
           bash scripts/ci/test-validate-production-env.sh
           PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts/ops/production -p 'test_*.py'
           bash scripts/ci/test-npm-audit-with-retry.sh
@@ -248,7 +248,6 @@ jobs:
           python3 scripts/ci/test-github-ci.py
           bash scripts/ci/test-prettier-check-diff.sh
           bash scripts/ci/validate-test-rules.sh
-          bash scripts/ci/test-deploy-proxy-boundary.sh
           bash scripts/ci/validate-arch.sh
 
   required-checks:

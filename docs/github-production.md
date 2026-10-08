@@ -122,3 +122,15 @@ Only a healthy normal public-source deploy enables the separate release-tag
 job. That job receives `contents:write` and no production secrets. It creates
 the exact deployed version tag or verifies the existing tag identifies the
 same commit. Private migration trials create no release tag.
+
+## Retained legacy configuration
+
+Private current, previous and recorded-previous operations derive their Compose file from the
+immutable approved capture. The adapter replaces exactly the archived PostgreSQL registry literal
+with its approved GHCR digest and retains both original and derived hashes. Original role manifests
+and captured files remain unchanged. Unrecognized retained Compose edits fail before live mutation.
+
+The workflow transports the reviewed isolated restore helper with its other fixed scripts. After
+release verification it retains the old helper, installs the reviewed helper with mode0700 and
+records its checksum. `RESTORE_POSTGRES_IMAGE` comes from the approved database digest; neither
+Compose nor standalone restore falls back to the retired registry.

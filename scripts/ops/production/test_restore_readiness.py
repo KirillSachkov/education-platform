@@ -48,7 +48,8 @@ elif 'UNION ALL' in sql: print('auth.users|1\\neducation.courses|1\\naccess.plan
                 path.chmod(0o700)
             environment = dict(os.environ, PATH=str(tools) + ":" + os.environ["PATH"],
                                DRILL_TEST_ROOT=str(root), DRILL_FINAL_SERVER=final_server,
-                               BACKUP_S3_ACCESS_KEY="test", BACKUP_S3_SECRET_KEY="test", TMPDIR=str(root))
+                               BACKUP_S3_ACCESS_KEY="test", BACKUP_S3_SECRET_KEY="test", TMPDIR=str(root),
+                               RESTORE_POSTGRES_IMAGE="pgvector/pgvector:pg16")
             result = subprocess.run(["bash", str(SCRIPT), "--drill", "test.sql.gz"],
                                     env=environment, capture_output=True, text=True, timeout=30)
             commands = (root / "commands").read_text()

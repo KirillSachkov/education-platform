@@ -8,7 +8,6 @@
       ".codex/**/*",
       ".gitattributes",
       ".github/**/*",
-      ".gitlab-ci.yml",
       ".harness/**/*",
       ".inside-harness/**/*",
       ".templates/**/*",
@@ -26,7 +25,6 @@
     ],
     "templates": [
       ".github/**/*",
-      ".gitlab-ci.yml",
       ".gitmodules",
       ".templates/**/*",
       "backend/Directory.Build.props",
@@ -47,7 +45,6 @@
     ],
     "compose": [
       ".github/**/*",
-      ".gitlab-ci.yml",
       "docker-compose.prod.yml",
       "docker-compose.yml",
       "nginx.prod.conf",
@@ -58,19 +55,19 @@
       "scripts/ci/npm-audit-with-retry.sh",
       "scripts/ci/test-github-*",
       "scripts/ci/test-npm-audit-with-retry.sh",
-      "scripts/ci/test-production-env-export.sh",
       "scripts/ci/test-production-rollback-guard.sh",
       "scripts/ci/test-run-production-migrations.sh",
       "scripts/ci/test-validate-production-env.sh",
       "scripts/ci/validate-compose-contracts.sh",
       "scripts/ci/validate-nginx-contracts.sh",
       "scripts/ops/**/*",
+      "scripts/restore-s3.sh",
       "scripts/run-production-migrations.sh",
+      "scripts/tests/test-restore-s3.sh",
       "scripts/validate-production-env.sh"
     ],
     "images": [
       ".github/**/*",
-      ".gitlab-ci.yml",
       ".gitmodules",
       "ASSET_NOTICE.md",
       "LICENSE",
@@ -92,7 +89,6 @@
     ],
     "admin": [
       ".github/**/*",
-      ".gitlab-ci.yml",
       "mcp/admin-server/**/*",
       "scripts/ci/github-*",
       "scripts/ci/npm-audit-with-retry.sh",
@@ -110,7 +106,6 @@
     ],
     "backend": [
       ".github/**/*",
-      ".gitlab-ci.yml",
       ".gitmodules",
       "backend/**/*",
       "global.json",
@@ -119,13 +114,11 @@
     ],
     "rules": [
       ".github/**/*",
-      ".gitlab-ci.yml",
       ".gitmodules",
       "backend/**/*.csproj",
       "backend/*/Directory.Build.props",
       "global.json",
       "scripts/ci/github-*",
-      "scripts/ci/test-deploy-proxy-boundary.sh",
       "scripts/ci/test-github-*",
       "scripts/ci/validate-arch.sh",
       "scripts/ci/validate-test-rules.sh"

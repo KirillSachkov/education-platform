@@ -7,7 +7,7 @@ S3_ENDPOINT="${BACKUP_S3_ENDPOINT:-https://storage.yandexcloud.net}"
 S3_ACCESS_KEY="${BACKUP_S3_ACCESS_KEY:-}"
 S3_SECRET_KEY="${BACKUP_S3_SECRET_KEY:-}"
 
-PG_IMAGE="${RESTORE_POSTGRES_IMAGE:-gitlab-sachkov.ru:5050/miracle-generation/education-platform/postgres-pgvector:pg16}"
+PG_IMAGE="${RESTORE_POSTGRES_IMAGE:-}"
 PG_DATABASE="education_platform"
 MIN_APPLICATION_TABLES=100
 KNOWN_PROBLEMATIC_GRANT='GRANT pg_monitor TO postgres_exporter WITH INHERIT TRUE GRANTED BY platform;'
@@ -43,12 +43,12 @@ Object key:
 Required environment:
   BACKUP_S3_ACCESS_KEY
   BACKUP_S3_SECRET_KEY
+  RESTORE_POSTGRES_IMAGE
+                        Audited PostgreSQL 16 + pgvector image for this backup
 
 Optional environment:
   BACKUP_S3_BUCKET      Default: education-platform-backups
   BACKUP_S3_ENDPOINT    Default: https://storage.yandexcloud.net
-  RESTORE_POSTGRES_IMAGE
-                        Default: the production pgvector PostgreSQL 16 image
 EOF
 }
 
@@ -127,6 +127,9 @@ fi
 
 [[ -n "$S3_ACCESS_KEY" && -n "$S3_SECRET_KEY" ]] ||
     die "BACKUP_S3_ACCESS_KEY and BACKUP_S3_SECRET_KEY must be set"
+[[ -n "$PG_IMAGE" ]] || die "RESTORE_POSTGRES_IMAGE must be set"
+[[ "$PG_IMAGE" != gitlab-sachkov.ru:* && "$PG_IMAGE" != gitlab-sachkov.ru/* ]] ||
+    die "RESTORE_POSTGRES_IMAGE must not depend on the retired registry"
 
 for command in aws awk docker gzip mktemp sort tail; do
     command -v "$command" >/dev/null 2>&1 || die "required command not found: $command"

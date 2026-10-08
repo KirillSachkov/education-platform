@@ -33,7 +33,7 @@ if grep -nF '${POSTGRES_EXPORTER_PASSWORD:-exporter}' docker-compose.prod.yml; t
 fi
 
 IMAGE_TAG=contract-test docker compose --profile '*' -f docker-compose.yml config --format json >"$dev_json"
-DOCKER_REGISTRY=registry.example/ IMAGE_TAG=contract-test POSTGRES_EXPORTER_PASSWORD=contract-test \
+DOCKER_REGISTRY=registry.example/ IMAGE_TAG=contract-test POSTGRES_EXPORTER_PASSWORD=contract-test RESTORE_POSTGRES_IMAGE=pgvector/pgvector:pg16 \
   docker compose --profile '*' -f docker-compose.prod.yml config --format json >"$prod_json"
 
 for rendered_compose in "$dev_json" "$prod_json"; do

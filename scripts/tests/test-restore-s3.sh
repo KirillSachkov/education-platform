@@ -164,6 +164,7 @@ run_restore() {
         BACKUP_S3_ENDPOINT=https://s3.test.invalid \
         BACKUP_S3_ACCESS_KEY=test-access \
         BACKUP_S3_SECRET_KEY=test-secret \
+        RESTORE_POSTGRES_IMAGE="${FAKE_POSTGRES_IMAGE:-pgvector/pgvector:pg16}" \
         bash "$SCRIPT_UNDER_TEST" "$@" > "$OUTPUT" 2>&1
 }
 
@@ -190,7 +191,7 @@ assert_contains "$DOCKER_LOG" "psql -v ON_ERROR_STOP=1 -U postgres -d postgres"
 assert_contains "$DOCKER_LOG" "GRANT pg_monitor TO postgres_exporter;"
 assert_contains "$DOCKER_LOG" "run -d --name"
 assert_contains "$DOCKER_LOG" "--network none"
-assert_contains "$DOCKER_LOG" "gitlab-sachkov.ru:5050/miracle-generation/education-platform/postgres-pgvector:pg16"
+assert_contains "$DOCKER_LOG" "pgvector/pgvector:pg16"
 assert_contains "$DOCKER_LOG" "rm -f"
 assert_contains "$DOCKER_LOG" "volume rm"
 if find "$WORK_DIR" -mindepth 1 -print -quit | grep -q .; then
@@ -200,6 +201,21 @@ fi
 reset_case
 run_restore --drill backups/backup_20260715_030000.sql.gz || fail "explicit object restore drill failed"
 assert_contains "$AWS_LOG" "s3 cp s3://test-bucket/backups/backup_20260715_030000.sql.gz"
+
+reset_case
+FAKE_POSTGRES_IMAGE=gitlab-sachkov.ru:5050/retired/postgres:pg16
+if run_restore --drill --latest; then
+    fail "retired registry image was accepted"
+fi
+unset FAKE_POSTGRES_IMAGE
+[[ ! -s "$AWS_LOG" && ! -s "$DOCKER_LOG" ]] || fail "retired image reached AWS or Docker"
+
+reset_case
+if env BACKUP_S3_ACCESS_KEY=test BACKUP_S3_SECRET_KEY=test RESTORE_POSTGRES_IMAGE= \
+    bash "$SCRIPT_UNDER_TEST" --drill test.sql.gz > "$OUTPUT" 2>&1; then
+    fail "missing PostgreSQL image was accepted"
+fi
+assert_contains "$OUTPUT" "RESTORE_POSTGRES_IMAGE must be set"
 
 reset_case
 FAKE_BACKUP_ARCHIVE="$TEMP_ROOT/corrupt.sql.gz"

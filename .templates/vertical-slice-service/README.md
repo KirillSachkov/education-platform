@@ -86,7 +86,7 @@ the feature, but keep committed migrations immutable and add a corrective migrat
      --startup-project backend/{ServiceName}/src/{ServiceName}
    ```
    (Both flags point at the same project in VSA layout.)
-4. Wire infra: docker-compose, nginx, `.gitlab-ci.yml`, init-databases.sql, .env.
+4. Wire infra: docker-compose, nginx, `scripts/ci/github-ci-paths.json`, init-databases.sql, .env.
 5. Add a link to `backend/AGENTS.md` only when the generated service is committed.
 
 ## When the service outgrows VSA

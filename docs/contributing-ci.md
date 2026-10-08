@@ -125,14 +125,14 @@ disabled. Diagnostics remain in logs and the job summary. Standard public hosted
 runners are [free](https://docs.github.com/en/billing/concepts/product-billing/github-actions);
 artifact storage still has a quota.
 
-Legacy GitLab CI stays operational during transition. Its inline deploy/rollback
-fake tests certify that existing path. They do not certify the independent manual
-GitHub production workflow or its transport adapters.
+Production script tests exercise the manual GitHub transport and host adapter. Migration,
+rollback, environment-export and restore checks use their actual implementations; no legacy
+pipeline definition is required. Real hosted deploy and rollback remain separate external evidence.
 
 ## External acceptance after publication
 
 These checks require the actual public repository. Local selection tests and the
-transition GitLab pipeline do not provide this evidence.
+local script fixtures do not provide this evidence.
 
 1. Open a PR that changes only a contributor document. Read selection output and
    confirm all unselected checks are skipped, whitespace passes, and
