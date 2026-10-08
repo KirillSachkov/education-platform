@@ -1,0 +1,139 @@
+# Environment files with sensitive data
+.env
+*.env
+.env.*
+!.env.example
+frontend/.env.local
+
+# NuGet configuration with credentials
+nuget.config
+backend/nuget.config
+
+# Docker volumes
+postgres_data/
+minio_data/
+seq_data/
+
+# Database backups
+backups/
+
+# Claude Code (local permissions are personal)
+.claude/settings.local.json
+.claude/agent-memory/
+.claude/scheduled_tasks.lock
+**/.claude/agent-memory/
+# Personal global skills/memory mirror — synced from ~/.claude, not project-specific
+.claude/global/
+
+# Python (skill-runner venv + caches)
+**/.venv/
+**/__pycache__/
+*.py[cod]
+*.pyo
+
+# .NET test runner output
+**/TestResults/
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.lscache
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+!.inside-harness/skills/release/
+[Rr]eleases/
+x64/
+x86/
+[Aa]rm/
+[Aa]rm64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Bb]in\\[Dd]ebug/
+[Bb]in\\[Rr]elease/
+[Oo]bj\\[Dd]ebug/
+[Oo]bj\\[Rr]elease/
+
+# .NET
+*.cache
+*.dll
+*.exe
+*.pdb
+*.suo
+*.user
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node modules
+node_modules/
+**/node_modules/
+
+# Husky internals (auto-generated wrappers)
+**/.husky/_/
+
+# Frontend local workspace
+frontend/project/
+.collaborator
+
+# MemPalace (local AI memory)
+mempalace.yaml
+entities.json
+
+# Temp screenshots and debug artifacts in root
+/*.png
+/*.html
+/*.svg
+/screenshots/*
+!/screenshots/.gitkeep
+# Ad-hoc QA/Playwright screenshots anywhere (e.g. frontend/screenshots from agent runs)
+screenshots/
+
+# Playwright MCP snapshots
+.playwright-mcp/
+
+# Git worktrees (parallel agent workspaces)
+.worktrees/
+.claude/worktrees/
+
+# Next.js build trace (created when running from root dir)
+/.next/
+
+# Stray agent-memory directory
+.claire/
+
+# Stop-gate v2 task contract (per-worktree, #855)
+.task-contract.json
+
+# Private learning content and local agent memory stay outside the public source tree.
+/docs/curriculum/
+/docs/tags/
+/docs/reviews/
+/docs/superpowers/
+/.serena/memories/
+/.private/
+
+# Owner-supplied legal documents stay private and are mounted at runtime.
+/frontend/content/legal/
+/frontend/public/legal-docs/
+
+# Private proprietor runtime configuration.
+/frontend/business-details.json
+
+# Bounded CI image-publication metadata.
+.image-notices.tar
+image-manifest.json
+digests/
+frontend/dependency-notices/

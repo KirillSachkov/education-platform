@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>PlatformAuth</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App"/>
+    <PackageReference Include="CSharpFunctionalExtensions"/>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer"/>
+    <PackageReference Include="OpenIddict.Validation.AspNetCore"/>
+    <PackageReference Include="OpenIddict.Validation.SystemNetHttp"/>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi"/>
+    <ProjectReference Include="..\SharedKernel\SharedKernel.csproj" />
+    <PackageReference Include="Scalar.AspNetCore"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ContentAccess\ContentAccess\ContentAccess.csproj"/>
+  </ItemGroup>
+
+</Project>

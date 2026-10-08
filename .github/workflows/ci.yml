@@ -1,0 +1,349 @@
+name: CI
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# A new PR revision cancels obsolete work; main image publications finish.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+  DOCKER_BUILD_RECORD_UPLOAD: 'false'
+
+jobs:
+  select:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      base: ${{ steps.paths.outputs.base }}
+      diff_head: ${{ steps.paths.outputs.diff_head }}
+      selected: ${{ steps.paths.outputs.selected }}
+      images_matrix: ${{ steps.paths.outputs.images_matrix }}
+      harness: ${{ steps.paths.outputs.harness }}
+      templates: ${{ steps.paths.outputs.templates }}
+      migrations: ${{ steps.paths.outputs.migrations }}
+      compose: ${{ steps.paths.outputs.compose }}
+      images: ${{ steps.paths.outputs.images }}
+      admin: ${{ steps.paths.outputs.admin }}
+      frontend: ${{ steps.paths.outputs.frontend }}
+      backend: ${{ steps.paths.outputs.backend }}
+      rules: ${{ steps.paths.outputs.rules }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          submodules: recursive
+          persist-credentials: false
+      - id: paths
+        run: python3 scripts/ci/github-ci.py select
+
+  whitespace:
+    needs: select
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      CI_DIFF_BASE: ${{ needs.select.outputs.base }}
+      CI_DIFF_HEAD: ${{ needs.select.outputs.diff_head }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          submodules: recursive
+          persist-credentials: false
+      - run: bash scripts/ci/github-check-whitespace.sh
+
+  harness:
+    needs: select
+    if: needs.select.outputs.harness == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      CI_DIFF_BASE: ${{ needs.select.outputs.base }}
+      CI_DIFF_HEAD: ${{ needs.select.outputs.diff_head }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          submodules: recursive
+          persist-credentials: false
+      - run: python3 scripts/ci/validate-agent-instructions.py
+
+  templates:
+    needs: select
+    if: needs.select.outputs.templates == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CI_DIFF_BASE: ${{ needs.select.outputs.base }}
+      CI_DIFF_HEAD: ${{ needs.select.outputs.diff_head }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          submodules: recursive
+          persist-credentials: false
+      - uses: ./.github/actions/setup-dotnet
+      - run: bash scripts/ci/test-agent-template-contract.sh
+
+  migrations:
+    needs: select
+    if: needs.select.outputs.migrations == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      CI_DIFF_BASE: ${{ needs.select.outputs.base }}
+      CI_DIFF_HEAD: ${{ needs.select.outputs.diff_head }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          submodules: recursive
+          persist-credentials: false
+      - run: bash scripts/ci/github-check-migrations.sh
+
+  compose:
+    needs: select
+    if: needs.select.outputs.compose == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      CI_DIFF_BASE: ${{ needs.select.outputs.base }}
+      CI_DIFF_HEAD: ${{ needs.select.outputs.diff_head }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          submodules: recursive
+          persist-credentials: false
+      - run: |
+          bash scripts/ci/validate-compose-contracts.sh
+          bash scripts/ci/validate-nginx-contracts.sh
+          bash scripts/ci/test-run-production-migrations.sh
+          bash scripts/ci/test-production-rollback-guard.sh
+          bash scripts/ci/test-production-env-export.sh
+          bash scripts/ci/test-validate-production-env.sh
+          bash scripts/ci/test-npm-audit-with-retry.sh
+
+  images:
+    needs: select
+    if: needs.select.outputs.images == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      CI_DIFF_BASE: ${{ needs.select.outputs.base }}
+      CI_DIFF_HEAD: ${{ needs.select.outputs.diff_head }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          submodules: recursive
+          persist-credentials: false
+      - run: python3 scripts/ci/validate-service-image-contracts.py
+
+  admin:
+    needs: select
+    if: needs.select.outputs.admin == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CI_DIFF_BASE: ${{ needs.select.outputs.base }}
+      CI_DIFF_HEAD: ${{ needs.select.outputs.diff_head }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          submodules: recursive
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - working-directory: mcp/admin-server
+        run: |
+          npm ci
+          npm run typecheck
+          npm test
+          bash ../../scripts/ci/npm-audit-with-retry.sh --audit-level=moderate
+
+  frontend:
+    needs: select
+    if: needs.select.outputs.frontend == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CI_DIFF_BASE: ${{ needs.select.outputs.base }}
+      CI_DIFF_HEAD: ${{ needs.select.outputs.diff_head }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          submodules: recursive
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - working-directory: frontend
+        run: |
+          npm ci
+          npm run typecheck
+          bash ../scripts/ci/eslint-ratchet.sh
+          bash ../scripts/ci/ts-strict-ratchet.sh
+          bash ../scripts/ci/prettier-check-diff.sh
+          npm run build
+          npm test
+          npx knip --reporter compact || echo 'knip found unused code (warning only)'
+
+  backend:
+    needs: select
+    if: needs.select.outputs.backend == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CI_DIFF_BASE: ${{ needs.select.outputs.base }}
+      CI_DIFF_HEAD: ${{ needs.select.outputs.diff_head }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          submodules: recursive
+          persist-credentials: false
+      - uses: ./.github/actions/setup-dotnet
+      - run: |
+          dotnet build backend/backend.slnx -c Release -maxcpucount:2 --verbosity minimal
+          dotnet test backend/Shared/Common.Tests -c Release -maxcpucount:2 --verbosity minimal --logger "console;verbosity=minimal"
+          dotnet test backend/Shared/Ordering/Ordering.Tests -c Release -maxcpucount:2 --verbosity minimal --logger "console;verbosity=minimal"
+          dotnet test backend/Shared/AI/AI.OpenAiCompatible.Tests -c Release -maxcpucount:2 --verbosity minimal --logger "console;verbosity=minimal"
+          dotnet test backend/Shared/Core.Tests -c Release -maxcpucount:2 --verbosity minimal --logger "console;verbosity=minimal"
+          dotnet test backend/Shared/Authentication.Tests -c Release -maxcpucount:2 --verbosity minimal --logger "console;verbosity=minimal"
+          dotnet test backend/Shared/ContentAccess/ContentAccess.Tests -c Release -maxcpucount:2 --verbosity minimal --logger "console;verbosity=minimal" --filter "FullyQualifiedName!~RedisIntegrationTests"
+          dotnet test backend/FileService/tests/FileService.UnitTests -c Release -maxcpucount:2 --verbosity minimal --logger "console;verbosity=minimal"
+          dotnet test backend/NotificationService/tests/NotificationService.UnitTests -c Release -maxcpucount:2 --verbosity minimal --logger "console;verbosity=minimal"
+          dotnet test backend/AssignmentReviewService/tests/AssignmentReviewService.UnitTests -c Release -maxcpucount:2 --verbosity minimal --logger "console;verbosity=minimal"
+
+  rules:
+    needs: select
+    if: needs.select.outputs.rules == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      CI_DIFF_BASE: ${{ needs.select.outputs.base }}
+      CI_DIFF_HEAD: ${{ needs.select.outputs.diff_head }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          submodules: recursive
+          persist-credentials: false
+      - run: |
+          python3 scripts/ci/test-github-ci.py
+          bash scripts/ci/test-prettier-check-diff.sh
+          bash scripts/ci/validate-test-rules.sh
+          bash scripts/ci/test-deploy-proxy-boundary.sh
+          bash scripts/ci/validate-arch.sh
+
+  required-checks:
+    name: required-checks
+    if: always()
+    needs: [select, whitespace, harness, templates, migrations, compose, images, admin, frontend, backend, rules]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      NEEDS_JSON: ${{ toJSON(needs) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          submodules: recursive
+          persist-credentials: false
+      - run: python3 scripts/ci/github-ci.py aggregate
+
+  publish-images:
+    needs: [select, required-checks]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'KirillSachkov/education-platform'
+    permissions:
+      contents: read
+      packages: write
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix: ${{ fromJSON(needs.select.outputs.images_matrix) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          submodules: recursive
+          persist-credentials: false
+      - run: bash scripts/ci/prepare-image-notices.sh
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: build
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          platforms: linux/amd64
+          tags: ghcr.io/kirillsachkov/education-platform/${{ matrix.name }}:${{ github.sha }}
+          secret-files: |
+            nuget_config=backend/nuget.config.ci
+            image_notices=.image-notices.tar
+          build-args: |
+            BUILD_REVISION=${{ github.sha }}
+            BUILD_VERSION=${{ github.sha }}
+            NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL || 'https://sachkov-learn.net/api/' }}
+            NEXT_PUBLIC_AUTH_ORIGIN=${{ vars.NEXT_PUBLIC_AUTH_ORIGIN || 'https://sachkov-learn.net' }}
+            NEXT_PUBLIC_APP_URL=${{ vars.NEXT_PUBLIC_APP_URL || 'https://sachkov-learn.net' }}
+            NEXT_PUBLIC_PRIMARY_AUTHOR_SLUG=${{ vars.NEXT_PUBLIC_PRIMARY_AUTHOR_SLUG || 'sachkov' }}
+            NEXT_PUBLIC_CONSULTATION_LINK=${{ vars.NEXT_PUBLIC_CONSULTATION_LINK || 'https://t.me/sachkova_mng' }}
+            NEXT_PUBLIC_YANDEX_METRIKA_ID=${{ vars.NEXT_PUBLIC_YANDEX_METRIKA_ID }}
+            NEXT_PUBLIC_VAPID_PUBLIC_KEY=${{ vars.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
+      - name: Record digest
+        env:
+          IMAGE_NAME: ${{ matrix.name }}
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+        run: python3 scripts/ci/github-image-manifest.py record
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: digest-${{ matrix.name }}
+          path: digests/*.json
+          if-no-files-found: error
+          retention-days: 1
+
+  image-manifest:
+    needs: publish-images
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'KirillSachkov/education-platform'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          submodules: recursive
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: digest-*
+          path: digests
+          merge-multiple: true
+      - run: python3 scripts/ci/github-image-manifest.py collect
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: image-manifest-${{ github.sha }}
+          path: image-manifest.json
+          if-no-files-found: error
+          retention-days: 7

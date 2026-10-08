@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageVersion Include="StyleCop.Analyzers" Version="1.1.118" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk"/>
+    <PackageReference Include="Respawn" />
+    <ProjectReference Include="..\..\..\Shared\Core\Core.csproj" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="Testcontainers.RabbitMq" />
+    <PackageReference Include="Testcontainers.Redis" />
+    <PackageReference Include="WolverineFx.RabbitMQ" />
+    <PackageReference Include="Testcontainers.Typesense" />
+    <PackageReference Include="xunit"/>
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+
+  <ItemGroup>
+        <Using Include="Xunit"/>
+    </ItemGroup>
+
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\Messaging\RabbitMqMessaging\RabbitMqMessaging.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Wolverine.Testing\Wolverine.Testing.csproj" />
+    <ProjectReference Include="..\..\src\SearchService.Infrastructure.Postgres\SearchService.Infrastructure.Postgres.csproj" />
+    <ProjectReference Include="..\..\src\SearchService.Web\SearchService.Web.csproj" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <Content Update="appsettings.Tests.json">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <Folder Include="Features\EducationDocuments\IntegrationEvents\" />
+  </ItemGroup>
+
+
+</Project>

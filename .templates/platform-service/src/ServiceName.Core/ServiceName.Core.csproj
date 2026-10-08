@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="FluentValidation" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    <ProjectReference Include="..\..\..\Shared\Core\Core.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Framework\Framework.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ServiceName.Contracts\ServiceName.Contracts.csproj" />
+    <ProjectReference Include="..\ServiceName.Domain\ServiceName.Domain.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Authentication\Authentication.csproj" />
+  </ItemGroup>
+
+</Project>

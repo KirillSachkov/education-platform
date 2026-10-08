@@ -1,0 +1,438 @@
+{
+  "uid": "service-detail",
+  "title": "Service Detail",
+  "description": "Per-service drill-down. Выбери service в dropdown'е → RPS, latency p50/p95/p99, status mix, top routes by latency/errors, Wolverine handler durations, outbox/inbox depth, HTTP outbound (HttpClient). Health-endpoints исключены из RPS/latency панелей чтобы не сжимать процентили.",
+  "tags": ["platform", "service", "RED"],
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "graphTooltip": 1,
+  "time": { "from": "now-1h", "to": "now" },
+  "refresh": "30s",
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "label": "Service",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "query": "label_values(http_server_request_duration_seconds_count, service_name)",
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false,
+        "sort": 1,
+        "current": { "text": "EducationContentService", "value": "EducationContentService" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "RED — overview",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "RPS",
+      "description": "Запросов в секунду, без /health/live и /health/ready (убирают процентили из-за высокой частоты).",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 5, "w": 5, "x": 0, "y": 1 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(http_server_request_duration_seconds_count{service_name=\"$service\", http_route!~\"/health.*\", http_route!~\"/metrics.*\"}[1m]))"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps", "decimals": 2, "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null } ] } } },
+      "options": { "colorMode": "value", "graphMode": "area" }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "5xx rate",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 5, "w": 5, "x": 5, "y": 1 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "100 * sum(rate(http_server_request_duration_seconds_count{service_name=\"$service\", http_response_status_code=~\"5..\"}[5m])) / clamp_min(sum(rate(http_server_request_duration_seconds_count{service_name=\"$service\"}[5m])), 0.001)"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent", "decimals": 2, "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 5 } ] } } },
+      "options": { "colorMode": "background" }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "p95 latency",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 5, "w": 5, "x": 10, "y": 1 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_server_request_duration_seconds_bucket{service_name=\"$service\", http_route!~\"/health.*\"}[5m])))"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s", "decimals": 3, "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 0.5 }, { "color": "red", "value": 1 } ] } } }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "5xx in 5m",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 5, "w": 5, "x": 15, "y": 1 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(http_server_request_duration_seconds_count{service_name=\"$service\", http_response_status_code=~\"5..\"}[5m]))"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0, "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 20 } ] } } }
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "DLQ msgs",
+      "description": "wolverine_dead_letter_queue_Messages_total (counter, total since process start).",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 5, "w": 4, "x": 20, "y": 1 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(wolverine_dead_letter_queue_Messages_total{service_name=\"$service\"}) or vector(0)"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0, "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 1 } ] } } }
+    },
+    {
+      "id": 10,
+      "type": "row",
+      "title": "HTTP server",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 6 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "RPS by route",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 7 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "topk(15, sum by (http_route, http_request_method) (rate(http_server_request_duration_seconds_count{service_name=\"$service\", http_route!~\"/health.*\"}[1m])))",
+          "legendFormat": "{{http_request_method}} {{http_route}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": { "lineWidth": 1, "fillOpacity": 15, "stacking": { "mode": "normal" } },
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] } }
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "Latency p50 / p95 / p99",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 7 },
+      "targets": [
+        {
+          "refId": "p50",
+          "expr": "histogram_quantile(0.5,  sum by (le) (rate(http_server_request_duration_seconds_bucket{service_name=\"$service\", http_route!~\"/health.*\"}[5m])))",
+          "legendFormat": "p50"
+        },
+        {
+          "refId": "p95",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_server_request_duration_seconds_bucket{service_name=\"$service\", http_route!~\"/health.*\"}[5m])))",
+          "legendFormat": "p95"
+        },
+        {
+          "refId": "p99",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(http_server_request_duration_seconds_bucket{service_name=\"$service\", http_route!~\"/health.*\"}[5m])))",
+          "legendFormat": "p99"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s", "decimals": 3, "custom": { "lineWidth": 2, "fillOpacity": 5 } }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] } }
+    },
+    {
+      "id": 13,
+      "type": "timeseries",
+      "title": "Status code mix",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 15 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (http_response_status_code) (rate(http_server_request_duration_seconds_count{service_name=\"$service\", http_route!~\"/health.*\"}[1m]))",
+          "legendFormat": "{{http_response_status_code}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": { "lineWidth": 1, "fillOpacity": 25, "stacking": { "mode": "normal" } },
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean"] } }
+    },
+    {
+      "id": 14,
+      "type": "table",
+      "title": "Top-10 routes by p95 latency",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 15 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "topk(10, histogram_quantile(0.95, sum by (le, http_route, http_request_method) (rate(http_server_request_duration_seconds_bucket{service_name=\"$service\", http_route!~\"/health.*\"}[5m]))))",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s", "decimals": 3 },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Value" },
+            "properties": [{ "id": "displayName", "value": "p95" }, { "id": "custom.cellOptions", "value": { "type": "color-text" } }, { "id": "color", "value": { "mode": "thresholds" } }, { "id": "thresholds", "value": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 0.5 }, { "color": "red", "value": 1 }] } }]
+          }
+        ]
+      },
+      "transformations": [
+        { "id": "organize", "options": { "excludeByName": { "Time": true, "__name__": true, "deployment_environment": true, "exported_instance": true, "exported_job": true, "host_name": true, "instance": true, "job": true, "service_instance_id": true, "service_name": true, "service_version": true, "source": true, "telemetry_sdk_language": true, "telemetry_sdk_name": true, "telemetry_sdk_version": true } } }
+      ]
+    },
+    {
+      "id": 15,
+      "type": "table",
+      "title": "Top routes by error rate (4xx + 5xx)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 23 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "topk(15, sum by (http_route, http_request_method, http_response_status_code) (rate(http_server_request_duration_seconds_count{service_name=\"$service\", http_response_status_code=~\"4..|5..\", http_route!~\"/health.*\"}[5m])))",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "decimals": 4 },
+        "overrides": [{ "matcher": { "id": "byName", "options": "Value" }, "properties": [{ "id": "displayName", "value": "rate(/s)" }] }]
+      },
+      "transformations": [
+        { "id": "organize", "options": { "excludeByName": { "Time": true, "__name__": true, "deployment_environment": true, "exported_instance": true, "exported_job": true, "host_name": true, "instance": true, "job": true, "service_instance_id": true, "service_name": true, "service_version": true, "source": true, "telemetry_sdk_language": true, "telemetry_sdk_name": true, "telemetry_sdk_version": true } } }
+      ]
+    },
+    {
+      "id": 20,
+      "type": "row",
+      "title": "Wolverine — handlers & queues",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 31 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 21,
+      "type": "timeseries",
+      "title": "Outbox / Inbox / Scheduled depth (gauges)",
+      "description": "wolverine_(outbox|inbox|scheduled)_count_default_Messages — буферы Wolverine. Растущий outbox = публикация не успевает, inbox = consumer не успевает.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 32 },
+      "targets": [
+        {
+          "refId": "out",
+          "expr": "sum(wolverine_outbox_count_default_Messages{service_name=\"$service\"}) or vector(0)",
+          "legendFormat": "outbox"
+        },
+        {
+          "refId": "in",
+          "expr": "sum(wolverine_inbox_count_default_Messages{service_name=\"$service\"}) or vector(0)",
+          "legendFormat": "inbox"
+        },
+        {
+          "refId": "sched",
+          "expr": "sum(wolverine_scheduled_count_default_Messages{service_name=\"$service\"}) or vector(0)",
+          "legendFormat": "scheduled"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "lineWidth": 2, "fillOpacity": 30 },
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max", "last"] } }
+    },
+    {
+      "id": 22,
+      "type": "timeseries",
+      "title": "Throughput (recv / sent / succeeded / failed)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 32 },
+      "targets": [
+        {
+          "refId": "recv",
+          "expr": "sum(rate(wolverine_messages_received_Messages_total{service_name=\"$service\"}[1m]))",
+          "legendFormat": "received"
+        },
+        {
+          "refId": "sent",
+          "expr": "sum(rate(wolverine_messages_sent_Messages_total{service_name=\"$service\"}[1m]))",
+          "legendFormat": "sent"
+        },
+        {
+          "refId": "ok",
+          "expr": "sum(rate(wolverine_messages_succeeded_Messages_total{service_name=\"$service\"}[1m]))",
+          "legendFormat": "succeeded"
+        },
+        {
+          "refId": "fail",
+          "expr": "sum(rate(wolverine_execution_failure_Messages_total{service_name=\"$service\"}[1m]))",
+          "legendFormat": "failed"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "ops", "decimals": 3, "custom": { "lineWidth": 2, "fillOpacity": 5 }, "color": { "mode": "palette-classic" } }
+      }
+    },
+    {
+      "id": 23,
+      "type": "timeseries",
+      "title": "Handler execution time p95 (ms)",
+      "description": "histogram_quantile(0.95, wolverine_execution_time_Milliseconds). Включает retry. effective_time — без retry.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 40 },
+      "targets": [
+        {
+          "refId": "exec",
+          "expr": "histogram_quantile(0.95, sum by (le, message_type) (rate(wolverine_execution_time_Milliseconds_bucket{service_name=\"$service\"}[5m])))",
+          "legendFormat": "{{message_type}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "ms", "decimals": 1, "custom": { "lineWidth": 2, "fillOpacity": 5 }, "color": { "mode": "palette-classic" } }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["max"] } }
+    },
+    {
+      "id": 24,
+      "type": "table",
+      "title": "Top message types by failure rate",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 40 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "topk(10, sum by (message_type) (rate(wolverine_execution_failure_Messages_total{service_name=\"$service\"}[5m])))",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "ops", "decimals": 4 },
+        "overrides": [{ "matcher": { "id": "byName", "options": "Value" }, "properties": [{ "id": "displayName", "value": "fail/sec" }] }]
+      },
+      "transformations": [
+        { "id": "organize", "options": { "excludeByName": { "Time": true } } }
+      ]
+    },
+    {
+      "id": 30,
+      "type": "row",
+      "title": "HTTP outbound (HttpClient)",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 48 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 31,
+      "type": "timeseries",
+      "title": "Outbound RPS by host",
+      "description": "rate(http_client_request_duration_seconds_count). Сколько и куда сервис ходит сам.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 49 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (server_address, http_request_method) (rate(http_client_request_duration_seconds_count{service_name=\"$service\"}[1m]))",
+          "legendFormat": "{{http_request_method}} {{server_address}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "custom": { "lineWidth": 2, "fillOpacity": 15, "stacking": { "mode": "normal" } }, "color": { "mode": "palette-classic" } }
+      }
+    },
+    {
+      "id": 32,
+      "type": "timeseries",
+      "title": "Outbound p95 latency by host",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 49 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le, server_address) (rate(http_client_request_duration_seconds_bucket{service_name=\"$service\"}[5m])))",
+          "legendFormat": "{{server_address}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s", "decimals": 3, "custom": { "lineWidth": 2, "fillOpacity": 5 }, "color": { "mode": "palette-classic" } }
+      }
+    },
+    {
+      "id": 33,
+      "type": "timeseries",
+      "title": "Outbound errors by host (non-2xx)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 57 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (server_address, http_response_status_code) (rate(http_client_request_duration_seconds_count{service_name=\"$service\", http_response_status_code!~\"2..\"}[1m]))",
+          "legendFormat": "{{http_response_status_code}} {{server_address}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "ops", "decimals": 3, "custom": { "lineWidth": 2, "fillOpacity": 25, "drawStyle": "bars" }, "color": { "mode": "palette-classic" } }
+      }
+    },
+    {
+      "id": 34,
+      "type": "timeseries",
+      "title": "Open / active outbound connections",
+      "description": "http_client_open_connections + http_client_active_requests — висячие соединения, признак pool starvation.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 57 },
+      "targets": [
+        {
+          "refId": "open",
+          "expr": "sum by (server_address) (http_client_open_connections{service_name=\"$service\"})",
+          "legendFormat": "open {{server_address}}"
+        },
+        {
+          "refId": "active",
+          "expr": "sum by (server_address) (http_client_active_requests{service_name=\"$service\"})",
+          "legendFormat": "active {{server_address}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "lineWidth": 2, "fillOpacity": 10 }, "color": { "mode": "palette-classic" } }
+      }
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "active_provider": "gitlab",
+  "gitlab_project": "miracle-generation/education-platform",
+  "github_tracker": "KirillSachkov/education-platform-internal",
+  "github_source": "KirillSachkov/education-platform",
+  "activation": null
+}

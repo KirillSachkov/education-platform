@@ -1,0 +1,11 @@
+[Unit]
+Description=Run the verified GitLab data backup daily
+
+[Timer]
+OnCalendar=*-*-* 02:15:00 UTC
+RandomizedDelaySec=10m
+Persistent=true
+Unit=gitlab-data-backup.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,70 @@
+{
+  "name": "SachkovLearn",
+  "short_name": "SachkovLearn",
+  "description": "Информационно-консультационная платформа по программированию: C#, .NET, AI, DevOps, микросервисы.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#13120f",
+  "theme_color": "#13120f",
+  "lang": "ru",
+  "dir": "ltr",
+  "categories": ["education"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Продолжить обучение",
+      "short_name": "Продолжить",
+      "description": "Открыть главную с прогрессом по курсам",
+      "url": "/home",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Мои курсы",
+      "short_name": "Курсы",
+      "description": "Все ваши курсы и доступы по планам",
+      "url": "/courses",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "База знаний",
+      "short_name": "База знаний",
+      "description": "Открытые материалы: статьи, видео, заметки",
+      "url": "/knowledge-base",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Уведомления",
+      "short_name": "Уведомления",
+      "description": "Входящие уведомления платформы",
+      "url": "/notifications",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

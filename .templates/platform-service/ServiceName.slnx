@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="src/ServiceName.Contracts/ServiceName.Contracts.csproj" />
+  <Project Path="src/ServiceName.Core/ServiceName.Core.csproj" />
+  <Project Path="src/ServiceName.Domain/ServiceName.Domain.csproj" />
+  <Project Path="src/ServiceName.Infrastructure.Postgres/ServiceName.Infrastructure.Postgres.csproj" />
+  <Project Path="src/ServiceName.Web/ServiceName.Web.csproj" />
+  <Project Path="tests/ServiceName.IntegrationTests/ServiceName.IntegrationTests.csproj" />
+</Solution>

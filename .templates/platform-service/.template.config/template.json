@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Platform Team",
+  "classifications": ["Web", "Microservice", "DDD"],
+  "identity": "Platform.Service.Template",
+  "name": "Platform Microservice",
+  "shortName": "platform-service",
+  "sourceName": "ServiceName",
+  "preferNameDirectory": false,
+  "defaultName": "NewService",
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  },
+  "symbols": {
+    "port": {
+      "type": "parameter",
+      "datatype": "int",
+      "defaultValue": "8010",
+      "replaces": "__SERVICE_PORT__",
+      "description": "HTTP port this service listens on (8001..8099 range)."
+    },
+    "schema": {
+      "type": "parameter",
+      "datatype": "text",
+      "defaultValue": "newservice",
+      "replaces": "__SERVICE_SCHEMA__",
+      "description": "PostgreSQL schema name (lowercase, singular)."
+    }
+  },
+  "primaryOutputs": [{ "path": "src/ServiceName.Web/ServiceName.Web.csproj" }]
+}

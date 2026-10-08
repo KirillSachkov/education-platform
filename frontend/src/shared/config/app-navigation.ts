@@ -1,0 +1,113 @@
+import { ROLES, type Role } from "@/shared/auth";
+import { routes } from "@/shared/config/routes";
+import { Icons, type IconComponent } from "@/shared/ui/icons";
+
+/**
+ * Single source of truth for the platform's context navigation groups.
+ *
+ * Consumed by both the desktop `AppSidebar` and the mobile `AppSectionTopTabs`
+ * so the two never drift — add/remove/rename a section in one place. The `icon`
+ * is used by the sidebar; the mobile tabs render labels only.
+ */
+export type NavItem = {
+  href: string;
+  icon: IconComponent;
+  label: string;
+  roles?: readonly Role[];
+  minRole?: Role;
+  exact?: boolean;
+};
+
+/**
+ * «Тренажёр» — отдельный раздел платформы (#623): свой сайдбар (`TrainerSidebar`) +
+ * хедер-таб (`AppLayout`). В общем учебном сайдбаре его НЕ показываем (чтобы не
+ * дублировать), но оставляем в мобильной шторке «Меню» как точку входа.
+ */
+export const trainerNavItem: NavItem = {
+  href: routes.trainer,
+  icon: Icons.energy,
+  label: "Тренажёр",
+};
+
+export const learningNav: NavItem[] = [
+  { href: routes.home, icon: Icons.home, label: "Главная", exact: true },
+  { href: routes.courses, icon: Icons.course, label: "Каталог" },
+  { href: routes.knowledgeBase, icon: Icons.library, label: "База знаний" },
+  { href: routes.levelTest, icon: Icons.levelTest, label: "Тест уровня" },
+  { href: routes.saved, icon: Icons.bookmark, label: "Сохранённое" },
+  { href: routes.progress, icon: Icons.trending, label: "Мой прогресс" },
+  { href: routes.leaderboard, icon: Icons.trophy, label: "Рейтинг" },
+  { href: routes.pricing, icon: Icons.crown, label: "Доступ" },
+];
+
+export const teachingNav: NavItem[] = [
+  { href: routes.authorCourses, icon: Icons.editAlt, label: "Курсы" },
+  { href: routes.authorKnowledgeBase, icon: Icons.document, label: "Материалы" },
+  { href: routes.authorCollections, icon: Icons.grid, label: "Подборки" },
+  { href: routes.authorRoadmaps, icon: Icons.roadmap, label: "Роадмапы" },
+  { href: routes.authorQuizzes, icon: Icons.quiz, label: "Тесты" },
+  { href: routes.authorLevelTest, icon: Icons.listChecks, label: "Тест уровня" },
+  {
+    href: `${routes.trainerAdmin}?tab=mock`,
+    icon: Icons.briefcase,
+    label: "Мок-собесы",
+    minRole: ROLES.ADMIN,
+  },
+  { href: routes.authorTags, icon: Icons.tag, label: "Управление тегами", minRole: ROLES.ADMIN },
+  {
+    href: routes.authorReview,
+    icon: Icons.clipboardCheck,
+    label: "Проверка работ",
+    minRole: ROLES.MODERATOR,
+  },
+  {
+    href: routes.authorCatalogModeration,
+    icon: Icons.shieldCheck,
+    label: "Модерация витрины",
+    minRole: ROLES.MODERATOR,
+  },
+  {
+    href: routes.authorComments,
+    icon: Icons.message,
+    label: "Комментарии",
+    roles: [ROLES.AUTHOR, ROLES.MODERATOR, ROLES.ADMIN, ROLES.OWNER],
+  },
+];
+
+export function canViewNavItem(
+  item: NavItem,
+  checks: {
+    isAtLeast: (role: Role) => boolean;
+    hasAnyRole: (roles: Role[]) => boolean;
+  },
+) {
+  if (item.roles) {
+    return checks.hasAnyRole([...item.roles]);
+  }
+
+  return !item.minRole || checks.isAtLeast(item.minRole);
+}
+
+export const adminNav: NavItem[] = [
+  { href: routes.adminOverview, icon: Icons.dashboard, label: "Обзор" },
+  { href: routes.adminPlans, icon: Icons.crown, label: "Планы доступа" },
+  { href: routes.adminUsers, icon: Icons.userSettings, label: "Пользователи" },
+  { href: routes.adminAuditLog, icon: Icons.clock, label: "Audit log" },
+  { href: routes.adminPayments, icon: Icons.gift, label: "Платежи" },
+  { href: routes.adminCampaigns, icon: Icons.send, label: "Рассылки" },
+  { href: routes.adminSearch, icon: Icons.search, label: "Поиск" },
+  { href: routes.adminLevelTest, icon: Icons.levelTest, label: "Тест уровня" },
+  { href: routes.adminTests, icon: Icons.chart, label: "Статистика тестов" },
+  // «Тренажёр» переехал в собственное пространство (#623) — /trainer/admin,
+  // ссылка живёт в TrainerSidebar. Из платформенного admin-nav убрана.
+  { href: routes.adminAiUsage, icon: Icons.ai, label: "AI usage" },
+  { href: routes.adminAiModels, icon: Icons.settings, label: "AI модели" },
+];
+
+export const accountNav: NavItem[] = [
+  { href: routes.profile, icon: Icons.user, label: "Профиль" },
+  { href: routes.notifications, icon: Icons.notification, label: "Уведомления" },
+  { href: routes.myPlans, icon: Icons.crown, label: "Мои планы" },
+  { href: routes.payments, icon: Icons.creditCard, label: "Платежи" },
+  { href: routes.settings, icon: Icons.settings, label: "Настройки" },
+];

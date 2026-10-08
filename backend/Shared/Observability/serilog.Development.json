@@ -1,0 +1,15 @@
+{
+  "Serilog": {
+    "WriteTo": [
+      {
+        "Name": "Console",
+        "Args": {
+          "outputTemplate": "[{Timestamp:HH:mm:ss.fff} {Level:u3}] [{SourceContext:l}] {Message:lj}{NewLine}{Exception}"
+        }
+      },
+      {
+        "Name": "Debug"
+      }
+    ]
+  }
+}

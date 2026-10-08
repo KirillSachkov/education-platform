@@ -1,0 +1,207 @@
+[
+  {
+    "file": "Matt-Pocock-MIT.txt",
+    "repository": "mattpocock/skills",
+    "reviewed_ref": "885e2ca4d842d139e9aef4e48d366c63cb1b8013",
+    "upstream_path": "LICENSE",
+    "git_blob": "f1dd2c09108dde1a5f56097cee8461b3ea834499",
+    "sha256": "0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+    "url": "https://github.com/mattpocock/skills/blob/885e2ca4d842d139e9aef4e48d366c63cb1b8013/LICENSE",
+    "local_path": "THIRD_PARTY_LICENSES/matt-pocock-MIT.txt"
+  },
+  {
+    "file": "shadcn-MIT.txt",
+    "repository": "shadcn-ui/ui",
+    "reviewed_ref": "0132174664c07d41262fb51012d0cc782e458e6c",
+    "upstream_path": "LICENSE.md",
+    "git_blob": "fad4d887a681dd49233e5ed01ee2c7a1513089a0",
+    "sha256": "1564074e13439397221ffd522e2e504d56561994a23d371aa5e3ad43e4f5423f",
+    "url": "https://github.com/shadcn-ui/ui/blob/0132174664c07d41262fb51012d0cc782e458e6c/LICENSE.md",
+    "local_path": "THIRD_PARTY_LICENSES/shadcn-ui-MIT.txt"
+  },
+  {
+    "file": "impeccable-LICENSE",
+    "repository": "pbakaus/impeccable",
+    "reviewed_ref": "778c8a7b71ccd5bfe3ca6ac68c15d9d872d0f87d",
+    "upstream_path": "LICENSE",
+    "git_blob": "bb3f6d23b1f8025514a62a12b51b47d73e3c9aa9",
+    "sha256": "02bb8c3b4e70190e3986c0404ad2fd8d639b4f534252d82379cc1b502b6d1812",
+    "url": "https://github.com/pbakaus/impeccable/blob/778c8a7b71ccd5bfe3ca6ac68c15d9d872d0f87d/LICENSE",
+    "local_path": "THIRD_PARTY_LICENSES/impeccable-Apache-2.0.txt"
+  },
+  {
+    "file": "impeccable-NOTICE.md",
+    "repository": "pbakaus/impeccable",
+    "reviewed_ref": "778c8a7b71ccd5bfe3ca6ac68c15d9d872d0f87d",
+    "upstream_path": "NOTICE.md",
+    "git_blob": "0468271c904ae334cfaf27da6f8df3d5f419a1f0",
+    "sha256": "c60a093c2845fd9fb82f9c6f742ece31f379f8190b535309d32d66c45ccffdcb",
+    "url": "https://github.com/pbakaus/impeccable/blob/778c8a7b71ccd5bfe3ca6ac68c15d9d872d0f87d/NOTICE.md",
+    "local_path": "THIRD_PARTY_LICENSES/impeccable-NOTICE.md"
+  },
+  {
+    "file": "ehmo-LICENSE.txt",
+    "repository": "ehmo/platform-design-skills",
+    "reviewed_ref": "dc2be825d8b439caea78e9eaa8fb3ac23b0ff3e9",
+    "upstream_path": "LICENSE",
+    "git_blob": "14fac913ccf80234b1848540089a3bbcb6e5283d",
+    "sha256": "1126322e2cc8d165adc4c792eeb195717de2bcc7b39be1ce77959d78e87ef685",
+    "url": "https://github.com/ehmo/platform-design-skills/blob/dc2be825d8b439caea78e9eaa8fb3ac23b0ff3e9/LICENSE",
+    "local_path": "THIRD_PARTY_LICENSES/ehmo-platform-design-skills-MIT.txt"
+  },
+  {
+    "file": "modern-Apache-2.0.txt",
+    "repository": "GoogleChrome/modern-web-guidance-src",
+    "reviewed_ref": "271a5501f46e70c8904ea134ab334a05c8dc992f",
+    "upstream_path": "LICENSE",
+    "git_blob": "d645695673349e3947e8e5ae42332d0ac3164cd7",
+    "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "url": "https://github.com/GoogleChrome/modern-web-guidance-src/blob/271a5501f46e70c8904ea134ab334a05c8dc992f/LICENSE",
+    "local_path": "THIRD_PARTY_LICENSES/modern-web-guidance-Apache-2.0.txt"
+  },
+  {
+    "file": "playwright-cli-LICENSE",
+    "repository": "microsoft/playwright-cli",
+    "reviewed_ref": "b85c7a736bb473bf55b584e54a09ffa698d6d871",
+    "upstream_path": "LICENSE",
+    "git_blob": "cefe596afef12e19a8e5e923f1a04c7da3188760",
+    "sha256": "9a7110fc2d2f964038e5dc49128f908f29f47a574c961cba16085914e879cbda",
+    "url": "https://github.com/microsoft/playwright-cli/blob/b85c7a736bb473bf55b584e54a09ffa698d6d871/LICENSE",
+    "local_path": "THIRD_PARTY_LICENSES/playwright-cli-Apache-2.0.txt"
+  },
+  {
+    "file": "CC-BY-4.0.txt",
+    "url": "https://creativecommons.org/licenses/by/4.0/legalcode.txt",
+    "sha256": "9ba9550ad48438d0836ddab3da480b3b69ffa0aac7b7878b5a0039e7ab429411",
+    "local_path": "THIRD_PARTY_LICENSES/CC-BY-4.0.txt"
+  },
+  {
+    "file": "PT-Sans-OFL-0.txt",
+    "url": "font name table: frontend/public/fonts/PTSans-{Regular,Bold}.ttf nameID=13",
+    "sha256": "3066d17bf28ada2276b4716caa50cfb8eb03f6221f7b6d6a4c9a5f9173a37f7f",
+    "local_path": "frontend/public/fonts/OFL.txt"
+  },
+  {
+    "file": "SkiaSharp-MIT.txt",
+    "repository": "mono/SkiaSharp",
+    "reviewed_ref": "v4.153.1",
+    "source_commit": "4783f51448f9b070dda4f87b83e941c9599e466e",
+    "source_type": "nuget-package-entry",
+    "package_entry": "LICENSE.txt",
+    "copied_from_package": "SkiaSharp",
+    "package_origins": [
+      {
+        "id": "SkiaSharp",
+        "version": "4.153.1",
+        "url": "https://www.nuget.org/packages/SkiaSharp/4.153.1",
+        "package_url": "https://api.nuget.org/v3-flatcontainer/skiasharp/4.153.1/skiasharp.4.153.1.nupkg",
+        "sha256": "9cf0fa681223d4956bfbd37995c9eaa8d259935ae3d195fac681ff9a4e9c4816",
+        "sha512_base64": "quzaoxV/g+5AizlwOf6XzdALi3cgCEy6rQA06SW1fezA+Lrj0FKFmG5v65hyDM26qD+SdL7u0HjWadN9hOZwFA==",
+        "signature_verification": "dotnet nuget verify --all passed (Microsoft author and NuGet.org repository signatures), 2026-10-08"
+      }
+    ],
+    "sha256": "89101e35a8c66fd4d6dffc1763259161d35cb564c169714ec227a768c89f2938",
+    "byte_length": 1129,
+    "local_path": "THIRD_PARTY_LICENSES/SkiaSharp-MIT.txt",
+    "publish_path": "licenses/SkiaSharp-MIT.txt",
+    "upstream_path": "LICENSE.txt",
+    "upstream_git_blob": "8532c34b194d2413d8d4c87f2b94d697ce470581",
+    "upstream_sha256": "bc2eb4f37d574f9b1b67da2b17e14d151618850527d78f7323239e7518df5b77",
+    "upstream_url": "https://github.com/mono/SkiaSharp/blob/4783f51448f9b070dda4f87b83e941c9599e466e/LICENSE.txt",
+    "upstream_comparison": "Package text preserves CRLF; pinned source uses LF. Text matches after CRLF-to-LF normalization."
+  },
+  {
+    "file": "SkiaSharp-NativeAssets-MIT.txt",
+    "repository": "mono/SkiaSharp",
+    "reviewed_ref": "v4.153.1",
+    "source_commit": "4783f51448f9b070dda4f87b83e941c9599e466e",
+    "source_type": "nuget-package-entry",
+    "package_entry": "LICENSE.txt",
+    "copied_from_package": "SkiaSharp.NativeAssets.Linux.NoDependencies",
+    "package_origins": [
+      {
+        "id": "SkiaSharp.NativeAssets.Linux.NoDependencies",
+        "version": "4.153.1",
+        "url": "https://www.nuget.org/packages/SkiaSharp.NativeAssets.Linux.NoDependencies/4.153.1",
+        "package_url": "https://api.nuget.org/v3-flatcontainer/skiasharp.nativeassets.linux.nodependencies/4.153.1/skiasharp.nativeassets.linux.nodependencies.4.153.1.nupkg",
+        "sha256": "1678572dd5d1488c3f39892460bec16c2b0942489f3a5149abfbcbae3da53431",
+        "sha512_base64": "9pcoCFjGDhkSLAJlgJXU9PpFzFbxwSDsJVSv4jOJm+EmPrP7b9FnRPC3R9I+qQXjw4JhLdfHPRbi+6630mT2MA==",
+        "signature_verification": "dotnet nuget verify --all passed (Microsoft author and NuGet.org repository signatures), 2026-10-08"
+      },
+      {
+        "id": "SkiaSharp.NativeAssets.macOS",
+        "version": "4.153.1",
+        "url": "https://www.nuget.org/packages/SkiaSharp.NativeAssets.macOS/4.153.1",
+        "package_url": "https://api.nuget.org/v3-flatcontainer/skiasharp.nativeassets.macos/4.153.1/skiasharp.nativeassets.macos.4.153.1.nupkg",
+        "sha256": "da8967494eb11d881494d0fd2562893174e92056d41c22c907b2a36caf1032c9",
+        "sha512_base64": "xeXDBFWaRUkhh5Dsvzrnm3mbY2T8YTe5FXsw6SMnbsZBlr90nzYxFInQKWFV/Zi+H//g7rIXafinPlvHg/QPsQ==",
+        "signature_verification": "dotnet nuget verify --all passed (Microsoft author and NuGet.org repository signatures), 2026-10-08"
+      },
+      {
+        "id": "SkiaSharp.NativeAssets.Win32",
+        "version": "4.153.1",
+        "url": "https://www.nuget.org/packages/SkiaSharp.NativeAssets.Win32/4.153.1",
+        "package_url": "https://api.nuget.org/v3-flatcontainer/skiasharp.nativeassets.win32/4.153.1/skiasharp.nativeassets.win32.4.153.1.nupkg",
+        "sha256": "c27b04338d1e4d400c20de534356310b9971e123e081c732af97e56f5572e1ae",
+        "sha512_base64": "++O6xSRWZU7A6eXNQyIn60Pcv8XVeVowoPquXdG+C1uT4XcTTtiePZMnkR1pHryAS5OKrkLRaitsWC2iFi+h4A==",
+        "signature_verification": "dotnet nuget verify --all passed (Microsoft author and NuGet.org repository signatures), 2026-10-08"
+      }
+    ],
+    "sha256": "89101e35a8c66fd4d6dffc1763259161d35cb564c169714ec227a768c89f2938",
+    "byte_length": 1129,
+    "local_path": "THIRD_PARTY_LICENSES/SkiaSharp-NativeAssets-MIT.txt",
+    "publish_path": "licenses/SkiaSharp-NativeAssets-MIT.txt",
+    "upstream_path": "LICENSE.txt",
+    "upstream_git_blob": "8532c34b194d2413d8d4c87f2b94d697ce470581",
+    "upstream_sha256": "bc2eb4f37d574f9b1b67da2b17e14d151618850527d78f7323239e7518df5b77",
+    "upstream_url": "https://github.com/mono/SkiaSharp/blob/4783f51448f9b070dda4f87b83e941c9599e466e/LICENSE.txt",
+    "upstream_comparison": "Package text preserves CRLF; pinned source uses LF. Text matches after CRLF-to-LF normalization."
+  },
+  {
+    "file": "SkiaSharp-NativeAssets-THIRD-PARTY-NOTICES.txt",
+    "repository": "mono/SkiaSharp",
+    "reviewed_ref": "v4.153.1",
+    "source_commit": "4783f51448f9b070dda4f87b83e941c9599e466e",
+    "source_type": "nuget-package-entry",
+    "package_entry": "THIRD-PARTY-NOTICES.txt",
+    "copied_from_package": "SkiaSharp.NativeAssets.Linux.NoDependencies",
+    "package_origins": [
+      {
+        "id": "SkiaSharp.NativeAssets.Linux.NoDependencies",
+        "version": "4.153.1",
+        "url": "https://www.nuget.org/packages/SkiaSharp.NativeAssets.Linux.NoDependencies/4.153.1",
+        "package_url": "https://api.nuget.org/v3-flatcontainer/skiasharp.nativeassets.linux.nodependencies/4.153.1/skiasharp.nativeassets.linux.nodependencies.4.153.1.nupkg",
+        "sha256": "1678572dd5d1488c3f39892460bec16c2b0942489f3a5149abfbcbae3da53431",
+        "sha512_base64": "9pcoCFjGDhkSLAJlgJXU9PpFzFbxwSDsJVSv4jOJm+EmPrP7b9FnRPC3R9I+qQXjw4JhLdfHPRbi+6630mT2MA==",
+        "signature_verification": "dotnet nuget verify --all passed (Microsoft author and NuGet.org repository signatures), 2026-10-08"
+      },
+      {
+        "id": "SkiaSharp.NativeAssets.macOS",
+        "version": "4.153.1",
+        "url": "https://www.nuget.org/packages/SkiaSharp.NativeAssets.macOS/4.153.1",
+        "package_url": "https://api.nuget.org/v3-flatcontainer/skiasharp.nativeassets.macos/4.153.1/skiasharp.nativeassets.macos.4.153.1.nupkg",
+        "sha256": "da8967494eb11d881494d0fd2562893174e92056d41c22c907b2a36caf1032c9",
+        "sha512_base64": "xeXDBFWaRUkhh5Dsvzrnm3mbY2T8YTe5FXsw6SMnbsZBlr90nzYxFInQKWFV/Zi+H//g7rIXafinPlvHg/QPsQ==",
+        "signature_verification": "dotnet nuget verify --all passed (Microsoft author and NuGet.org repository signatures), 2026-10-08"
+      },
+      {
+        "id": "SkiaSharp.NativeAssets.Win32",
+        "version": "4.153.1",
+        "url": "https://www.nuget.org/packages/SkiaSharp.NativeAssets.Win32/4.153.1",
+        "package_url": "https://api.nuget.org/v3-flatcontainer/skiasharp.nativeassets.win32/4.153.1/skiasharp.nativeassets.win32.4.153.1.nupkg",
+        "sha256": "c27b04338d1e4d400c20de534356310b9971e123e081c732af97e56f5572e1ae",
+        "sha512_base64": "++O6xSRWZU7A6eXNQyIn60Pcv8XVeVowoPquXdG+C1uT4XcTTtiePZMnkR1pHryAS5OKrkLRaitsWC2iFi+h4A==",
+        "signature_verification": "dotnet nuget verify --all passed (Microsoft author and NuGet.org repository signatures), 2026-10-08"
+      }
+    ],
+    "sha256": "21504c46c4c58aa64c1055bd2dcbc5f9a136b4b8c412ed3cc6740e22c5b127f5",
+    "byte_length": 139775,
+    "local_path": "THIRD_PARTY_LICENSES/SkiaSharp-NativeAssets-THIRD-PARTY-NOTICES.txt",
+    "publish_path": "licenses/SkiaSharp-NativeAssets-THIRD-PARTY-NOTICES.txt",
+    "upstream_path": "External-Dependency-Info.txt",
+    "upstream_git_blob": "02f9d113ec2763c89c4c33af3e9c55d522fbef06",
+    "upstream_sha256": "98acf9d4d6083959988c884f630cdff760f94bfeb9acf57774653e08c23d1e45",
+    "upstream_url": "https://github.com/mono/SkiaSharp/blob/4783f51448f9b070dda4f87b83e941c9599e466e/External-Dependency-Info.txt",
+    "upstream_comparison": "Package text preserves CRLF; pinned source uses LF. Text matches after CRLF-to-LF normalization."
+  }
+]

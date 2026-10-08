@@ -1,0 +1,76 @@
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+    jsonData:
+      httpMethod: POST
+      exemplarTraceIdDestinations:
+        - name: trace_id
+          datasourceUid: tempo
+
+  - name: Tempo
+    uid: tempo
+    type: tempo
+    access: proxy
+    url: http://tempo:3200
+    editable: true
+    jsonData:
+      tracesToLogsV2:
+        datasourceUid: loki
+        filterByTraceID: true
+        filterBySpanID: false
+        customQuery: true
+        query: '{service_name="${__span.tags["service.name"]}"} | trace_id = `${__trace.traceId}`'
+      tracesToMetrics:
+        datasourceUid: prometheus
+        spanStartTimeShift: -2m
+        spanEndTimeShift: 2m
+      nodeGraph:
+        enabled: true
+      serviceMap:
+        datasourceUid: prometheus
+      lokiSearch:
+        datasourceUid: loki
+      spanBar:
+        type: Tag
+        tag: http.path
+
+  - name: Loki
+    uid: loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    editable: true
+    jsonData:
+      traceDatasourceUid: tempo
+      derivedFields:
+        - name: TraceID
+          matcherRegex: "(?:\"TraceId\":\"|trace_id[=: ]+)([a-f0-9]{16,32})"
+          datasourceUid: tempo
+          urlDisplayLabel: "View Trace in Tempo"
+
+  # Application Postgres — powers the business dashboards that query domain
+  # tables directly (Trainer stats). Dev uses a least-privilege READ-ONLY role
+  # (grafana_ro, created by docker/postgres/init-databases.sql), NOT the app
+  # superuser — same $GRAFANA_PG_USER / $GRAFANA_PG_PASSWORD vars as prod. The
+  # grafana container has env_file: .env, so they resolve; sslmode disabled on
+  # the docker net.
+  - name: education-postgres
+    uid: education-postgres
+    type: postgres
+    access: proxy
+    url: postgres:5432
+    user: $GRAFANA_PG_USER
+    editable: true
+    jsonData:
+      database: education_platform
+      sslmode: disable
+      postgresVersion: 1600
+    secureJsonData:
+      password: $GRAFANA_PG_PASSWORD

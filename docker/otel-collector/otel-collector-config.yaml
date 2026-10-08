@@ -1,0 +1,71 @@
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 5s
+    send_batch_size: 1024
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 256
+    spike_limit_mib: 64
+  resource:
+    attributes:
+      - key: deployment.environment
+        value: ${env:DEPLOYMENT_ENVIRONMENT:-local}
+        action: upsert
+  filter/health:
+    error_mode: ignore
+    traces:
+      span:
+        - 'attributes["url.path"] == "/health"'
+        - 'attributes["http.route"] == "/health"'
+        - 'attributes["url.path"] == "/metrics"'
+    metrics:
+      metric:
+        - 'HasAttrOnDatapoint("http.route", "/health")'
+        - 'HasAttrOnDatapoint("url.path", "/health")'
+
+exporters:
+  # Traces -> Tempo (OTLP gRPC native)
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+
+  # Metrics -> Prometheus (scraped via /metrics)
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    resource_to_telemetry_conversion:
+      enabled: true
+
+# Логи через OTLP сюда НЕ ходят — Serilog пишет в Console (stdout), Alloy
+# собирает stdout всех Docker-контейнеров и пушит в Loki напрямую. Это ловит
+# и app-логи (.NET сервисы), и infra (nginx, postgres, redis), и переживает
+# крэши процесса (stdout сохраняется Docker'ом).
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, filter/health, batch]
+      exporters: [otlp/tempo]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, filter/health, batch]
+      exporters: [prometheus]
+
+  telemetry:
+    logs:
+      level: info
+    metrics:
+      address: 0.0.0.0:8888

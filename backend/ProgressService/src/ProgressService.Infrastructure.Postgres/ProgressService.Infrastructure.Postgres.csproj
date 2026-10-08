@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\AccessService\src\AccessService.Contracts\AccessService.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\AuthService\src\AuthService.Contracts\AuthService.Contracts.csproj" />
+    <ProjectReference
+      Include="..\..\..\EducationContentService\src\EducationContentService.Contracts\EducationContentService.Contracts.csproj" />
+    <ProjectReference Include="..\ProgressService.Core\ProgressService.Core.csproj" />
+    <ProjectReference Include="..\ProgressService.Domain\ProgressService.Domain.csproj" />
+    <ProjectReference Include="..\..\..\Shared\DomainEvents\DomainEvents.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Database\Database.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="WolverineFx.EntityFrameworkCore" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Configuration\" />
+    <Folder Include="Repositories\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="Repositories\V2\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Remove="Repositories\V2\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="Repositories\V2\**" />
+  </ItemGroup>
+</Project>

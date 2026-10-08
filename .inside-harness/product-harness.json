@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 2,
+  "package": "inside-engineering",
+  "version": "0.3.11",
+  "source": {
+    "repository": "git@github.com:sachkov-inside/workspace.git",
+    "ref": "origin/main",
+    "commit": "3c970cdd2fb89affe7d8aa31197c210294260568"
+  },
+  "managedSkills": [
+    "ask-matt",
+    "code-review",
+    "codebase-design",
+    "diagnosing-bugs",
+    "domain-modeling",
+    "frontend-design",
+    "grill-me",
+    "grill-with-docs",
+    "grilling",
+    "handoff",
+    "impeccable",
+    "implement",
+    "improve-codebase-architecture",
+    "karpathy-guidelines",
+    "modern-web-guidance",
+    "playwright-cli",
+    "prototype",
+    "research",
+    "resolving-merge-conflicts",
+    "setup-matt-pocock-skills",
+    "tdd",
+    "teach",
+    "to-questionnaire",
+    "to-spec",
+    "to-tickets",
+    "triage",
+    "vercel-react-best-practices",
+    "wait-what",
+    "wayfinder",
+    "web-design-guidelines",
+    "wizard",
+    "writing-for-agents"
+  ],
+  "managedDigest": {
+    "algorithm": "sha256-path-mode-content-v1",
+    "value": "b12129bc6de352f0e33a6efb2b8c2feb99b36e7159ae4686594e5902b0bfefa5"
+  },
+  "localSkills": [
+    "ci-cd-investigate",
+    "release"
+  ],
+  "localDigest": {
+    "algorithm": "sha256-path-mode-content-v1",
+    "value": "7921697928507ba77dc2ded569dfe5391852934c53294e6716a2091639db29ea"
+  },
+  "registryDigest": {
+    "algorithm": "sha256-path-mode-content-v1",
+    "value": "969ee42c286c223a53366fb0007a4e04f08d584794550e3e79d0343fbfa21fdd"
+  },
+  "snapshot": ".inside-harness/skills",
+  "managedFiles": [],
+  "adaptedFiles": [
+    ".gitattributes",
+    ".github",
+    ".gitlab-ci.yml",
+    ".inside-harness/README.md",
+    ".templates/platform-service/AGENTS.md",
+    ".templates/platform-service/CLAUDE.md",
+    ".templates/platform-service/README.md",
+    ".templates/vertical-slice-service/AGENTS.md",
+    ".templates/vertical-slice-service/CLAUDE.md",
+    ".templates/vertical-slice-service/README.md",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "WORKFLOW.md",
+    "docs/agents",
+    "docs/contributing-ci.md",
+    "scripts/ci/github-ci-paths.json",
+    "scripts/ci/github-ci.py",
+    "scripts/ci/test-agent-template-contract.sh",
+    "scripts/ci/validate-agent-instructions.py"
+  ],
+  "adaptedDigest": {
+    "algorithm": "sha256-path-mode-content-v1",
+    "value": "0bca46574b8c7d16525b0e53a15b88a6bf0856625845f85a6447e7ff242b6bf0"
+  },
+  "lifecycle": {
+    "health": "python3 scripts/ci/validate-agent-instructions.py && bash scripts/ci/test-agent-template-contract.sh",
+    "updateManagedSnapshot": "update from the pinned source commit, reapply Education adaptations, refresh digests with `python3 scripts/ci/validate-agent-instructions.py --write-digests`, then run health"
+  },
+  "targets": {
+    "portable": ".agents/skills",
+    "claude": ".claude/skills"
+  },
+  "compatibility": {
+    "skills": ".harness/skills",
+    "rules": ".harness/rules"
+  }
+}

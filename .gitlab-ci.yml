@@ -1,0 +1,1582 @@
+# Release 2026-05-19 full-rebuild marker: pipeline 600 был отменён до завершения
+# 10 builds из 12 (после фейла build-education-service на отсутствующем COPY
+# ProgressService.Contracts — fixed via !173). Pipeline 602 пересобрал бы только
+# ECS+frontend, остальные остались бы на pre-release :latest. Этот chore-touch
+# в .shared-paths форсирует rebuild всех сервисов, чтобы release !172 уехал
+# на прод целиком (notification hardening #230/#236, progress views #234,
+# AccessService review #228, etc.).
+workflow:
+  auto_cancel:
+    on_new_commit: interruptible
+  rules:
+    # MR into main is the delivery boundary (#1153): it runs affected-only checks
+    # (unit, frontend, contracts, migrations) selected by `changes:` against main.
+    # Heavy integration suites stay a local gate on the exact candidate SHA; the
+    # full matrix is available as an optional manual button. Build/deploy never
+    # run in an MR pipeline.
+    - if: $CI_MERGE_REQUEST_IID && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"
+      variables:
+        MR_TARGET_MAIN: "true"
+    - if: $CI_MERGE_REQUEST_IID
+    - if: $CI_COMMIT_BRANCH == "main"
+    # On-demand manual run from the GitLab UI ("Run pipeline") on ANY branch — e.g. a
+    # sanity check on a task branch without opening an MR.
+    # NEVER fires automatically (only an explicit click). build/release/deploy jobs stay gated
+    # to `$CI_COMMIT_BRANCH == "main"`, so a web run on a non-main branch runs tests only.
+    # See docs/agents/release-pipelines.md.
+    - if: $CI_PIPELINE_SOURCE == "web"
+
+default:
+  interruptible: true
+
+stages:
+  - test
+  - build
+  - release
+  - deploy
+
+variables:
+  DOTNET_NOLOGO: "true"
+  # TelegramBotFlow framework подключён как git submodule в backend/external/telegram-bot-flow.
+  # Нужно чтобы CI-runner подтягивал submodule'ы при клонировании.
+  GIT_SUBMODULE_STRATEGY: recursive
+  GIT_SUBMODULE_UPDATE_FLAGS: --jobs 4
+
+# ───── TEMPLATES ─────
+
+.nuget-config: &nuget-config
+  - cp backend/nuget.config.ci backend/nuget.config
+
+# ── Production deploy/rollback SSH route (self-hosted CI runner) ──────────────────
+# Shared by deploy-production + rollback-production so the route lives in ONE place.
+# (Earlier hotfixes duplicated this block verbatim in both jobs and it drifted.)
+# GitLab flattens this nested list into each job's before_script.
+#
+# self-hosted CI job containers have NO direct route/DNS to prod. The deploy egress is the
+# dedicated HTTP CONNECT proxy on the docker0 gateway ($DEPLOY_CONNECT_PROXY, fallback
+# 172.17.0.1:3129). Runner-provided $HTTP_PROXY is reserved for build/package egress.
+# The final hop to prod goes through the GitLab host acting as an SSH bastion:
+#
+#   CI container ─ncat CONNECT($DEPLOY_CONNECT_PROXY)─▶ bastion:22 ─ssh ProxyJump─▶ prod:22
+#
+# TWO SEPARATE identities — do NOT conflate. Conflation was the deploy failure
+# (pipelines #907–#910): the bastion hop reused the prod key as root@bastion and got
+# "Permission denied (publickey,password)". They are decoupled here:
+#   • bastion hop — authenticates to the GitLab host. Uses $BASTION_SSH_KEY if defined,
+#     else falls back to $SSH_PRIVATE_KEY. On the bastion this key must be authorised for
+#     port-forwarding ONLY (authorized_keys prefix: restrict,permitopen="<prod-ip>:22") —
+#     no shell, no agent/X11/tty forwarding.
+#   • prod hop    — authenticates to prod with the deploy key $SSH_PRIVATE_KEY.
+#
+# Every endpoint is a CI/runner variable, so a future bastion/host/user/key change is a
+# variable edit — not a code change + release cycle:
+#   DEPLOY_HOST       prod host                   (required — existing project var)
+#   SSH_PRIVATE_KEY   prod deploy key, File type  (required — existing project var)
+#   BASTION_HOST      bastion hostname            (optional — default gitlab-sachkov.ru)
+#   BASTION_SSH_USER  bastion login user          (optional — default root)
+#   BASTION_SSH_KEY   bastion key, File type      (optional — default: reuse $SSH_PRIVATE_KEY)
+#   DEPLOY_CONNECT_PROXY  deploy CONNECT proxy    (optional — default http://172.17.0.1:3129)
+.prod-ssh-route: &prod-ssh-route
+  - apk add --no-cache bash openssh-client wget nmap-ncat
+  - bash scripts/ci/test-deploy-proxy-boundary.sh
+  - chmod 400 "$SSH_PRIVATE_KEY"
+  - |
+    BASTION_HOST="${BASTION_HOST:-gitlab-sachkov.ru}"
+    BASTION_SSH_USER="${BASTION_SSH_USER:-root}"
+    BASTION_KEY="${BASTION_SSH_KEY:-$SSH_PRIVATE_KEY}"
+    chmod 400 "$BASTION_KEY"
+    PROXY_HOSTPORT=$(printf '%s' "${DEPLOY_CONNECT_PROXY:-http://172.17.0.1:3129}" | sed -e 's#^.*://##' -e 's#/.*$##')
+    echo "Deploy SSH route: CI -CONNECT(${PROXY_HOSTPORT})-> ${BASTION_SSH_USER}@${BASTION_HOST} -ProxyJump-> root@${DEPLOY_HOST}"
+    mkdir -p ~/.ssh
+    {
+      echo "Host gitlab-bastion"
+      echo "  HostName ${BASTION_HOST}"
+      echo "  User ${BASTION_SSH_USER}"
+      echo "  IdentityFile ${BASTION_KEY}"
+      echo "  IdentitiesOnly yes"
+      echo "  StrictHostKeyChecking no"
+      echo "  UserKnownHostsFile /dev/null"
+      echo "  ProxyCommand ncat --proxy ${PROXY_HOSTPORT} --proxy-type http --proxy-dns remote %h %p"
+      echo "Host ${DEPLOY_HOST}"
+      echo "  HostName ${DEPLOY_HOST}"
+      echo "  User root"
+      echo "  IdentityFile ${SSH_PRIVATE_KEY}"
+      echo "  IdentitiesOnly yes"
+      echo "  StrictHostKeyChecking no"
+      echo "  UserKnownHostsFile /dev/null"
+      echo "  ProxyJump gitlab-bastion"
+    } > ~/.ssh/config
+    chmod 600 ~/.ssh/config
+
+.dotnet-base:
+  # self-hosted runner egress is tunnelled through configured (slow); a cold NuGet restore
+  # alone can take ~30+ min. Raise the per-job ceiling above the 1h project default so
+  # a cold-cache run does not false-fail on timeout (pipeline 804 died at 65m this way).
+  timeout: 2h
+  image: mcr.microsoft.com/dotnet/sdk:10.0
+  cache:
+    key:
+      files:
+        - backend/Directory.Packages.props
+      prefix: nuget
+    paths:
+      - $CI_PROJECT_DIR/.nuget/packages/
+  variables:
+    NUGET_PACKAGES: $CI_PROJECT_DIR/.nuget/packages
+
+.backend-mr-rules:
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: never
+    - changes:
+        - backend/**/*
+        - .gitlab-ci.yml
+        - .github/**/*
+        - scripts/ci/github-*
+        - scripts/ci/test-github-*
+
+.frontend-mr-rules:
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: never
+    # NOTE: deliberately NOT triggering on `.gitlab-ci.yml` — an MR that merges dev
+    # (which carries unrelated CI edits) would otherwise force a frontend build on
+    # backend-only MRs. Frontend runs only on real frontend changes.
+    - changes:
+        - frontend/**/*
+        - scripts/ci/prettier-check-diff.sh
+
+.docker-build:
+  stage: build
+  timeout: 2h
+  image: docker:27
+  services:
+    - docker:27-dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+    DOCKER_BUILDKIT: "1"
+  before_script:
+    # self-hosted build-egress: route every `docker build` RUN step (apt/npm/nuget) through the configured
+    # CI proxy. The nested build containers have no direct DNS/route to Cloudflare-fronted mirrors
+    # (archive.ubuntu.com etc.) — the 2026-05-30 egress consolidation dropped the host-level rule
+    # that used to cover them, so the first self-hosted release-build failed with
+    # `Temporary failure resolving archive.ubuntu.com`. `proxies.default` makes Docker apply
+    # $HTTP_PROXY to all build RUN steps; the nested build reaches the host tunnel 172.17.0.1:3129
+    # (verified on self-hosted). `docker login` below merges its registry auth into the same config
+    # without dropping `proxies`.
+    - |
+      if [ -n "$HTTP_PROXY" ]; then
+        mkdir -p ~/.docker
+        printf '{"proxies":{"default":{"httpProxy":"%s","httpsProxy":"%s","noProxy":"localhost,127.0.0.1"}}}\n' \
+          "$HTTP_PROXY" "$HTTPS_PROXY" > ~/.docker/config.json
+      fi
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+  after_script:
+    - docker logout "$CI_REGISTRY" 2>/dev/null || true
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+
+# ───── TEST ─────
+
+validate-agent-skills:
+  stage: test
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache git python3 > /dev/null
+  script:
+    - |
+      set -eu
+      git fetch --depth=200 origin "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
+      # Backend files intentionally use CRLF (backend/.editorconfig); CR is not trailing whitespace.
+      git -c core.whitespace=cr-at-eol diff --check "$CI_MERGE_REQUEST_DIFF_BASE_SHA...HEAD"
+      python3 scripts/ci/validate-agent-instructions.py
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        # Inside snapshot, Education adaptations, and runtime discovery/compatibility links.
+        - .gitattributes
+        - .inside-harness/**/*
+        - .harness/**/*
+        - .claude/**/*
+        - .agents/**/*
+        - .codex/**/*
+        - .templates/**/*
+        - "**/AGENTS.md"
+        - "**/CLAUDE.md"
+        - WORKFLOW.md
+        - backend/Shared/Messaging/RabbitMqMessaging/MESSAGING_CONVENTIONS.md
+        - docs/agents/**/*
+        - docs/contributing-ci.md
+        - docs/RUNBOOK.md
+        - docs/ops.md
+        - frontend/eslint.config.mjs
+        - scripts/ci/test-agent-template-contract.sh
+        - scripts/ci/validate-agent-instructions.py
+        - .gitlab-ci.yml
+        - .github/**/*
+        - scripts/ci/github-*
+        - scripts/ci/test-github-*
+    - when: never
+
+validate-agent-templates:
+  stage: test
+  extends: .dotnet-base
+  before_script:
+    - *nuget-config
+  script:
+    - bash scripts/ci/test-agent-template-contract.sh
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - .templates/**/*
+        - scripts/ci/test-agent-template-contract.sh
+        - .gitlab-ci.yml
+        - .github/**/*
+        - scripts/ci/github-*
+        - scripts/ci/test-github-*
+        - backend/nuget.config.ci
+        - backend/Directory.Packages.props
+        - backend/Directory.Build.props
+        - backend/Shared/**/*
+    - when: never
+
+# Every MR into main gets at least this job, so `Pipelines must succeed` with
+# `allow_merge_on_skipped_pipeline=false` never faces an empty pipeline (#1153).
+mr-main-gate:
+  stage: test
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache git > /dev/null
+  script:
+    - git fetch --depth=200 origin "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
+    # cr-at-eol: several backend files are CRLF by .editorconfig; CR is not trailing whitespace.
+    - git -c core.whitespace=cr-at-eol diff --check "$CI_MERGE_REQUEST_DIFF_BASE_SHA...HEAD"
+    - echo "mr-main-gate passed - affected checks run as separate jobs."
+  rules:
+    - if: '$MR_TARGET_MAIN == "true"'
+    - when: never
+
+check-migrations:
+  stage: test
+  image: alpine:latest
+  variables:
+    # origin/main...HEAD needs the merge base; the project default depth (20) can cut it off.
+    GIT_DEPTH: "0"
+  before_script:
+    - apk add --no-cache git > /dev/null
+    - git fetch origin main
+  script:
+    - |
+      set -e
+      echo "Checking for deleted migration files..."
+      # Bypass: explicit `[skip-migrations-check]` marker in any commit on the MR
+      # — only for an owner-approved service removal or history rewrite. See docs/agents/migrations.md.
+      if git log origin/main..HEAD --pretty=%B 2>/dev/null | grep -qF '[skip-migrations-check]'; then
+        echo "Bypass marker [skip-migrations-check] present — skipping check (squash MR)."
+        exit 0
+      fi
+      # Fail closed: a git error must not look like "no deleted migrations".
+      CHANGES=$(git diff --name-status origin/main...HEAD -- 'backend/*/Migrations/*.cs' 'backend/*/*/Migrations/*.cs' 'backend/*/*/*/Migrations/*.cs')
+      DELETED=$(printf '%s\n' "$CHANGES" | grep '^D' || true)
+      if [ -n "$DELETED" ]; then
+        echo "ERROR: Migration files must never be deleted!"
+        echo ""
+        echo "The following migration files were removed:"
+        echo "$DELETED"
+        echo ""
+        echo "Migrations are immutable once committed. To fix a migration error,"
+        echo "create a new migration instead of modifying or deleting an existing one."
+        echo ""
+        echo "If this IS an owner-approved service removal or squash, add [skip-migrations-check]"
+        echo "to a commit message (see docs/agents/migrations.md)."
+        exit 1
+      fi
+      echo "OK: No migration files deleted."
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: never
+    - changes:
+        - backend/**/*
+
+validate-compose-contracts:
+  stage: test
+  image: docker:27
+  before_script:
+    - apk add --no-cache bash jq python3 > /dev/null
+  script:
+    - bash scripts/ci/validate-compose-contracts.sh
+    - bash scripts/ci/validate-nginx-contracts.sh
+    - bash scripts/ci/test-run-production-migrations.sh
+    - bash scripts/ci/test-production-rollback-guard.sh
+    - bash scripts/ci/test-production-env-export.sh
+    - bash scripts/ci/test-validate-production-env.sh
+    - bash scripts/ci/test-npm-audit-with-retry.sh
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: never
+    - changes:
+        - docker-compose.yml
+        - docker-compose.prod.yml
+        - scripts/ci/validate-compose-contracts.sh
+        - scripts/run-production-migrations.sh
+        - scripts/check-production-rollback.sh
+        - scripts/ci/test-run-production-migrations.sh
+        - scripts/ci/test-production-rollback-guard.sh
+        - scripts/ci/test-production-env-export.sh
+        - scripts/validate-production-env.sh
+        - scripts/ci/test-validate-production-env.sh
+        - scripts/ci/npm-audit-with-retry.sh
+        - scripts/ci/test-npm-audit-with-retry.sh
+        - scripts/ci/fixtures/fake-docker-compose.sh
+        - scripts/ci/fixtures/fake-npm-audit.sh
+        - nginx.prod.conf
+        - scripts/ci/validate-nginx-contracts.sh
+        - .gitlab-ci.yml
+        - .github/**/*
+        - scripts/ci/github-*
+        - scripts/ci/test-github-*
+
+validate-service-image-contracts:
+  stage: test
+  image: python:3.13-alpine
+  before_script:
+    - apk add --no-cache git > /dev/null
+  script:
+    - python3 scripts/ci/validate-service-image-contracts.py
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: never
+    - changes:
+        - backend/*/src/*.Web/*.csproj
+        - backend/*/Dockerfile
+        - scripts/ci/validate-dev-runtime.sh
+        - scripts/ci/validate-service-image-contracts.py
+        - .gitlab-ci.yml
+        - .github/**/*
+        - scripts/ci/github-*
+        - scripts/ci/test-github-*
+
+build-admin-mcp:
+  stage: test
+  image: node:22-alpine
+  variables:
+    NODE_OPTIONS: "--no-network-family-autoselection"
+  before_script:
+    - apk add --no-cache bash > /dev/null
+  script:
+    - cd mcp/admin-server
+    - npm ci --cache /npm-cache --prefer-offline
+    - npm run typecheck
+    - npm test
+    - bash ../../scripts/ci/npm-audit-with-retry.sh --audit-level=moderate
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: never
+    - changes:
+        - mcp/admin-server/**/*
+        - scripts/ci/npm-audit-with-retry.sh
+        - .gitlab-ci.yml
+        - .github/**/*
+        - scripts/ci/github-*
+        - scripts/ci/test-github-*
+
+build-frontend:
+  stage: test
+  timeout: 2h
+  image: node:22-alpine
+  script:
+    # node:22-alpine не содержит bash/python3/git — нужны для ratchet-скриптов
+    # (#712): eslint/ts-strict через bash+python3, prettier-check-diff через git
+    # (тот же apk-паттерн, что в validate-test-rules).
+    - apk add --no-cache bash python3 git > /dev/null
+    - cd frontend
+    # npm cache is a stable host bind-mount (/npm-cache, see runner config.toml
+    # [runners.docker] volumes) — survives between jobs without the docker-executor
+    # GitLab-cache token-prefix drift that left frontend/.npm un-restored every run.
+    - npm ci --cache /npm-cache --prefer-offline
+    # Гейты #712: typecheck (next build сам НЕ тайпчекает тесты), typed-eslint с
+    # per-rule warning-ratchet (заменяет npm run lint — ошибки блокируют всегда),
+    # strict-tsc ratchet, prettier по diff'у MR. Долг зафиксирован в baseline'ах
+    # (frontend/.eslint-warnings-baseline.json, .ts-strict-baseline.json) и может
+    # только уменьшаться.
+    - npm run typecheck
+    - bash "$CI_PROJECT_DIR/scripts/ci/eslint-ratchet.sh"
+    - bash "$CI_PROJECT_DIR/scripts/ci/ts-strict-ratchet.sh"
+    - bash "$CI_PROJECT_DIR/scripts/ci/prettier-check-diff.sh"
+    - npm run build
+    - npm test
+    # knip — warn-only (#712): 41 unused-файл исторического долга разбирает gc-sweep.
+    - npx knip --reporter compact || echo "knip нашёл неиспользуемый код (warn-only) — см. выше"
+  rules:
+    - !reference [.frontend-mr-rules, rules]
+
+unit-tests:
+  stage: test
+  extends: .dotnet-base
+  before_script:
+    - *nuget-config
+  script:
+    # `dotnet test` без --no-build — каждая команда сама билдит свой target +
+    # транзитивные deps, MSBuild кэширует в obj/ между запусками. Раньше делали
+    # `dotnet build backend/backend.slnx` (50+ проектов) до 5 маленьких unit-suites
+    # — большая часть build'а уходила на проекты которые мы вообще не тестим.
+    # -maxcpucount:2 caps MSBuild worker fan-out (см. integration-tests:all).
+    - dotnet test backend/Shared/Common.Tests -c Release -maxcpucount:2 --verbosity minimal --logger "console;verbosity=minimal"
+    - dotnet test backend/Shared/Ordering/Ordering.Tests -c Release -maxcpucount:2 --verbosity minimal --logger "console;verbosity=minimal"
+    - dotnet test backend/Shared/AI/AI.OpenAiCompatible.Tests -c Release -maxcpucount:2 --verbosity minimal --logger "console;verbosity=minimal"
+    - dotnet test backend/Shared/Core.Tests -c Release -maxcpucount:2 --verbosity minimal --logger "console;verbosity=minimal"
+    - dotnet test backend/Shared/Authentication.Tests -c Release -maxcpucount:2 --verbosity minimal --logger "console;verbosity=minimal"
+    # RedisIntegrationTests внутри ContentAccess.Tests требует Docker (Testcontainers Redis) —
+    # unit-tests job DinD не имеет, поэтому фильтруем их. Полный набор запускается отдельной
+    # shared-content-access-integration-tests job с Docker-in-Docker ниже.
+    - dotnet test backend/Shared/ContentAccess/ContentAccess.Tests -c Release -maxcpucount:2 --verbosity minimal --logger "console;verbosity=minimal" --filter "FullyQualifiedName!~RedisIntegrationTests"
+    - dotnet test backend/FileService/tests/FileService.UnitTests -c Release -maxcpucount:2 --verbosity minimal --logger "console;verbosity=minimal"
+    - dotnet test backend/NotificationService/tests/NotificationService.UnitTests -c Release -maxcpucount:2 --verbosity minimal --logger "console;verbosity=minimal"
+    - dotnet test backend/AssignmentReviewService/tests/AssignmentReviewService.UnitTests -c Release -maxcpucount:2 --verbosity minimal --logger "console;verbosity=minimal"
+  rules:
+    - !reference [.backend-mr-rules, rules]
+
+# Selective integration tests:
+# - Per-service jobs run only when their service path (or one of its Contracts deps) is touched.
+# - Cross-cutting changes (Shared/**, Directory.Packages.props, backend.slnx, .gitlab-ci.yml)
+#   fall back to `integration-tests:all` which runs every suite as a parallel:matrix —
+#   each job has its own cgroup-bounded process (gitlab-runner memory=2500m, cpus=2),
+#   so even when the fallback fires the host stays predictable and one bad suite cannot
+#   eat the whole runner.
+# - ContentAccess.Tests moved to `unit-tests` job (it's a pure unit suite, no DinD needed).
+# - Sibling Contracts deps were extracted from each Web/.csproj's ProjectReference graph.
+# - Job paths cover both legacy `tests/` and any future cross-references via `.slnx`.
+
+.integration-test-base:
+  stage: test
+  timeout: 2h
+  image: mcr.microsoft.com/dotnet/sdk:10.0
+  services:
+    # DinD сконфигурирован c registry-mirror на host'е GitLab runner'а
+    # (`registry:2` pull-through cache по адресу 172.17.0.1:6000 — docker0 bridge gateway).
+    # Mirror прозрачно проксирует Docker Hub и кэширует blob'ы → последующие job'ы
+    # получают postgres/minio/redis/pgvector локально, не упираясь в anonymous rate-limit
+    # Docker Hub (100 pulls / 6h / IP). Setup см. RUNBOOK.md § Docker pull-through cache.
+    #
+    # Runner переехал на домашний сервер self-hosted 2026-05-29. `registry-cache` контейнер
+    # пере-поднят там (docker run --restart=always; upstream до Docker Hub идёт через
+    # host CONNECT-proxy на :3128, т.к. DNS в контейнерах self-hosted недоступен). Ops/детали —
+    # private operator documentation. 172.17.0.1 — docker0 gateway на текущем single-host
+    # docker-executor; при следующем переезде runner'а — пере-создать cache на новом
+    # host'е, иначе DinD молча fallback'нется на Docker Hub (rate-limit БЕЗ явной CI ошибки).
+    - name: docker:27-dind
+      command:
+        - --registry-mirror=http://172.17.0.1:6000
+        - --insecure-registry=172.17.0.1:6000
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+    TESTCONTAINERS_HOST_OVERRIDE: docker
+    TESTCONTAINERS_RYUK_DISABLED: "true"
+    DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION: "1"
+    NUGET_PACKAGES: $CI_PROJECT_DIR/.nuget/packages
+    # Все Testcontainers base-образы (postgres/redis/minio/pgvector/typesense/rabbitmq)
+    # тянутся из НАШЕГО GitLab-registry-зеркала, а не с Docker Hub — это снимает anonymous
+    # pull-rate-limit (`toomanyrequests`), который флапал self-hosted-runner (#404/#407).
+    # Testcontainers подставляет этот префикс к каждому hub-образу:
+    # `postgres:16-alpine` → `${CI_REGISTRY_IMAGE}/postgres:16-alpine`.
+    # Зеркало наполняется scripts/ci-mirror-images.sh (re-run при бампе версий образов).
+    TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX: "${CI_REGISTRY_IMAGE}/"
+  cache:
+    - key:
+        files:
+          - backend/Directory.Packages.props
+        prefix: nuget
+      paths:
+        - $CI_PROJECT_DIR/.nuget/packages/
+  before_script:
+    - *nuget-config
+    - |
+      # Fetch the docker CLI binary (needed only to pre-pull testcontainer images into DinD).
+      # Static binary from download.docker.com (CloudFront — fast, direct egress from the self-hosted
+      # runner). Replaces `apt-get install docker.io`, which routed ubuntu archives (Cloudflare,
+      # throttled on the direct RU route → forced via configured) and took ~23 min PER JOB (#371).
+      if ! command -v docker >/dev/null 2>&1; then
+        curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-27.5.1.tgz \
+          | tar -xz -C /usr/local/bin --strip-components=1 docker/docker
+      fi
+    # Authenticate DinD to OUR GitLab Container Registry (where the testcontainer base
+    # images are mirrored) and pre-pull them into DinD. TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX
+    # (see variables) rewrites every Docker Hub image → ${CI_REGISTRY_IMAGE}/<image>, so
+    # Docker Hub is NEVER contacted at test time → no anonymous pull-rate-limit. The mirror
+    # is populated by scripts/ci-mirror-images.sh — keep THIS list, that script, and the
+    # versions pinned in the test WebFactories in sync.
+    - |
+      echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+      for img in postgres:16-alpine pgvector/pgvector:pg16 minio/minio:latest \
+                 redis:7.2 redis:7-alpine typesense/typesense:30.1 rabbitmq:3-management; do
+        for attempt in 1 2 3; do
+          if docker pull "${CI_REGISTRY_IMAGE}/$img"; then break; fi
+          echo "pull ${CI_REGISTRY_IMAGE}/$img failed (attempt $attempt/3), retrying..." >&2
+          sleep 5
+        done
+      done
+
+# Ultra-cross-cutting paths — when any of these are touched, the per-service jobs
+# skip and `integration-tests:all` runs the full 13-suite matrix.
+#
+# These are the only paths that genuinely affect every service's build/test:
+# global build props, the solution file, the SDK pin, the nuget config, and this
+# file itself. Per-suite `changes:` lists already include each service's Shared/*
+# deps explicitly (derived from csproj refs and validated by `validate-test-rules`),
+# so there is no longer a broad `Shared/**` fallback here — narrow Shared changes
+# trigger only the suites that actually depend on them.
+.ultra-cross-cutting-paths: &ultra-paths
+  - backend/Directory.Packages.props
+  - backend/Directory.Build.props
+  - backend/Shared/Directory.Build.props
+  - backend/backend.slnx
+  - global.json
+  - backend/nuget.config.ci
+  - .gitlab-ci.yml
+
+# Drift-gate: re-derives each service's csproj Shared/* refs and fails the MR if
+# the per-suite `changes:` list in this file diverges. Keeps the static dep-map
+# below honest as the project graph evolves.
+validate-test-rules:
+  stage: test
+  image: alpine:3.20
+  before_script:
+    - apk add --no-cache bash python3 grep findutils git tar > /dev/null
+  script:
+    - python3 scripts/ci/test-github-ci.py
+    - bash scripts/ci/test-prettier-check-diff.sh
+    - bash scripts/ci/validate-test-rules.sh
+    - bash scripts/ci/test-deploy-proxy-boundary.sh
+    # Арх-инварианты (#712): props-import, cross-service только через Contracts,
+    # Domain внизу слоёв. Раньше жили прозой в CLAUDE.md — теперь механически.
+    - bash scripts/ci/validate-arch.sh
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: never
+    - changes:
+        - .gitlab-ci.yml
+        - .github/**/*
+        - scripts/ci/github-*
+        - scripts/ci/test-github-*
+        - scripts/ci/validate-test-rules.sh
+        - scripts/ci/test-deploy-proxy-boundary.sh
+        - scripts/ci/validate-arch.sh
+        - backend/**/*.csproj
+        - backend/*/Directory.Build.props
+
+integration-tests:all:
+  extends: .integration-test-base
+  parallel:
+    matrix:
+      - SUITE: AccessService
+      - SUITE: AssignmentReviewService
+      - SUITE: AuthService
+      - SUITE: CommentService
+      - SUITE: EducationContentService
+      - SUITE: FileService
+      - SUITE: MaterialProcessingService
+      - SUITE: NotificationService
+      - SUITE: ProgressService
+      - SUITE: SearchService
+      - SUITE: TagService
+      - SUITE: TelegramBotService
+      - SUITE: TrainerService
+  script:
+    # Build only the suite's test project + its transitive deps — orders of magnitude
+    # faster than `dotnet build backend.slnx` when the matrix expands the job 12x.
+    # -maxcpucount:2 caps MSBuild worker fan-out (см. unit-tests).
+    # Tests inside a single suite share one Postgres testcontainer through
+    # the [Collection(...)] / ICollectionFixture pattern (see backend/{Service}/.../Infrastructure/TestCollection.cs),
+    # so xUnit defaults are safe — no need for a custom xunit.runner.json.
+    - dotnet test backend/${SUITE}/tests/${SUITE}.IntegrationTests -c Release -maxcpucount:2 --verbosity minimal --logger "console;verbosity=minimal"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: never
+    # MR→main: full matrix is an optional manual run; local evidence is the gate.
+    - if: '$MR_TARGET_MAIN == "true"'
+      when: manual
+      allow_failure: true
+    - changes: *ultra-paths
+
+shared-content-access-integration-tests:
+  extends: .integration-test-base
+  script:
+    - dotnet test backend/Shared/ContentAccess/ContentAccess.Tests -c Release -maxcpucount:2 --verbosity minimal --logger "console;verbosity=minimal"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: never
+    - if: '$MR_TARGET_MAIN == "true"'
+      when: never
+    - changes:
+        - .gitlab-ci.yml
+        - .github/**/*
+        - scripts/ci/github-*
+        - scripts/ci/test-github-*
+        - backend/Directory.Packages.props
+        - backend/Directory.Build.props
+        - backend/Shared/Directory.Build.props
+        - backend/Shared/Common/**/*
+        - backend/Shared/ContentAccess/**/*
+        - backend/Shared/SharedKernel/**/*
+
+integration-tests:access:
+  extends: .integration-test-base
+  script:
+    - dotnet test backend/AccessService/tests/AccessService.IntegrationTests -c Release -maxcpucount:2 --verbosity minimal --logger "console;verbosity=minimal"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: never
+    - if: '$MR_TARGET_MAIN == "true"'
+      when: never
+    - changes: *ultra-paths
+      when: never
+    - changes:
+        - backend/AccessService/**/*
+        - backend/AuthService/src/AuthService.Contracts/**/*
+        - backend/EducationContentService/src/EducationContentService.Contracts/**/*
+        - backend/TelegramBotService/src/TelegramBotService.Contracts/**/*
+        - backend/Shared/Authentication/**/*
+        - backend/Shared/ContentAccess/ContentAccess/**/*
+        - backend/Shared/ContentAccess/ContentAccess.Redis/**/*
+        - backend/Shared/ContentAccess/ContentAccess.TestSupport/**/*
+        - backend/Shared/Core/**/*
+        - backend/Shared/Database/**/*
+        - backend/Shared/DomainEvents/**/*
+        - backend/Shared/Framework/**/*
+        - backend/Shared/GitHubApp/**/*
+        - backend/Shared/Messaging/**/*
+        - backend/Shared/Observability/**/*
+        - backend/Shared/Ordering/Ordering/**/*
+        - backend/Shared/PlatformBootstrap/**/*
+        - backend/Shared/SharedKernel/**/*
+        - backend/Shared/Wolverine.Testing/**/*
+
+integration-tests:assignment-review:
+  extends: .integration-test-base
+  script:
+    - dotnet test backend/AssignmentReviewService/tests/AssignmentReviewService.IntegrationTests -c Release -maxcpucount:2 --verbosity minimal --logger "console;verbosity=minimal"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: never
+    - if: '$MR_TARGET_MAIN == "true"'
+      when: never
+    - changes: *ultra-paths
+      when: never
+    - changes:
+        - backend/AssignmentReviewService/**/*
+        - backend/AuthService/src/AuthService.Contracts/**/*
+        - backend/Shared/AI/AI/**/*
+        - backend/Shared/AI/AI.OpenAiCompatible/**/*
+        - backend/Shared/Authentication/**/*
+        - backend/Shared/Core/**/*
+        - backend/Shared/Database/**/*
+        - backend/Shared/DomainEvents/**/*
+        - backend/Shared/Framework/**/*
+        - backend/Shared/GitHubApp/**/*
+        - backend/Shared/Messaging/**/*
+        - backend/Shared/Observability/**/*
+        - backend/Shared/PlatformBootstrap/**/*
+        - backend/Shared/SharedKernel/**/*
+        - backend/Shared/Wolverine.Testing/**/*
+
+integration-tests:auth:
+  extends: .integration-test-base
+  script:
+    - dotnet test backend/AuthService/tests/AuthService.IntegrationTests -c Release -maxcpucount:2 --verbosity minimal --logger "console;verbosity=minimal"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: never
+    - if: '$MR_TARGET_MAIN == "true"'
+      when: never
+    - changes: *ultra-paths
+      when: never
+    - changes:
+        - backend/AuthService/**/*
+        - backend/EducationContentService/src/EducationContentService.Contracts/**/*
+        - backend/Shared/Authentication/**/*
+        - backend/Shared/Core/**/*
+        - backend/Shared/Database/**/*
+        - backend/Shared/DomainEvents/**/*
+        - backend/Shared/Email/**/*
+        - backend/Shared/Framework/**/*
+        - backend/Shared/Messaging/**/*
+        - backend/Shared/Observability/**/*
+        - backend/Shared/PlatformBootstrap/**/*
+        - backend/Shared/SharedKernel/**/*
+        - backend/Shared/Wolverine.Testing/**/*
+
+integration-tests:comment:
+  extends: .integration-test-base
+  script:
+    - dotnet test backend/CommentService/tests/CommentService.IntegrationTests -c Release -maxcpucount:2 --verbosity minimal --logger "console;verbosity=minimal"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: never
+    - if: '$MR_TARGET_MAIN == "true"'
+      when: never
+    - changes: *ultra-paths
+      when: never
+    - changes:
+        - backend/CommentService/**/*
+        - backend/AuthService/src/AuthService.Contracts/**/*
+        - backend/EducationContentService/src/EducationContentService.Contracts/**/*
+        - backend/Shared/Authentication/**/*
+        - backend/Shared/Common/**/*
+        - backend/Shared/ContentAccess/ContentAccess/**/*
+        - backend/Shared/ContentAccess/ContentAccess.Redis/**/*
+        - backend/Shared/ContentAccess/ContentAccess.TestSupport/**/*
+        - backend/Shared/Core/**/*
+        - backend/Shared/Database/**/*
+        - backend/Shared/DomainEvents/**/*
+        - backend/Shared/Framework/**/*
+        - backend/Shared/Messaging/**/*
+        - backend/Shared/Observability/**/*
+        - backend/Shared/PlatformBootstrap/**/*
+        - backend/Shared/SharedKernel/**/*
+        - backend/Shared/Wolverine.Testing/**/*
+
+integration-tests:education:
+  extends: .integration-test-base
+  script:
+    - dotnet test backend/EducationContentService/tests/EducationContentService.IntegrationTests -c Release -maxcpucount:2 --verbosity minimal --logger "console;verbosity=minimal"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: never
+    - if: '$MR_TARGET_MAIN == "true"'
+      when: never
+    - changes: *ultra-paths
+      when: never
+    - changes:
+        - backend/EducationContentService/**/*
+        - backend/FileService/src/FileService.Contracts/**/*
+        - backend/MaterialProcessingService/src/MaterialProcessingService.Contracts/**/*
+        - backend/ProgressService/src/ProgressService.Contracts/**/*
+        - backend/Shared/Authentication/**/*
+        - backend/Shared/Common/**/*
+        - backend/Shared/ContentAccess/ContentAccess/**/*
+        - backend/Shared/ContentAccess/ContentAccess.Redis/**/*
+        - backend/Shared/ContentAccess/ContentAccess.TestSupport/**/*
+        - backend/Shared/Core/**/*
+        - backend/Shared/Database/**/*
+        - backend/Shared/DomainEvents/**/*
+        - backend/Shared/Framework/**/*
+        - backend/Shared/Messaging/**/*
+        - backend/Shared/Observability/**/*
+        - backend/Shared/Ordering/Ordering/**/*
+        - backend/Shared/PlatformBootstrap/**/*
+        - backend/Shared/SharedKernel/**/*
+
+integration-tests:file:
+  extends: .integration-test-base
+  script:
+    - dotnet test backend/FileService/tests/FileService.IntegrationTests -c Release -maxcpucount:2 --verbosity minimal --logger "console;verbosity=minimal"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: never
+    - if: '$MR_TARGET_MAIN == "true"'
+      when: never
+    - changes: *ultra-paths
+      when: never
+    - changes:
+        - backend/FileService/**/*
+        - backend/EducationContentService/src/EducationContentService.Contracts/**/*
+        - backend/Shared/Authentication/**/*
+        - backend/Shared/ContentAccess/ContentAccess/**/*
+        - backend/Shared/ContentAccess/ContentAccess.Redis/**/*
+        - backend/Shared/Core/**/*
+        - backend/Shared/Database/**/*
+        - backend/Shared/DomainEvents/**/*
+        - backend/Shared/Framework/**/*
+        - backend/Shared/Messaging/**/*
+        - backend/Shared/Observability/**/*
+        - backend/Shared/PlatformBootstrap/**/*
+        - backend/Shared/SharedKernel/**/*
+        - backend/Shared/Wolverine.Testing/**/*
+
+integration-tests:material-processing:
+  extends: .integration-test-base
+  script:
+    - dotnet test backend/MaterialProcessingService/tests/MaterialProcessingService.IntegrationTests -c Release -maxcpucount:2 --verbosity minimal --logger "console;verbosity=minimal"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: never
+    - if: '$MR_TARGET_MAIN == "true"'
+      when: never
+    - changes: *ultra-paths
+      when: never
+    - changes:
+        - backend/MaterialProcessingService/**/*
+        - backend/EducationContentService/src/EducationContentService.Contracts/**/*
+        - backend/FileService/src/FileService.Contracts/**/*
+        - backend/Shared/AI/AI/**/*
+        - backend/Shared/AI/AI.OpenAiCompatible/**/*
+        - backend/Shared/Authentication/**/*
+        - backend/Shared/Core/**/*
+        - backend/Shared/DomainEvents/**/*
+        - backend/Shared/Framework/**/*
+        - backend/Shared/Messaging/**/*
+        - backend/Shared/Observability/**/*
+        - backend/Shared/SharedKernel/**/*
+
+integration-tests:notification:
+  extends: .integration-test-base
+  script:
+    - dotnet test backend/NotificationService/tests/NotificationService.IntegrationTests -c Release -maxcpucount:2 --verbosity minimal --logger "console;verbosity=minimal"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: never
+    - if: '$MR_TARGET_MAIN == "true"'
+      when: never
+    - changes: *ultra-paths
+      when: never
+    - changes:
+        - backend/NotificationService/**/*
+        - backend/AccessService/src/AccessService.Contracts/**/*
+        - backend/AuthService/src/AuthService.Contracts/**/*
+        - backend/EducationContentService/src/EducationContentService.Contracts/**/*
+        - backend/Shared/Authentication/**/*
+        - backend/Shared/Common/**/*
+        - backend/Shared/ContentAccess/ContentAccess/**/*
+        - backend/Shared/Core/**/*
+        - backend/Shared/Database/**/*
+        - backend/Shared/Email/**/*
+        - backend/Shared/Framework/**/*
+        - backend/Shared/Messaging/**/*
+        - backend/Shared/Navigation/**/*
+        - backend/Shared/Observability/**/*
+        - backend/Shared/PlatformBootstrap/**/*
+        - backend/Shared/SharedKernel/**/*
+        - backend/Shared/Wolverine.Testing/**/*
+
+integration-tests:progress:
+  extends: .integration-test-base
+  script:
+    - dotnet test backend/ProgressService/tests/ProgressService.IntegrationTests -c Release -maxcpucount:2 --verbosity minimal --logger "console;verbosity=minimal"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: never
+    - if: '$MR_TARGET_MAIN == "true"'
+      when: never
+    - changes: *ultra-paths
+      when: never
+    - changes:
+        - backend/ProgressService/**/*
+        - backend/AccessService/src/AccessService.Contracts/**/*
+        - backend/AuthService/src/AuthService.Contracts/**/*
+        - backend/EducationContentService/src/EducationContentService.Contracts/**/*
+        - backend/Shared/AI/AI/**/*
+        - backend/Shared/AI/AI.OpenAiCompatible/**/*
+        - backend/Shared/Authentication/**/*
+        - backend/Shared/Common/**/*
+        - backend/Shared/ContentAccess/ContentAccess/**/*
+        - backend/Shared/ContentAccess/ContentAccess.Redis/**/*
+        - backend/Shared/ContentAccess/ContentAccess.TestSupport/**/*
+        - backend/Shared/Core/**/*
+        - backend/Shared/Database/**/*
+        - backend/Shared/DomainEvents/**/*
+        - backend/Shared/Framework/**/*
+        - backend/Shared/Messaging/**/*
+        - backend/Shared/Observability/**/*
+        - backend/Shared/Ordering/Ordering/**/*
+        - backend/Shared/PlatformBootstrap/**/*
+        - backend/Shared/SharedKernel/**/*
+
+integration-tests:search:
+  extends: .integration-test-base
+  script:
+    - dotnet test backend/SearchService/tests/SearchService.IntegrationTests -c Release -maxcpucount:2 --verbosity minimal --logger "console;verbosity=minimal"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: never
+    - if: '$MR_TARGET_MAIN == "true"'
+      when: never
+    - changes: *ultra-paths
+      when: never
+    - changes:
+        - backend/SearchService/**/*
+        - backend/EducationContentService/src/EducationContentService.Contracts/**/*
+        - backend/FileService/src/FileService.Contracts/**/*
+        - backend/TagService/src/TagService.Contracts/**/*
+        - backend/Shared/Authentication/**/*
+        - backend/Shared/Common/**/*
+        - backend/Shared/ContentAccess/ContentAccess/**/*
+        - backend/Shared/ContentAccess/ContentAccess.Redis/**/*
+        - backend/Shared/Core/**/*
+        - backend/Shared/Database/**/*
+        - backend/Shared/Framework/**/*
+        - backend/Shared/Messaging/**/*
+        - backend/Shared/Observability/**/*
+        - backend/Shared/PlatformBootstrap/**/*
+        - backend/Shared/SharedKernel/**/*
+        - backend/Shared/Wolverine.Testing/**/*
+
+integration-tests:tag:
+  extends: .integration-test-base
+  script:
+    - dotnet test backend/TagService/tests/TagService.IntegrationTests -c Release -maxcpucount:2 --verbosity minimal --logger "console;verbosity=minimal"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: never
+    - if: '$MR_TARGET_MAIN == "true"'
+      when: never
+    - changes: *ultra-paths
+      when: never
+    - changes:
+        - backend/TagService/**/*
+        - backend/EducationContentService/src/EducationContentService.Contracts/**/*
+        - backend/Shared/Authentication/**/*
+        - backend/Shared/Common/**/*
+        - backend/Shared/ContentAccess/ContentAccess/**/*
+        - backend/Shared/ContentAccess/ContentAccess.Redis/**/*
+        - backend/Shared/ContentAccess/ContentAccess.TestSupport/**/*
+        - backend/Shared/Core/**/*
+        - backend/Shared/Database/**/*
+        - backend/Shared/DomainEvents/**/*
+        - backend/Shared/Framework/**/*
+        - backend/Shared/Messaging/**/*
+        - backend/Shared/Observability/**/*
+        - backend/Shared/PlatformBootstrap/**/*
+        - backend/Shared/SharedKernel/**/*
+        - backend/Shared/Wolverine.Testing/**/*
+
+integration-tests:telegram-bot:
+  extends: .integration-test-base
+  script:
+    - dotnet test backend/TelegramBotService/tests/TelegramBotService.IntegrationTests -c Release -maxcpucount:2 --verbosity minimal --logger "console;verbosity=minimal"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: never
+    - if: '$MR_TARGET_MAIN == "true"'
+      when: never
+    - changes: *ultra-paths
+      when: never
+    - changes:
+        - backend/TelegramBotService/**/*
+        - backend/external/telegram-bot-flow/**/*
+        - backend/AccessService/src/AccessService.Contracts/**/*
+        - backend/AuthService/src/AuthService.Contracts/**/*
+        - backend/EducationContentService/src/EducationContentService.Contracts/**/*
+        - backend/ProgressService/src/ProgressService.Contracts/**/*
+        - backend/Shared/Authentication/**/*
+        - backend/Shared/Common/**/*
+        - backend/Shared/ContentAccess/ContentAccess/**/*
+        - backend/Shared/ContentAccess/ContentAccess.Redis/**/*
+        - backend/Shared/ContentAccess/ContentAccess.TestSupport/**/*
+        - backend/Shared/Core/**/*
+        - backend/Shared/Database/**/*
+        - backend/Shared/Framework/**/*
+        - backend/Shared/Messaging/**/*
+        - backend/Shared/Observability/**/*
+        - backend/Shared/PlatformBootstrap/**/*
+        - backend/Shared/SharedKernel/**/*
+        - backend/Shared/Wolverine.Testing/**/*
+
+integration-tests:trainer:
+  extends: .integration-test-base
+  script:
+    - dotnet test backend/TrainerService/tests/TrainerService.IntegrationTests -c Release -maxcpucount:2 --verbosity minimal --logger "console;verbosity=minimal"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: never
+    - if: '$MR_TARGET_MAIN == "true"'
+      when: never
+    - changes: *ultra-paths
+      when: never
+    - changes:
+        - backend/TrainerService/**/*
+        - backend/EducationContentService/src/EducationContentService.Contracts/**/*
+        - backend/Shared/AI/AI/**/*
+        - backend/Shared/AI/AI.OpenAiCompatible/**/*
+        - backend/Shared/Authentication/**/*
+        - backend/Shared/ContentAccess/ContentAccess/**/*
+        - backend/Shared/ContentAccess/ContentAccess.Redis/**/*
+        - backend/Shared/ContentAccess/ContentAccess.TestSupport/**/*
+        - backend/Shared/Core/**/*
+        - backend/Shared/Database/**/*
+        - backend/Shared/DomainEvents/**/*
+        - backend/Shared/Framework/**/*
+        - backend/Shared/Messaging/**/*
+        - backend/Shared/Observability/**/*
+        - backend/Shared/Ordering/Ordering/**/*
+        - backend/Shared/PlatformBootstrap/**/*
+        - backend/Shared/SharedKernel/**/*
+
+# ───── BUILD ─────
+#
+# Все build-* джобы билдятся БЕЗУСЛОВНО на main (без `changes:`-гейта). Раньше большинство
+# было gated по `backend/<Svc>/**` + `Shared/**`, но release-MR merge-коммиты в main имеют
+# пустой diff против ближайшего родителя (pre-merge release-ветка), поэтому `changes:` НЕ
+# матчился → build-джоба скипалась → `prepare-release-images` re-tag'ал stale `<svc>:latest`
+# под свежий `:$CI_COMMIT_SHA` → прод катил бинарь старее своего тега (issue #661: access/
+# notification/progress/material-processing гоняли код 06-23 под тегом v1.46.1). ARS и trainer
+# уже были безусловными по этой же причине. `--cache-from :latest` держит unchanged-билды
+# быстрыми (полный layer-cache hit); `--build-arg BUILD_REVISION=$CI_COMMIT_SHA` штампует
+# коммит в image-label, чтобы staleness была видна сразу (`docker inspect` revision vs git).
+
+build-auth-service:
+  extends: .docker-build
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  script:
+    - *nuget-config
+    - |
+      docker build \
+        --build-arg BUILD_REVISION=$CI_COMMIT_SHA \
+        --build-arg BUILD_VERSION=$CI_COMMIT_SHORT_SHA \
+        --secret id=nuget_config,src=backend/nuget.config \
+        --cache-from $CI_REGISTRY_IMAGE/auth-service:latest \
+        --file backend/AuthService/Dockerfile \
+        --tag $CI_REGISTRY_IMAGE/auth-service:$CI_COMMIT_SHA \
+        --tag $CI_REGISTRY_IMAGE/auth-service:$CI_COMMIT_SHORT_SHA \
+        --tag $CI_REGISTRY_IMAGE/auth-service:latest \
+        backend
+    - docker push $CI_REGISTRY_IMAGE/auth-service --all-tags
+
+build-education-service:
+  extends: .docker-build
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  script:
+    - *nuget-config
+    - |
+      docker build \
+        --build-arg BUILD_REVISION=$CI_COMMIT_SHA \
+        --build-arg BUILD_VERSION=$CI_COMMIT_SHORT_SHA \
+        --secret id=nuget_config,src=backend/nuget.config \
+        --cache-from $CI_REGISTRY_IMAGE/education-service:latest \
+        --file backend/EducationContentService/Dockerfile \
+        --tag $CI_REGISTRY_IMAGE/education-service:$CI_COMMIT_SHA \
+        --tag $CI_REGISTRY_IMAGE/education-service:$CI_COMMIT_SHORT_SHA \
+        --tag $CI_REGISTRY_IMAGE/education-service:latest \
+        backend
+    - docker push $CI_REGISTRY_IMAGE/education-service --all-tags
+
+build-file-service:
+  extends: .docker-build
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  script:
+    - *nuget-config
+    - |
+      docker build \
+        --build-arg BUILD_REVISION=$CI_COMMIT_SHA \
+        --build-arg BUILD_VERSION=$CI_COMMIT_SHORT_SHA \
+        --secret id=nuget_config,src=backend/nuget.config \
+        --cache-from $CI_REGISTRY_IMAGE/file-service:latest \
+        --file backend/FileService/Dockerfile \
+        --tag $CI_REGISTRY_IMAGE/file-service:$CI_COMMIT_SHA \
+        --tag $CI_REGISTRY_IMAGE/file-service:$CI_COMMIT_SHORT_SHA \
+        --tag $CI_REGISTRY_IMAGE/file-service:latest \
+        backend
+    - docker push $CI_REGISTRY_IMAGE/file-service --all-tags
+
+build-progress-service:
+  extends: .docker-build
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  script:
+    - *nuget-config
+    - |
+      docker build \
+        --build-arg BUILD_REVISION=$CI_COMMIT_SHA \
+        --build-arg BUILD_VERSION=$CI_COMMIT_SHORT_SHA \
+        --secret id=nuget_config,src=backend/nuget.config \
+        --cache-from $CI_REGISTRY_IMAGE/progress-service:latest \
+        --file backend/ProgressService/Dockerfile \
+        --tag $CI_REGISTRY_IMAGE/progress-service:$CI_COMMIT_SHA \
+        --tag $CI_REGISTRY_IMAGE/progress-service:$CI_COMMIT_SHORT_SHA \
+        --tag $CI_REGISTRY_IMAGE/progress-service:latest \
+        backend
+    - docker push $CI_REGISTRY_IMAGE/progress-service --all-tags
+
+build-comment-service:
+  extends: .docker-build
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  script:
+    - *nuget-config
+    - |
+      docker build \
+        --build-arg BUILD_REVISION=$CI_COMMIT_SHA \
+        --build-arg BUILD_VERSION=$CI_COMMIT_SHORT_SHA \
+        --secret id=nuget_config,src=backend/nuget.config \
+        --cache-from $CI_REGISTRY_IMAGE/comment-service:latest \
+        --file backend/CommentService/Dockerfile \
+        --tag $CI_REGISTRY_IMAGE/comment-service:$CI_COMMIT_SHA \
+        --tag $CI_REGISTRY_IMAGE/comment-service:$CI_COMMIT_SHORT_SHA \
+        --tag $CI_REGISTRY_IMAGE/comment-service:latest \
+        backend
+    - docker push $CI_REGISTRY_IMAGE/comment-service --all-tags
+
+build-tag-service:
+  extends: .docker-build
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  script:
+    - *nuget-config
+    - |
+      docker build \
+        --build-arg BUILD_REVISION=$CI_COMMIT_SHA \
+        --build-arg BUILD_VERSION=$CI_COMMIT_SHORT_SHA \
+        --secret id=nuget_config,src=backend/nuget.config \
+        --cache-from $CI_REGISTRY_IMAGE/tag-service:latest \
+        --file backend/TagService/Dockerfile \
+        --tag $CI_REGISTRY_IMAGE/tag-service:$CI_COMMIT_SHA \
+        --tag $CI_REGISTRY_IMAGE/tag-service:$CI_COMMIT_SHORT_SHA \
+        --tag $CI_REGISTRY_IMAGE/tag-service:latest \
+        backend
+    - docker push $CI_REGISTRY_IMAGE/tag-service --all-tags
+
+build-notification-service:
+  extends: .docker-build
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  script:
+    - *nuget-config
+    - |
+      docker build \
+        --build-arg BUILD_REVISION=$CI_COMMIT_SHA \
+        --build-arg BUILD_VERSION=$CI_COMMIT_SHORT_SHA \
+        --secret id=nuget_config,src=backend/nuget.config \
+        --cache-from $CI_REGISTRY_IMAGE/notification-service:latest \
+        --file backend/NotificationService/Dockerfile \
+        --tag $CI_REGISTRY_IMAGE/notification-service:$CI_COMMIT_SHA \
+        --tag $CI_REGISTRY_IMAGE/notification-service:$CI_COMMIT_SHORT_SHA \
+        --tag $CI_REGISTRY_IMAGE/notification-service:latest \
+        backend
+    - docker push $CI_REGISTRY_IMAGE/notification-service --all-tags
+
+build-telegram-bot-service:
+  extends: .docker-build
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  script:
+    - *nuget-config
+    - |
+      docker build \
+        --build-arg BUILD_REVISION=$CI_COMMIT_SHA \
+        --build-arg BUILD_VERSION=$CI_COMMIT_SHORT_SHA \
+        --secret id=nuget_config,src=backend/nuget.config \
+        --cache-from $CI_REGISTRY_IMAGE/telegram-bot-service:latest \
+        --file backend/TelegramBotService/Dockerfile \
+        --tag $CI_REGISTRY_IMAGE/telegram-bot-service:$CI_COMMIT_SHA \
+        --tag $CI_REGISTRY_IMAGE/telegram-bot-service:$CI_COMMIT_SHORT_SHA \
+        --tag $CI_REGISTRY_IMAGE/telegram-bot-service:latest \
+        backend
+    - docker push $CI_REGISTRY_IMAGE/telegram-bot-service --all-tags
+
+build-search-service:
+  extends: .docker-build
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  script:
+    - *nuget-config
+    - |
+      docker build \
+        --build-arg BUILD_REVISION=$CI_COMMIT_SHA \
+        --build-arg BUILD_VERSION=$CI_COMMIT_SHORT_SHA \
+        --secret id=nuget_config,src=backend/nuget.config \
+        --cache-from $CI_REGISTRY_IMAGE/search-service:latest \
+        --file backend/SearchService/Dockerfile \
+        --tag $CI_REGISTRY_IMAGE/search-service:$CI_COMMIT_SHA \
+        --tag $CI_REGISTRY_IMAGE/search-service:$CI_COMMIT_SHORT_SHA \
+        --tag $CI_REGISTRY_IMAGE/search-service:latest \
+        backend
+    - docker push $CI_REGISTRY_IMAGE/search-service --all-tags
+
+build-access-service:
+  extends: .docker-build
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  script:
+    - *nuget-config
+    - |
+      docker build \
+        --build-arg BUILD_REVISION=$CI_COMMIT_SHA \
+        --build-arg BUILD_VERSION=$CI_COMMIT_SHORT_SHA \
+        --secret id=nuget_config,src=backend/nuget.config \
+        --cache-from $CI_REGISTRY_IMAGE/access-service:latest \
+        --file backend/AccessService/Dockerfile \
+        --tag $CI_REGISTRY_IMAGE/access-service:$CI_COMMIT_SHA \
+        --tag $CI_REGISTRY_IMAGE/access-service:$CI_COMMIT_SHORT_SHA \
+        --tag $CI_REGISTRY_IMAGE/access-service:latest \
+        backend
+    - docker push $CI_REGISTRY_IMAGE/access-service --all-tags
+
+build-assignment-review-service:
+  extends: .docker-build
+  rules:
+    # ARS активирован на проде (#334). Dockerfile задаёт dummy AI env
+    # (AI__PROVIDERS__AITUNNEL__APIKEY=ef-bundle-dummy) ПЕРЕД `dotnet ef migrations
+    # bundle`, поэтому ValidateOnStart на AddOpenAiCompatible не падает в CI-билде.
+    # Билдим безусловно на main (БЕЗ changes-гейта) — иначе `:latest` может
+    # отсутствовать в registry и prepare-release-images падает на `manifest unknown`
+    # (pipeline 770). Безусловный билд гарантирует свежий `:latest` каждый релиз.
+    - if: $CI_COMMIT_BRANCH == "main"
+  script:
+    - *nuget-config
+    - |
+      docker build \
+        --build-arg BUILD_REVISION=$CI_COMMIT_SHA \
+        --build-arg BUILD_VERSION=$CI_COMMIT_SHORT_SHA \
+        --secret id=nuget_config,src=backend/nuget.config \
+        --cache-from $CI_REGISTRY_IMAGE/assignment-review-service:latest \
+        --file backend/AssignmentReviewService/Dockerfile \
+        --tag $CI_REGISTRY_IMAGE/assignment-review-service:$CI_COMMIT_SHA \
+        --tag $CI_REGISTRY_IMAGE/assignment-review-service:$CI_COMMIT_SHORT_SHA \
+        --tag $CI_REGISTRY_IMAGE/assignment-review-service:latest \
+        backend
+    - docker push $CI_REGISTRY_IMAGE/assignment-review-service --all-tags
+
+build-material-processing-service:
+  extends: .docker-build
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  script:
+    - *nuget-config
+    - |
+      docker build \
+        --build-arg BUILD_REVISION=$CI_COMMIT_SHA \
+        --build-arg BUILD_VERSION=$CI_COMMIT_SHORT_SHA \
+        --secret id=nuget_config,src=backend/nuget.config \
+        --cache-from $CI_REGISTRY_IMAGE/material-processing-service:latest \
+        --file backend/MaterialProcessingService/Dockerfile \
+        --tag $CI_REGISTRY_IMAGE/material-processing-service:$CI_COMMIT_SHA \
+        --tag $CI_REGISTRY_IMAGE/material-processing-service:$CI_COMMIT_SHORT_SHA \
+        --tag $CI_REGISTRY_IMAGE/material-processing-service:latest \
+        backend
+    - docker push $CI_REGISTRY_IMAGE/material-processing-service --all-tags
+
+build-trainer-service:
+  extends: .docker-build
+  rules:
+    # Новый сервис (#568) — билдим безусловно на main (БЕЗ changes-гейта), как ARS:
+    # иначе `:latest` может отсутствовать в registry и prepare-release-images падает
+    # на `manifest unknown`. Безусловный билд гарантирует свежий `:latest` каждый релиз.
+    - if: $CI_COMMIT_BRANCH == "main"
+  script:
+    - *nuget-config
+    - |
+      docker build \
+        --build-arg BUILD_REVISION=$CI_COMMIT_SHA \
+        --build-arg BUILD_VERSION=$CI_COMMIT_SHORT_SHA \
+        --secret id=nuget_config,src=backend/nuget.config \
+        --cache-from $CI_REGISTRY_IMAGE/trainer-service:latest \
+        --file backend/TrainerService/Dockerfile \
+        --tag $CI_REGISTRY_IMAGE/trainer-service:$CI_COMMIT_SHA \
+        --tag $CI_REGISTRY_IMAGE/trainer-service:$CI_COMMIT_SHORT_SHA \
+        --tag $CI_REGISTRY_IMAGE/trainer-service:latest \
+        backend
+    - docker push $CI_REGISTRY_IMAGE/trainer-service --all-tags
+
+build-frontend-image:
+  extends: .docker-build
+  rules:
+    # No `changes:` filter — merge commits в main с pre-merge release-веток
+    # имеют пустой diff против ближайшего родителя, и changes:frontend/**/*
+    # неожиданно skip'ает build (см. инцидент 2026-05-11: release 1.8.0
+    # фронтовые фичи никогда не задеплоились, потому что merge commit на main
+    # не триггернул rebuild). Frontend build ~3-5 мин — приемлемо на каждый main push.
+    - if: $CI_COMMIT_BRANCH == "main"
+  script:
+    # Non-secret prod build-args — hardcoded fallbacks so the job runs even
+    # when GitLab CI/CD vars aren't pre-populated. Only used by `npm run build`
+    # to bake NEXT_PUBLIC_* constants into the client bundle. Override via
+    # project CI/CD settings if the values ever diverge from prod.
+    - |
+      API_URL="${NEXT_PUBLIC_API_URL:-https://sachkov-learn.net/api}"
+      AUTH_ORIGIN="${NEXT_PUBLIC_AUTH_ORIGIN:-https://sachkov-learn.net}"
+      APP_URL="${NEXT_PUBLIC_APP_URL:-https://sachkov-learn.net}"
+      AUTHOR_SLUG="${NEXT_PUBLIC_PRIMARY_AUTHOR_SLUG:-sachkov}"
+      CONSULT_LINK="${NEXT_PUBLIC_CONSULTATION_LINK:-https://t.me/sachkova_mng}"
+      METRIKA_ID="${NEXT_PUBLIC_YANDEX_METRIKA_ID:-}"
+      VAPID_PUBLIC_KEY="${NEXT_PUBLIC_VAPID_PUBLIC_KEY:-}"
+      docker build \
+        --cache-from $CI_REGISTRY_IMAGE/frontend:latest \
+        --file frontend/Dockerfile \
+        --build-arg NEXT_PUBLIC_API_URL="$API_URL" \
+        --build-arg NEXT_PUBLIC_AUTH_ORIGIN="$AUTH_ORIGIN" \
+        --build-arg NEXT_PUBLIC_APP_URL="$APP_URL" \
+        --build-arg NEXT_PUBLIC_PRIMARY_AUTHOR_SLUG="$AUTHOR_SLUG" \
+        --build-arg NEXT_PUBLIC_CONSULTATION_LINK="$CONSULT_LINK" \
+        --build-arg NEXT_PUBLIC_YANDEX_METRIKA_ID="$METRIKA_ID" \
+        --build-arg NEXT_PUBLIC_VAPID_PUBLIC_KEY="$VAPID_PUBLIC_KEY" \
+        --tag $CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHA \
+        --tag $CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHORT_SHA \
+        --tag $CI_REGISTRY_IMAGE/frontend:latest \
+        frontend
+    - docker push $CI_REGISTRY_IMAGE/frontend --all-tags
+
+prepare-release-images:
+  extends: .docker-build
+  stage: release
+  script:
+    - |
+      set -e
+      # Services exposed through nginx must be promoted, rolled out, and checked by
+      # EXPECTED_SERVICES so prod does not pass green with a routed backend stopped.
+      SERVICES="auth-service education-service file-service progress-service comment-service tag-service search-service access-service material-processing-service notification-service telegram-bot-service trainer-service assignment-review-service frontend"
+      for service in $SERVICES; do
+        IMAGE="$CI_REGISTRY_IMAGE/$service"
+        RELEASE_IMAGE="$IMAGE:$CI_COMMIT_SHA"
+
+        if docker manifest inspect "$RELEASE_IMAGE" >/dev/null 2>&1; then
+          echo "$service already has immutable release tag $CI_COMMIT_SHA"
+          continue
+        fi
+
+        echo "Promoting $service:latest to immutable release tag $CI_COMMIT_SHA"
+        docker pull "$IMAGE:latest"
+        docker tag "$IMAGE:latest" "$RELEASE_IMAGE"
+        docker push "$RELEASE_IMAGE"
+      done
+
+# ───── DEPLOY ─────
+
+deploy-production:
+  stage: deploy
+  interruptible: false
+  timeout: 1h
+  image: alpine:latest
+  before_script:
+    - *prod-ssh-route
+  script:
+    # Docker login on prod server (persistent Deploy Token)
+    - |
+      ssh -i $SSH_PRIVATE_KEY root@$DEPLOY_HOST \
+        "echo '$DEPLOY_TOKEN' | docker login -u '$DEPLOY_TOKEN_USER' --password-stdin '$CI_REGISTRY'"
+
+    # Deploy config files + ops scripts (single tar transfer instead of multiple SCP).
+    # scripts/backup-s3.sh is referenced by the daily root crontab on prod — sync it
+    # so the prod copy never drifts from repo.
+    - |
+      tar czf /tmp/deploy-configs.tar.gz \
+        docker-compose.prod.yml nginx.prod.conf docker/ \
+        scripts/backup-s3.sh scripts/restore-s3.sh scripts/validate-production-env.sh \
+        scripts/run-production-migrations.sh \
+        scripts/check-production-rollback.sh
+    - scp -i $SSH_PRIVATE_KEY /tmp/deploy-configs.tar.gz root@$DEPLOY_HOST:/tmp/deploy-configs.tar.gz
+    - |
+      ssh -i $SSH_PRIVATE_KEY root@$DEPLOY_HOST \
+        "mkdir -p /opt/education-platform/docker /opt/education-platform/scripts && \
+         tar xzf /tmp/deploy-configs.tar.gz -C /opt/education-platform/ && \
+         chmod +x /opt/education-platform/scripts/backup-s3.sh \
+           /opt/education-platform/scripts/restore-s3.sh \
+           /opt/education-platform/scripts/validate-production-env.sh \
+           /opt/education-platform/scripts/run-production-migrations.sh \
+           /opt/education-platform/scripts/check-production-rollback.sh && \
+         rm /tmp/deploy-configs.tar.gz"
+
+    # Export secrets from Infisical to .env
+    - |
+      printf '%s\n%s\n%s\n' \
+        "$INFISICAL_CLIENT_ID" "$INFISICAL_CLIENT_SECRET" "$INFISICAL_PROJECT_ID" | \
+      ssh -i $SSH_PRIVATE_KEY root@$DEPLOY_HOST '
+        set -e
+        umask 077
+        IFS= read -r INFISICAL_UNIVERSAL_AUTH_CLIENT_ID
+        IFS= read -r INFISICAL_UNIVERSAL_AUTH_CLIENT_SECRET
+        IFS= read -r INFISICAL_PROJECT_ID
+        export INFISICAL_API_URL=http://localhost:8080
+        export INFISICAL_UNIVERSAL_AUTH_CLIENT_ID INFISICAL_UNIVERSAL_AUTH_CLIENT_SECRET
+        INFISICAL_TOKEN="$(infisical login --method=universal-auth --silent --plain)"
+        export INFISICAL_TOKEN
+        rm -f /opt/education-platform/.env.tmp
+        infisical export --projectId="$INFISICAL_PROJECT_ID" --env=prod --format=dotenv \
+          > /opt/education-platform/.env.tmp
+        test -s /opt/education-platform/.env.tmp
+        /opt/education-platform/scripts/validate-production-env.sh \
+          /opt/education-platform/.env.tmp /opt/education-platform/.env
+        chmod 600 /opt/education-platform/.env.tmp
+        mv /opt/education-platform/.env.tmp /opt/education-platform/.env
+      '
+
+    # Backup databases (fail deploy if backup fails)
+    - |
+      ssh -i $SSH_PRIVATE_KEY root@$DEPLOY_HOST '
+        set -a && . /opt/education-platform/.env && set +a &&
+        BACKUP_FILE=/opt/education-platform/backups/pre-deploy-$(date +%Y%m%d-%H%M%S).sql &&
+        docker exec postgres pg_dumpall -U "$POSTGRES_USER" > "$BACKUP_FILE" &&
+        test -s "$BACKUP_FILE" || { echo "Backup failed or empty"; exit 1; } &&
+        ls -t /opt/education-platform/backups/pre-deploy-*.sql | tail -n +6 | xargs rm -f 2>/dev/null || true
+      '
+
+    # Persist immutable release metadata and deploy exact image tags
+    - |
+      ssh -i $SSH_PRIVATE_KEY root@$DEPLOY_HOST "
+        set -e &&
+        RELEASES_DIR=/opt/education-platform/releases &&
+        mkdir -p \$RELEASES_DIR &&
+        printf '%s\n' \
+          'IMAGE_TAG=$CI_COMMIT_SHA' \
+          'DOCKER_REGISTRY=$CI_REGISTRY_IMAGE/' \
+          'RELEASE_COMMIT_SHA=$CI_COMMIT_SHA' \
+          'RELEASE_PIPELINE_ID=$CI_PIPELINE_ID' \
+          'MEDIA_BINDING_PROTOCOL=1' \
+          \"RELEASED_AT=\$(date -u +%Y-%m-%dT%H:%M:%SZ)\" \
+          > \$RELEASES_DIR/pending.env &&
+        cd /opt/education-platform &&
+        set -a &&
+        . /opt/education-platform/.env &&
+        . \$RELEASES_DIR/pending.env &&
+        set +a &&
+        { [ -n \"\$POSTGRES_USER\" ] && [ -n \"\$POSTGRES_PASSWORD\" ]; } || { echo 'FATAL #642: POSTGRES_USER/POSTGRES_PASSWORD empty after sourcing .env (infisical export hiccup?) — aborting deploy before it bricks postgres' ; exit 1 ; } &&
+        docker compose -f docker-compose.prod.yml pull \
+          auth-service education-service file-service progress-service comment-service tag-service search-service access-service material-processing-service notification-service telegram-bot-service trainer-service assignment-review-service frontend \
+          auth-service-migrations education-service-migrations file-service-migrations progress-service-migrations comment-service-migrations tag-service-migrations search-service-migrations access-service-migrations material-processing-service-migrations notification-service-migrations telegram-bot-service-migrations trainer-service-migrations assignment-review-service-migrations &&
+        ./scripts/run-production-migrations.sh docker-compose.prod.yml \$RELEASES_DIR/current.env &&
+        docker compose -f docker-compose.prod.yml up -d --force-recreate &&
+        docker image prune -f &&
+        if [ -f \$RELEASES_DIR/current.env ]; then cp \$RELEASES_DIR/current.env \$RELEASES_DIR/previous.env; fi &&
+        mv \$RELEASES_DIR/pending.env \$RELEASES_DIR/current.env &&
+        echo \"Current release tag: \$IMAGE_TAG\"
+      "
+
+    # Verify deployment — wait for all backend services to become healthy
+    - |
+      echo "Verifying deployment..."
+            # telegram-bot-service ИСКЛЮЧЁН из EXPECTED_SERVICES — на проде Telegram API
+      # частично блокируется (RU ISP), бот может несколько минут не входить в
+      # healthy state (или вообще не входить если api.telegram.org недостижим).
+      # Не блокируем deploy на нём — он стартует/рестартует сам, второстепенный.
+      EXPECTED_SERVICES="education-service file-service progress-service comment-service tag-service search-service access-service material-processing-service notification-service auth-service trainer-service assignment-review-service frontend"
+      EXPECTED_COUNT=$(echo $EXPECTED_SERVICES | wc -w | tr -d ' ')
+      for attempt in $(seq 1 36); do
+        healthy=$(ssh -i $SSH_PRIVATE_KEY root@$DEPLOY_HOST \
+          "docker ps --filter health=healthy --format '{{.Names}}'" \
+          | grep -cE "($(echo $EXPECTED_SERVICES | tr ' ' '|'))" || true)
+        if [ "$healthy" -ge "$EXPECTED_COUNT" ]; then
+          echo "All $EXPECTED_COUNT services healthy"
+          # Check observability stack (warning only, not blocking)
+          otel_running=$(ssh -i $SSH_PRIVATE_KEY root@$DEPLOY_HOST \
+            "docker inspect --format='{{.State.Running}}' otel-collector 2>/dev/null || echo 'false'")
+          echo "otel-collector running: $otel_running"
+          [ "$otel_running" != "true" ] && echo "WARNING: otel-collector is not running — monitoring may not work"
+          echo "Running public smoke checks..."
+          wget --spider --tries=1 --timeout=10 "$CI_ENVIRONMENT_URL/" || exit 1
+          wget --spider --tries=1 --timeout=10 "$CI_ENVIRONMENT_URL/sitemap.xml" || exit 1
+          wget -qO /tmp/oidc.json "$CI_ENVIRONMENT_URL/.well-known/openid-configuration" || exit 1
+          grep -q '"issuer"' /tmp/oidc.json || { echo "OIDC discovery response is invalid"; exit 1; }
+          exit 0
+        fi
+        echo "  attempt $attempt/36 — $healthy/$EXPECTED_COUNT healthy, waiting 10s..."
+        sleep 10
+      done
+      echo "DEPLOY VERIFICATION FAILED: not all services healthy after 6 minutes"
+      ssh -i $SSH_PRIVATE_KEY root@$DEPLOY_HOST \
+        "docker ps --format 'table {{.Names}}\t{{.Status}}'"
+      exit 1
+  # Images build automatically on every main push; production rollout is an
+  # explicit owner click (#1153). tag-release `needs` this job and waits for it.
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: manual
+  environment:
+    name: production
+    url: https://sachkov-learn.net
+
+# Auto-create the SemVer git tag (+ GitLab Release) after a successful prod deploy.
+# Version comes from the top released CHANGELOG entry. Idempotent: skips if the tag
+# already exists. Uses CI_JOB_TOKEN (no extra credentials). Fixes #345 — previously
+# tags were created by hand (v1.11.1, v1.12.0 were never auto-tagged).
+tag-release:
+  stage: deploy
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  needs:
+    - job: deploy-production
+      artifacts: false
+  before_script:
+    - apk add --no-cache curl git grep
+  script:
+    - |
+      VERSION=$(grep -m1 -oE '## \[[0-9]+\.[0-9]+\.[0-9]+\]' CHANGELOG.md | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
+      if [ -z "$VERSION" ]; then echo "Could not parse a released version from CHANGELOG.md — skipping tag"; exit 0; fi
+      TAG="v$VERSION"
+      echo "Top released CHANGELOG version: $VERSION → tag $TAG"
+      CODE=$(curl -s -o /dev/null -w "%{http_code}" --header "JOB-TOKEN: $CI_JOB_TOKEN" \
+        "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/tags/$TAG")
+      if [ "$CODE" = "200" ]; then echo "Tag $TAG already exists — nothing to do"; exit 0; fi
+      release-cli create \
+        --tag-name "$TAG" \
+        --ref "$CI_COMMIT_SHA" \
+        --name "$TAG" \
+        --description "Automated release $TAG — see CHANGELOG.md [$VERSION]."
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+
+rollback-production:
+  stage: deploy
+  interruptible: false
+  timeout: 10m
+  when: manual
+  image: alpine:latest
+  before_script:
+    - *prod-ssh-route
+  script:
+    - |
+      echo "Rolling back to previous immutable release..."
+      ssh -i $SSH_PRIVATE_KEY root@$DEPLOY_HOST "
+        set -e &&
+        RELEASES_DIR=/opt/education-platform/releases &&
+        test -f \$RELEASES_DIR/current.env || { echo 'Current release metadata is missing'; exit 1; } &&
+        test -f \$RELEASES_DIR/previous.env || { echo 'Previous release metadata is missing'; exit 1; } &&
+        /opt/education-platform/scripts/check-production-rollback.sh \
+          \$RELEASES_DIR/current.env \$RELEASES_DIR/previous.env \$RELEASES_DIR/pending.env &&
+        cp \$RELEASES_DIR/previous.env \$RELEASES_DIR/rollback.env &&
+        cd /opt/education-platform &&
+        set -a &&
+        . /opt/education-platform/.env &&
+        . \$RELEASES_DIR/rollback.env &&
+        set +a &&
+        { [ -n \"\$POSTGRES_USER\" ] && [ -n \"\$POSTGRES_PASSWORD\" ]; } || { echo 'FATAL #642: POSTGRES_USER/POSTGRES_PASSWORD empty after sourcing .env (infisical export hiccup?) — aborting deploy before it bricks postgres' ; exit 1 ; } &&
+        docker compose -f docker-compose.prod.yml pull \
+          auth-service education-service file-service progress-service comment-service tag-service search-service access-service material-processing-service notification-service telegram-bot-service trainer-service assignment-review-service frontend \
+          auth-service-migrations education-service-migrations file-service-migrations progress-service-migrations comment-service-migrations tag-service-migrations search-service-migrations access-service-migrations material-processing-service-migrations notification-service-migrations telegram-bot-service-migrations trainer-service-migrations assignment-review-service-migrations &&
+        docker compose -f docker-compose.prod.yml up -d --force-recreate &&
+        docker image prune -f &&
+        mv \$RELEASES_DIR/current.env \$RELEASES_DIR/rolled-back-from.env &&
+        mv \$RELEASES_DIR/rollback.env \$RELEASES_DIR/current.env &&
+        mv \$RELEASES_DIR/rolled-back-from.env \$RELEASES_DIR/previous.env &&
+        echo \"Rolled back to image tag: \$IMAGE_TAG\"
+      "
+    - |
+      echo "Verifying rollback..."
+            # telegram-bot-service ИСКЛЮЧЁН из EXPECTED_SERVICES — на проде Telegram API
+      # частично блокируется (RU ISP), бот может несколько минут не входить в
+      # healthy state (или вообще не входить если api.telegram.org недостижим).
+      # Не блокируем deploy на нём — он стартует/рестартует сам, второстепенный.
+      EXPECTED_SERVICES="education-service file-service progress-service comment-service tag-service search-service access-service material-processing-service notification-service auth-service trainer-service assignment-review-service frontend"
+      EXPECTED_COUNT=$(echo $EXPECTED_SERVICES | wc -w | tr -d ' ')
+      for attempt in $(seq 1 12); do
+        healthy=$(ssh -i $SSH_PRIVATE_KEY root@$DEPLOY_HOST \
+          "docker ps --filter health=healthy --format '{{.Names}}'" \
+          | grep -cE "($(echo $EXPECTED_SERVICES | tr ' ' '|'))" || true)
+        if [ "$healthy" -ge "$EXPECTED_COUNT" ]; then
+          echo "Rollback successful — all $EXPECTED_COUNT services healthy"
+          echo "Running public smoke checks after rollback..."
+          wget --spider --tries=1 --timeout=10 "$CI_ENVIRONMENT_URL/" || exit 1
+          wget -qO /tmp/oidc.json "$CI_ENVIRONMENT_URL/.well-known/openid-configuration" || exit 1
+          grep -q '"issuer"' /tmp/oidc.json || { echo "OIDC discovery response is invalid after rollback"; exit 1; }
+          exit 0
+        fi
+        echo "  attempt $attempt/12 — $healthy/$EXPECTED_COUNT healthy, waiting 10s..."
+        sleep 10
+      done
+      echo "ROLLBACK VERIFICATION FAILED"
+      ssh -i $SSH_PRIVATE_KEY root@$DEPLOY_HOST \
+        "docker ps --format 'table {{.Names}}\t{{.Status}}'"
+      exit 1
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: manual
+      allow_failure: true
+  environment:
+    name: production
+    action: stop
+    url: https://sachkov-learn.net

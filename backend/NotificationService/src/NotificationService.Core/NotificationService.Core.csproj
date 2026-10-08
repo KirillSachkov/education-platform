@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\Core\Core.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Framework\Framework.csproj" />
+    <PackageReference Include="Dapper" />
+    <PackageReference Include="Lib.Net.Http.WebPush" />
+    <PackageReference Include="Lib.AspNetCore.WebPush" />
+    <PackageReference Include="WolverineFx.EntityFrameworkCore" />
+    <PackageReference Include="WolverineFx.RabbitMQ" />
+    <PackageReference Include="WolverineFx.Postgresql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Email HTML-шаблоны читаются через EmailResourceLoader как embedded resources. -->
+    <EmbeddedResource Include="Templates/Emails/**/*.html" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="NotificationService.UnitTests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\Authentication\Authentication.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Email\Email.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Observability\Observability.csproj" />
+    <ProjectReference Include="..\..\..\Shared\ContentAccess\ContentAccess\ContentAccess.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Messaging\RabbitMqMessaging\RabbitMqMessaging.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Navigation\Navigation.csproj" />
+    <ProjectReference Include="..\..\..\AccessService\src\AccessService.Contracts\AccessService.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\AuthService\src\AuthService.Contracts\AuthService.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\EducationContentService\src\EducationContentService.Contracts\EducationContentService.Contracts.csproj" />
+    <ProjectReference Include="..\NotificationService.Contracts\NotificationService.Contracts.csproj" />
+    <ProjectReference Include="..\NotificationService.Domain\NotificationService.Domain.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Database\Database.csproj" />
+  </ItemGroup>
+
+</Project>

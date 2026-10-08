@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="WolverineFx.EntityFrameworkCore" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TelegramBotService.Core\TelegramBotService.Core.csproj" />
+    <ProjectReference Include="..\TelegramBotService.Domain\TelegramBotService.Domain.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Database\Database.csproj" />
+  </ItemGroup>
+</Project>

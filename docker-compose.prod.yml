@@ -1,0 +1,997 @@
+x-backend-env: &backend-env
+  env_file:
+    - .env
+  security_opt:
+    - no-new-privileges:true
+  networks:
+    - platform-network
+  # Give old container a 30s window to drain in-flight requests before SIGKILL.
+  # During release deploy this keeps the upstream answering while the new
+  # container's healthcheck flips green — cuts the 502-burst that nginx
+  # otherwise hits with `connect() refused (111)`.
+  stop_grace_period: 30s
+
+x-migration: &migration
+  <<: *backend-env
+  entrypoint: ["/bin/sh", "-c", "./efbundle --connection \"$$CONNECTIONSTRINGS__DATABASE\""]
+  depends_on:
+    postgres:
+      condition: service_healthy
+  restart: "no"
+
+x-healthcheck: &healthcheck
+  interval: 10s
+  timeout: 8s
+  retries: 5
+  start_period: 60s
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  # ─── Search Service ───
+  search-service-migrations:
+    container_name: search-service-migrations
+    image: ${DOCKER_REGISTRY:?DOCKER_REGISTRY must be set}search-service:${IMAGE_TAG:?IMAGE_TAG must be set}
+    <<: *migration
+    environment:
+      CONNECTIONSTRINGS__DATABASE: ${SEARCH_DB_CONNECTION}
+
+  search-service:
+    container_name: search-service
+    image: ${DOCKER_REGISTRY:?DOCKER_REGISTRY must be set}search-service:${IMAGE_TAG:?IMAGE_TAG must be set}
+    <<: *backend-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      typesense:
+        condition: service_healthy
+      education-service:
+        condition: service_healthy
+      tag-service:
+        condition: service_healthy
+      search-service-migrations:
+        condition: service_completed_successfully
+    environment:
+      ASPNETCORE_URLS: http://+:8009
+      ASPNETCORE_ENVIRONMENT: Production
+      OTEL_SERVICE_NAME: SearchService
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      CONNECTIONSTRINGS__DATABASE: ${SEARCH_DB_CONNECTION}
+      TYPESENSEOPTIONS__APIKEY: ${TYPESENSE_API_KEY}
+      # Deploy-stamp релиза → авто-реиндекс Typesense на первом старте нового релиза (#526).
+      SEARCHREINDEXOPTIONS__DEPLOYSTAMP: ${IMAGE_TAG:?IMAGE_TAG must be set}
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "dotnet", "healthcheck/healthcheck.dll", "8009"]
+    logging: *logging
+    restart: always
+
+  # ─── Access Service ───
+  access-service-migrations:
+    container_name: access-service-migrations
+    image: ${DOCKER_REGISTRY:?DOCKER_REGISTRY must be set}access-service:${IMAGE_TAG:?IMAGE_TAG must be set}
+    <<: *migration
+    environment:
+      CONNECTIONSTRINGS__DATABASE: ${ACCESS_DB_CONNECTION}
+
+  access-service:
+    container_name: access-service
+    image: ${DOCKER_REGISTRY:?DOCKER_REGISTRY must be set}access-service:${IMAGE_TAG:?IMAGE_TAG must be set}
+    <<: *backend-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      access-service-migrations:
+        condition: service_completed_successfully
+    environment:
+      ASPNETCORE_URLS: http://+:8010
+      ASPNETCORE_ENVIRONMENT: Production
+      OTEL_SERVICE_NAME: AccessService
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      CONNECTIONSTRINGS__DATABASE: ${ACCESS_DB_CONNECTION}
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "dotnet", "healthcheck/healthcheck.dll", "8010"]
+    logging: *logging
+    restart: always
+
+  # ─── Assignment Review Service ───
+  # Activated for prod (#334). GitHub App + LLM secrets live in Infisical; the
+  # assignment_review schema + tables are created by the InitialCreate migration
+  # (EnsureSchema). Included in EXPECTED_SERVICES in .gitlab-ci.yml: nginx routes
+  # /api/assignment-review/* directly here, so a stopped container breaks student
+  # submissions with 502.
+  assignment-review-service-migrations:
+    container_name: assignment-review-service-migrations
+    image: ${DOCKER_REGISTRY:?DOCKER_REGISTRY must be set}assignment-review-service:${IMAGE_TAG:?IMAGE_TAG must be set}
+    <<: *migration
+    environment:
+      CONNECTIONSTRINGS__DATABASE: ${ASSIGNMENT_REVIEW_DB_CONNECTION}
+
+  assignment-review-service:
+    container_name: assignment-review-service
+    image: ${DOCKER_REGISTRY:?DOCKER_REGISTRY must be set}assignment-review-service:${IMAGE_TAG:?IMAGE_TAG must be set}
+    <<: *backend-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      assignment-review-service-migrations:
+        condition: service_completed_successfully
+    environment:
+      ASPNETCORE_URLS: http://+:8012
+      ASPNETCORE_ENVIRONMENT: Production
+      OTEL_SERVICE_NAME: AssignmentReviewService
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      CONNECTIONSTRINGS__DATABASE: ${ASSIGNMENT_REVIEW_DB_CONNECTION}
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "dotnet", "healthcheck/healthcheck.dll", "8012"]
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.50"
+        reservations:
+          memory: 256M
+    restart: always
+
+  # ─── Trainer Service (interview-prep drill trainer — Ф1: no Wolverine/Redis) ───
+  # Included in EXPECTED_SERVICES in .gitlab-ci.yml: nginx routes /api/trainer/*
+  # directly to this container, so a stopped trainer-service is a public 502.
+  trainer-service-migrations:
+    container_name: trainer-service-migrations
+    image: ${DOCKER_REGISTRY:?DOCKER_REGISTRY must be set}trainer-service:${IMAGE_TAG:?IMAGE_TAG must be set}
+    <<: *migration
+    environment:
+      CONNECTIONSTRINGS__DATABASE: ${TRAINER_DB_CONNECTION}
+
+  trainer-service:
+    container_name: trainer-service
+    image: ${DOCKER_REGISTRY:?DOCKER_REGISTRY must be set}trainer-service:${IMAGE_TAG:?IMAGE_TAG must be set}
+    <<: *backend-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      trainer-service-migrations:
+        condition: service_completed_successfully
+    environment:
+      ASPNETCORE_URLS: http://+:8013
+      ASPNETCORE_ENVIRONMENT: Production
+      OTEL_SERVICE_NAME: TrainerService
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      CONNECTIONSTRINGS__DATABASE: ${TRAINER_DB_CONNECTION}
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "dotnet", "healthcheck/healthcheck.dll", "8013"]
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.50"
+        reservations:
+          memory: 256M
+    restart: always
+
+  # ─── Comment Service ───
+  comment-service-migrations:
+    container_name: comment-service-migrations
+    image: ${DOCKER_REGISTRY:?DOCKER_REGISTRY must be set}comment-service:${IMAGE_TAG:?IMAGE_TAG must be set}
+    <<: *migration
+    # Override: EF schema migrations + idempotent backfill target_author_id для исторических комментов.
+    entrypoint: ["/bin/sh", "-c", "./efbundle --connection \"$$CONNECTIONSTRINGS__DATABASE\" && dotnet CommentService.Web.dll backfill-target-author-id"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      # Owner-first DB-contract cutover: the view must exist before backfill.
+      education-service-migrations:
+        condition: service_completed_successfully
+    environment:
+      CONNECTIONSTRINGS__DATABASE: ${COMMENT_DB_CONNECTION}
+
+  comment-service:
+    container_name: comment-service
+    image: ${DOCKER_REGISTRY:?DOCKER_REGISTRY must be set}comment-service:${IMAGE_TAG:?IMAGE_TAG must be set}
+    <<: *backend-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      comment-service-migrations:
+        condition: service_completed_successfully
+      education-service-migrations:
+        condition: service_completed_successfully
+    environment:
+      ASPNETCORE_URLS: http://+:8004
+      ASPNETCORE_ENVIRONMENT: Production
+      OTEL_SERVICE_NAME: CommentService
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      CONNECTIONSTRINGS__DATABASE: ${COMMENT_DB_CONNECTION}
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "dotnet", "healthcheck/healthcheck.dll", "8004"]
+    logging: *logging
+    restart: always
+
+  # ─── Tag Service ───
+  tag-service-migrations:
+    container_name: tag-service-migrations
+    image: ${DOCKER_REGISTRY:?DOCKER_REGISTRY must be set}tag-service:${IMAGE_TAG:?IMAGE_TAG must be set}
+    <<: *migration
+    entrypoint: ["/bin/sh", "-c", "dotnet TagService.Web.dll reconcile-migration-history && ./efbundle --connection \"$$CONNECTIONSTRINGS__DATABASE\""]
+    environment:
+      CONNECTIONSTRINGS__DATABASE: ${TAG_DB_CONNECTION}
+
+  tag-service:
+    container_name: tag-service
+    image: ${DOCKER_REGISTRY:?DOCKER_REGISTRY must be set}tag-service:${IMAGE_TAG:?IMAGE_TAG must be set}
+    <<: *backend-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      tag-service-migrations:
+        condition: service_completed_successfully
+    environment:
+      ASPNETCORE_URLS: http://+:8007
+      ASPNETCORE_ENVIRONMENT: Production
+      OTEL_SERVICE_NAME: TagService
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      CONNECTIONSTRINGS__DATABASE: ${TAG_DB_CONNECTION}
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "dotnet", "healthcheck/healthcheck.dll", "8007"]
+    logging: *logging
+    restart: always
+
+  # ─── Notification Service ───
+  notification-service-migrations:
+    container_name: notification-service-migrations
+    image: ${DOCKER_REGISTRY:?DOCKER_REGISTRY must be set}notification-service:${IMAGE_TAG:?IMAGE_TAG must be set}
+    <<: *migration
+    environment:
+      CONNECTIONSTRINGS__DATABASE: ${NOTIFICATION_DB_CONNECTION}
+
+  notification-service:
+    container_name: notification-service
+    image: ${DOCKER_REGISTRY:?DOCKER_REGISTRY must be set}notification-service:${IMAGE_TAG:?IMAGE_TAG must be set}
+    <<: *backend-env
+    # ISP-DNS на проде блокирует резолв внешних API (api.telegram.org и др.).
+    # Перебиваем embedded Docker resolver на публичные DNS, чтобы Unisender
+    # email API + telegram-link callbacks работали стабильно.
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+      - 77.88.8.8
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      notification-service-migrations:
+        condition: service_completed_successfully
+    environment:
+      ASPNETCORE_URLS: http://+:8006
+      ASPNETCORE_ENVIRONMENT: Production
+      OTEL_SERVICE_NAME: NotificationService
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      CONNECTIONSTRINGS__DATABASE: ${NOTIFICATION_DB_CONNECTION}
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "dotnet", "healthcheck/healthcheck.dll", "8006"]
+    logging: *logging
+    # ВНИМАНИЕ: SSE state в SseConnectionHub — in-memory ConcurrentDictionary.
+    # Single-replica only. Горизонтальный scale-out = silent потеря push'ей
+    # (реплика B не увидит connections реплики A).
+    #
+    # Мы в standalone Compose (НЕ Swarm) — `deploy.replicas` здесь был бы no-op.
+    # Single-replica enforced через `container_name: notification-service` (уникальное имя).
+    # Rolling deploy = Compose delaets stop-start для контейнера с фиксированным именем,
+    # что даёт ~5-10s SSE downtime — приемлемо до внедрения Redis Pub/Sub (Phase C).
+    #
+    # НЕ добавляй `deploy.replicas` сюда, пока не перейдёшь на Swarm/K8s с Redis Pub/Sub —
+    # иначе SSE будет тихо терять уведомления.
+    # mem_limit/cpus намеренно НЕ заданы — все остальные backend-сервисы тоже
+    # летят без явных ограничений, host (8 CPU / 11G RAM) сам управляет.
+    # Поставили 512M в начале single-replica эпохи, но после prod-инцидента
+    # 2026-05-06 (#67, cgroup OOM при burst publish 53+ recipients → kill →
+    # Wolverine envelope ownership leak) убрали лимит совсем — burst может
+    # удваивать RSS на больших курсах, фиксированный потолок только мешает.
+    restart: always
+
+  # ─── Material Processing Service ───
+  material-processing-service-migrations:
+    container_name: material-processing-service-migrations
+    image: ${DOCKER_REGISTRY:?DOCKER_REGISTRY must be set}material-processing-service:${IMAGE_TAG:?IMAGE_TAG must be set}
+    <<: *migration
+    environment:
+      CONNECTIONSTRINGS__DATABASE: ${MATERIAL_PROCESSING_DB_CONNECTION}
+
+  material-processing-service:
+    container_name: material-processing-service
+    image: ${DOCKER_REGISTRY:?DOCKER_REGISTRY must be set}material-processing-service:${IMAGE_TAG:?IMAGE_TAG must be set}
+    <<: *backend-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      material-processing-service-migrations:
+        condition: service_completed_successfully
+    environment:
+      ASPNETCORE_URLS: http://+:8011
+      ASPNETCORE_ENVIRONMENT: Production
+      OTEL_SERVICE_NAME: MaterialProcessingService
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      CONNECTIONSTRINGS__DATABASE: ${MATERIAL_PROCESSING_DB_CONNECTION}
+      FILESERVICEOPTIONS__URL: http://file-service:8002
+      EDUCATIONSERVICEOPTIONS__URL: http://education-service:8001
+      AI__PROVIDERS__AITUNNEL__APIKEY: ${AI__PROVIDERS__AITUNNEL__APIKEY:-}
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "dotnet", "healthcheck/healthcheck.dll", "8011"]
+    logging: *logging
+    restart: always
+
+  # ─── Telegram Bot Service ───
+  telegram-bot-service-migrations:
+    container_name: telegram-bot-service-migrations
+    image: ${DOCKER_REGISTRY:?DOCKER_REGISTRY must be set}telegram-bot-service:${IMAGE_TAG:?IMAGE_TAG must be set}
+    <<: *migration
+    environment:
+      CONNECTIONSTRINGS__DATABASE: ${TELEGRAM_DB_CONNECTION}
+
+  telegram-bot-service:
+    container_name: telegram-bot-service
+    image: ${DOCKER_REGISTRY:?DOCKER_REGISTRY must be set}telegram-bot-service:${IMAGE_TAG:?IMAGE_TAG must be set}
+    <<: *backend-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      telegram-bot-service-migrations:
+        condition: service_completed_successfully
+    environment:
+      ASPNETCORE_URLS: http://+:8008
+      ASPNETCORE_ENVIRONMENT: Production
+      OTEL_SERVICE_NAME: TelegramBotService
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      CONNECTIONSTRINGS__DATABASE: ${TELEGRAM_DB_CONNECTION}
+      CONNECTIONSTRINGS__REDIS: redis:6379
+      BOT__TOKEN: ${BOT__TOKEN}
+      # HTTP-proxy для outbound к api.telegram.org (РФ-блокировка). Формат:
+      # http://user:pass@host:port. Прокси VPS вне РФ.
+      BOT__PROXYURL: ${BOT__PROXYURL}
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "dotnet", "healthcheck/healthcheck.dll", "8008"]
+      # TBF делает setMyCommands к Telegram API ДО app.RunAsync() → Kestrel
+      # биндится только после успешного setMyCommands. Это может занять до
+      # 60-90s (особенно при сетевой деградации/retry). Дефолтные 45s
+      # start_period + 50s retry-окно приводили к restart-loop'у. Override.
+      start_period: 180s
+    logging: *logging
+    restart: always
+
+  # ─── Education Content Service ───
+  education-service-migrations:
+    container_name: education-service-migrations
+    image: ${DOCKER_REGISTRY:?DOCKER_REGISTRY must be set}education-service:${IMAGE_TAG:?IMAGE_TAG must be set}
+    <<: *migration
+    # Override: сначала EF schema migrations, потом data-migrations (см. DataMigrationRunner).
+    entrypoint: ["/bin/sh", "-c", "./efbundle --connection \"$$CONNECTIONSTRINGS__DATABASE\" && dotnet EducationContentService.Web.dll migrate-data"]
+    environment:
+      CONNECTIONSTRINGS__DATABASE: ${EDUCATION_DB_CONNECTION}
+
+  education-service:
+    container_name: education-service
+    image: ${DOCKER_REGISTRY:?DOCKER_REGISTRY must be set}education-service:${IMAGE_TAG:?IMAGE_TAG must be set}
+    <<: *backend-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      education-service-migrations:
+        condition: service_completed_successfully
+    environment:
+      ASPNETCORE_URLS: http://+:8001
+      ASPNETCORE_ENVIRONMENT: Production
+      OTEL_SERVICE_NAME: EducationContentService
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      CONNECTIONSTRINGS__DATABASE: ${EDUCATION_DB_CONNECTION}
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "dotnet", "healthcheck/healthcheck.dll", "8001"]
+    logging: *logging
+    restart: always
+
+  # ─── File Service ───
+  file-service-migrations:
+    container_name: file-service-migrations
+    image: ${DOCKER_REGISTRY:?DOCKER_REGISTRY must be set}file-service:${IMAGE_TAG:?IMAGE_TAG must be set}
+    <<: *migration
+    depends_on:
+      postgres:
+        condition: service_healthy
+      education-service:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+    environment:
+      CONNECTIONSTRINGS__DATABASE: ${FILE_DB_CONNECTION}
+
+  file-service:
+    container_name: file-service
+    image: ${DOCKER_REGISTRY:?DOCKER_REGISTRY must be set}file-service:${IMAGE_TAG:?IMAGE_TAG must be set}
+    <<: *backend-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      education-service:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      file-service-migrations:
+        condition: service_completed_successfully
+    environment:
+      ASPNETCORE_URLS: http://+:8002
+      ASPNETCORE_ENVIRONMENT: Production
+      OTEL_SERVICE_NAME: FileService
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      CONNECTIONSTRINGS__DATABASE: ${FILE_DB_CONNECTION}
+      EDUCATIONSERVICEOPTIONS__URL: http://education-service:8001
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "dotnet", "healthcheck/healthcheck.dll", "8002"]
+    logging: *logging
+    restart: always
+
+  # ─── Progress Service ───
+  progress-service-migrations:
+    container_name: progress-service-migrations
+    image: ${DOCKER_REGISTRY:?DOCKER_REGISTRY must be set}progress-service:${IMAGE_TAG:?IMAGE_TAG must be set}
+    <<: *migration
+    environment:
+      CONNECTIONSTRINGS__DATABASE: ${PROGRESS_DB_CONNECTION}
+
+  progress-service:
+    container_name: progress-service
+    image: ${DOCKER_REGISTRY:?DOCKER_REGISTRY must be set}progress-service:${IMAGE_TAG:?IMAGE_TAG must be set}
+    <<: *backend-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      progress-service-migrations:
+        condition: service_completed_successfully
+    environment:
+      ASPNETCORE_URLS: http://+:8003
+      ASPNETCORE_ENVIRONMENT: Production
+      OTEL_SERVICE_NAME: ProgressService
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      CONNECTIONSTRINGS__DATABASE: ${PROGRESS_DB_CONNECTION}
+      AI__PROVIDERS__AITUNNEL__APIKEY: ${AI__PROVIDERS__AITUNNEL__APIKEY:-}
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "dotnet", "healthcheck/healthcheck.dll", "8003"]
+    logging: *logging
+    restart: always
+
+  # ─── Auth Service ───
+  auth-service-migrations:
+    container_name: auth-service-migrations
+    image: ${DOCKER_REGISTRY:?DOCKER_REGISTRY must be set}auth-service:${IMAGE_TAG:?IMAGE_TAG must be set}
+    <<: *migration
+    environment:
+      CONNECTIONSTRINGS__DATABASE: ${AUTH_DB_CONNECTION}
+
+  auth-service:
+    container_name: auth-service
+    image: ${DOCKER_REGISTRY:?DOCKER_REGISTRY must be set}auth-service:${IMAGE_TAG:?IMAGE_TAG must be set}
+    <<: *backend-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      auth-service-migrations:
+        condition: service_completed_successfully
+    environment:
+      ASPNETCORE_URLS: http://+:8005
+      ASPNETCORE_ENVIRONMENT: Production
+      OTEL_SERVICE_NAME: AuthService
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      CONNECTIONSTRINGS__DATABASE: ${AUTH_DB_CONNECTION}
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "dotnet", "healthcheck/healthcheck.dll", "8005"]
+    logging: *logging
+    restart: always
+
+  # ─── Frontend ───
+  frontend:
+    container_name: frontend
+    image: ${DOCKER_REGISTRY:?DOCKER_REGISTRY must be set}frontend:${IMAGE_TAG:?IMAGE_TAG must be set}
+    security_opt:
+      - no-new-privileges:true
+    env_file:
+      - .env
+    depends_on:
+      auth-service:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+    logging: *logging
+    restart: always
+    networks:
+      - platform-network
+
+  # ─── Infisical (secret management) ───
+  infisical:
+    container_name: infisical
+    image: infisical/infisical:latest
+    environment:
+      DB_CONNECTION_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/infisical
+      REDIS_URL: redis://redis-platform:6379
+      ENCRYPTION_KEY: ${INFISICAL_ENCRYPTION_KEY}
+      AUTH_SECRET: ${INFISICAL_AUTH_SECRET}
+      SITE_URL: http://localhost:8080
+      HTTPS_ENABLED: "false"
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "0.50"
+        reservations:
+          memory: 512M
+    restart: always
+    networks:
+      - platform-network
+
+  # ─── Nginx ───
+  nginx:
+    container_name: nginx
+    image: nginx:alpine
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - ./logs/nginx:/var/log/nginx
+      # ACME HTTP-01 webroot — certbot --webroot writes challenge files here; nginx :80
+      # serves /.well-known/acme-challenge/ from it for Let's Encrypt cert auto-renewal.
+      - ./certbot-webroot:/var/www/certbot:ro
+    depends_on:
+      education-service:
+        condition: service_healthy
+      file-service:
+        condition: service_healthy
+      progress-service:
+        condition: service_healthy
+      comment-service:
+        condition: service_healthy
+      tag-service:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      search-service:
+        condition: service_healthy
+      access-service:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+      notification-service:
+        condition: service_started
+      # telegram-bot-service ОТСУТСТВУЕТ в depends_on:
+      # 1) Telegram API на проде иногда блокируется ISP/DPI — бот может циклиться
+      #    в restart'ах при недоступности api.telegram.org → всё лежит из-за nginx
+      #    deps. 2) /api/telegram не критичен для основного функционала (только
+      #    chat-binding admin endpoints + ResyncMyInvites). Если бот лежит → nginx
+      #    отдаст 502 на /api/telegram/*, остальные роуты работают.
+      # Бот сам поднимется когда сможет, рестартует через `restart: always`.
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: "0.25"
+        reservations:
+          memory: 64M
+    restart: always
+    networks:
+      - platform-network
+
+  # ─── Infrastructure ───
+  postgres:
+    container_name: postgres
+    # pgvector image — drop-in для postgres:16-alpine с поддержкой vector
+    # (RAG embeddings в AssignmentReviewService). Binary-совместим: volume
+    # читается без миграции данных при rolling-restart.
+    #
+    # Mirrored из Docker Hub в GitLab Container Registry чтобы обойти
+    # Docker Hub anonymous pull rate-limit (100 / 6h / IP). Пересинхронизация
+    # mirror'а — см. docs/RUNBOOK.md (раздел «Mirror Docker Hub images»).
+    image: gitlab-sachkov.ru:5050/miracle-generation/education-platform/postgres-pgvector:pg16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_EXPORTER_PASSWORD: ${POSTGRES_EXPORTER_PASSWORD:?POSTGRES_EXPORTER_PASSWORD must be set}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init-databases.sql:/docker-entrypoint-initdb.d/01-init-databases.sql:ro
+      - ./docker/postgres/init-monitoring.sh:/docker-entrypoint-initdb.d/02-init-monitoring.sh:ro
+    healthcheck:
+      # Fallback to "postgres" if POSTGRES_USER is empty/unset — a transient
+      # infisical-export / env-sourcing hiccup must NOT brick the platform: an
+      # empty -U arg makes pg_isready exit 3 (unhealthy) → every depends_on
+      # service stalls in Created → site-wide outage (#642, prod 2026-06-23).
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "1.00"
+        reservations:
+          memory: 512M
+    restart: always
+    networks:
+      - platform-network
+
+  redis:
+    container_name: redis-platform
+    image: redis:alpine
+    # AOF + RDB персистенция. noeviction вместо allkeys-lru —
+    # потеря access-тегов критична (fail-closed = 401 для всех),
+    # лучше отказать записи чем потерять теги.
+    # maxmemory совпадает с memory-лимитом контейнера минус запас на overhead.
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync everysec
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+      --maxmemory 200mb
+      --maxmemory-policy noeviction
+    volumes:
+      - redis_data:/data
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.25"
+        reservations:
+          memory: 128M
+    restart: always
+    networks:
+      - platform-network
+
+  typesense:
+    container_name: typesense
+    image: typesense/typesense:30.1
+    environment:
+      TYPESENSE_DATA_DIR: /data
+      TYPESENSE_API_KEY: ${TYPESENSE_API_KEY}
+    volumes:
+      - typesense_data:/data
+    healthcheck:
+      # typesense/typesense:30.1 ships without wget/curl — bash TCP probe is the only portable check
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8108 && printf 'GET /health HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q '\"ok\":true' <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.50"
+        reservations:
+          memory: 256M
+    restart: always
+    networks:
+      - platform-network
+
+  rabbitmq:
+    container_name: rabbitmq
+    image: rabbitmq:4-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./docker/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
+      - ./docker/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      # Cold boot replays the durable queue store under a 0.5 CPU / 512 MB limit.
+      # During deploys this can take ~2 minutes and individual diagnostics calls
+      # can exceed 5 seconds; without a grace period Compose aborts the whole stack.
+      timeout: 15s
+      retries: 5
+      start_period: 180s
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.50"
+        reservations:
+          memory: 256M
+    restart: always
+    networks:
+      - platform-network
+
+  mailpit:
+    container_name: mailpit
+    image: axllent/mailpit:latest
+    ports:
+      - "127.0.0.1:8025:8025"
+    restart: unless-stopped
+    networks:
+      - platform-network
+
+  # ─── Observability ───
+  otel-collector:
+    container_name: otel-collector
+    image: otel/opentelemetry-collector-contrib:0.120.0
+    command: ["--config", "/etc/otelcol/otel-collector-config.yaml"]
+    volumes:
+      - ./docker/otel-collector/otel-collector-config.prod.yaml:/etc/otelcol/otel-collector-config.yaml:ro
+    depends_on:
+      loki:
+        condition: service_started
+      tempo:
+        condition: service_started
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.50"
+        reservations:
+          memory: 256M
+    restart: always
+    networks:
+      - platform-network
+
+  tempo:
+    container_name: tempo
+    image: grafana/tempo:2.7.2
+    command: ["-config.file=/etc/tempo/tempo-config.yaml"]
+    volumes:
+      - ./docker/tempo/tempo-config.prod.yaml:/etc/tempo/tempo-config.yaml:ro
+      - tempo_data:/var/tempo
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3200/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      # Replaying the production WAL/blocklist took ~199s after recreation on 2026-09-27 (#1169).
+      start_period: 5m
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.50"
+        reservations:
+          memory: 256M
+    restart: always
+    networks:
+      - platform-network
+
+  postgres-exporter:
+    container_name: postgres-exporter
+    image: prometheuscommunity/postgres-exporter:v0.18.1
+    environment:
+      DATA_SOURCE_NAME: "postgresql://postgres_exporter:${POSTGRES_EXPORTER_PASSWORD:?POSTGRES_EXPORTER_PASSWORD must be set}@postgres:5432/postgres?sslmode=disable"
+      PG_EXPORTER_AUTO_DISCOVER_DATABASES: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: "0.10"
+    restart: always
+    networks:
+      - platform-network
+
+  redis-exporter:
+    container_name: redis-exporter
+    image: oliver006/redis_exporter:v1.69.0-alpine
+    environment:
+      REDIS_ADDR: "redis://redis-platform:6379"
+    depends_on:
+      redis:
+        condition: service_started
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: "0.10"
+    restart: always
+    networks:
+      - platform-network
+
+  alloy:
+    container_name: alloy
+    image: grafana/alloy:v1.5.1
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    environment:
+      CLUSTER_NAME: production
+    volumes:
+      - ./docker/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - alloy_data:/var/lib/alloy/data
+    depends_on:
+      loki:
+        condition: service_started
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.25"
+    restart: always
+    networks:
+      - platform-network
+
+  loki:
+    container_name: loki
+    image: grafana/loki:3.4.2
+    command: -config.file=/etc/loki/loki-config.yaml
+    volumes:
+      - ./docker/loki/loki-config.prod.yaml:/etc/loki/loki-config.yaml:ro
+      - loki_data:/loki
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3100/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.25"
+        reservations:
+          memory: 128M
+    restart: always
+    networks:
+      - platform-network
+
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:latest
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"
+      - "--web.enable-remote-write-receiver"
+      - "--enable-feature=exemplar-storage"
+    volumes:
+      - ./docker/prometheus/prometheus.prod.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    depends_on:
+      otel-collector:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.25"
+        reservations:
+          memory: 128M
+    restart: always
+    networks:
+      - platform-network
+
+  grafana:
+    container_name: grafana
+    # Pinned to the version reported by the production /api/health endpoint on 2026-07-12.
+    image: grafana/grafana:12.4.2
+    ports:
+      - "127.0.0.1:3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD}
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_FEATURE_TOGGLES_ENABLE: "traceqlEditor traceQLStreaming metricsSummary"
+    volumes:
+      - ./docker/grafana/provisioning-prod:/etc/grafana/provisioning:ro
+      - ./docker/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      prometheus:
+        condition: service_started
+      loki:
+        condition: service_started
+      tempo:
+        condition: service_started
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+          cpus: "0.25"
+        reservations:
+          memory: 192M
+    restart: always
+    networks:
+      - platform-network
+
+networks:
+  platform-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  rabbitmq_data:
+  redis_data:
+  typesense_data:
+  loki_data:
+  prometheus_data:
+  tempo_data:
+  grafana_data:
+  alloy_data:

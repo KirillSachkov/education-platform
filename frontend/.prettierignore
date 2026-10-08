@@ -1,0 +1,16 @@
+# Generated / build output
+node_modules/
+.next/
+build/
+dist/
+out/
+*.tsbuildinfo
+
+# Lockfiles
+package-lock.json
+
+# Prototype / external
+project/
+
+# Юридические документы: форматирование меняет рендер пунктов (10.2.6 уходит в список)
+content/legal/

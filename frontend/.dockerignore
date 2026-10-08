@@ -1,0 +1,27 @@
+# Dependencies and build artifacts
+node_modules
+.next
+dependency-notices
+
+# VCS and editor
+.git
+.gitignore
+.vscode
+.idea
+
+# Local-only files
+.env
+.env.*
+
+# Logs and temp
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.swp
+
+# Owner-supplied legal documents stay private and are mounted at runtime.
+content/legal/
+public/legal-docs/
+
+# Private proprietor runtime configuration.
+business-details.json

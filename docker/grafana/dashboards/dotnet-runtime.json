@@ -1,0 +1,382 @@
+{
+  "uid": "dotnet-runtime",
+  "title": ".NET Runtime",
+  "description": "CPU / heap / GC / thread pool / exceptions per service. Шаблон через $service variable — переключай dropdown'ом для drill-down любого backend сервиса. Метрики из OTel runtime instrumentation (System.Runtime meter), label service_name из OTel resource.",
+  "tags": ["platform", "dotnet", "runtime"],
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "graphTooltip": 1,
+  "time": { "from": "now-1h", "to": "now" },
+  "refresh": "30s",
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "label": "Service",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "query": "label_values(dotnet_process_cpu_count, service_name)",
+        "refresh": 1,
+        "includeAll": true,
+        "multi": true,
+        "sort": 1,
+        "current": { "text": "All", "value": "$__all" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "Process",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "CPU time rate (sec/sec, ≈ #cores busy)",
+      "description": "Производная dotnet_process_cpu_time_seconds_total. Значение 1.0 = весь 1 CPU занят. >cpu_count = насыщение.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 1 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (service_name) (rate(dotnet_process_cpu_time_seconds_total{service_name=~\"$service\"}[1m]))",
+          "legendFormat": "{{service_name}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 3,
+          "custom": { "lineWidth": 2, "fillOpacity": 10 },
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] } }
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Working set memory",
+      "description": "RSS — сколько физической памяти занимает процесс. Это главный сигнал OOM-риска.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 1 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (service_name) (dotnet_process_memory_working_set_bytes{service_name=~\"$service\"})",
+          "legendFormat": "{{service_name}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": { "lineWidth": 2, "fillOpacity": 10 },
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] } }
+    },
+    {
+      "id": 10,
+      "type": "row",
+      "title": "Garbage collector",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "GC heap size by generation (last collection)",
+      "description": "dotnet_gc_last_collection_heap_size_bytes — gen0/gen1/gen2/loh/poh. Stacked = total managed heap.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 10 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (service_name, gc_heap_generation) (dotnet_gc_last_collection_heap_size_bytes{service_name=~\"$service\"})",
+          "legendFormat": "{{service_name}} {{gc_heap_generation}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": { "lineWidth": 1, "fillOpacity": 30, "stacking": { "mode": "normal" } },
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["max"] } }
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "GC collections rate by generation (per minute)",
+      "description": "rate(dotnet_gc_collections_total). Высокий gen2 rate = частые full GC = memory pressure.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 10 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "60 * sum by (service_name, gc_heap_generation) (rate(dotnet_gc_collections_total{service_name=~\"$service\"}[5m]))",
+          "legendFormat": "{{service_name}} {{gc_heap_generation}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 2,
+          "custom": { "lineWidth": 2, "fillOpacity": 10 },
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] } }
+    },
+    {
+      "id": 13,
+      "type": "timeseries",
+      "title": "GC pause time fraction (% of wall time)",
+      "description": "rate(dotnet_gc_pause_time_seconds_total). Доля времени, которое процесс провёл в GC. >5% = серьёзная просадка.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 18 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "100 * sum by (service_name) (rate(dotnet_gc_pause_time_seconds_total{service_name=~\"$service\"}[5m]))",
+          "legendFormat": "{{service_name}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 2,
+          "custom": { "lineWidth": 2, "fillOpacity": 10 },
+          "color": { "mode": "palette-classic" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 2 },
+              { "color": "red", "value": 5 }
+            ]
+          }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] } }
+    },
+    {
+      "id": 14,
+      "type": "timeseries",
+      "title": "Heap allocation rate",
+      "description": "rate(dotnet_gc_heap_allocated_bytes_total). Скорость аллокаций — индикатор how busy GC is.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 18 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (service_name) (rate(dotnet_gc_heap_allocated_bytes_total{service_name=~\"$service\"}[1m]))",
+          "legendFormat": "{{service_name}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": { "lineWidth": 2, "fillOpacity": 10 },
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] } }
+    },
+    {
+      "id": 20,
+      "type": "row",
+      "title": "Thread pool & contention",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 26 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 21,
+      "type": "timeseries",
+      "title": "Thread pool threads",
+      "description": "dotnet_thread_pool_thread_count_total — общее число managed threads из pool. Резкий рост = blocking calls / starvation.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 27 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (service_name) (dotnet_thread_pool_thread_count_total{service_name=~\"$service\"})",
+          "legendFormat": "{{service_name}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "lineWidth": 2, "fillOpacity": 10 },
+          "color": { "mode": "palette-classic" }
+        }
+      }
+    },
+    {
+      "id": 22,
+      "type": "timeseries",
+      "title": "Thread pool queue length",
+      "description": "dotnet_thread_pool_queue_length_total. >0 устойчиво = нет свободных worker'ов, work items ждут.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 27 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (service_name) (dotnet_thread_pool_queue_length_total{service_name=~\"$service\"})",
+          "legendFormat": "{{service_name}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "lineWidth": 2, "fillOpacity": 30 },
+          "color": { "mode": "palette-classic" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 10 },
+              { "color": "red", "value": 100 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 23,
+      "type": "timeseries",
+      "title": "Lock contentions / sec",
+      "description": "rate(dotnet_monitor_lock_contentions_total). Блокировки на lock/Monitor. Spike = lock contention hot path.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 27 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (service_name) (rate(dotnet_monitor_lock_contentions_total{service_name=~\"$service\"}[1m]))",
+          "legendFormat": "{{service_name}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "decimals": 2,
+          "custom": { "lineWidth": 2, "fillOpacity": 10 },
+          "color": { "mode": "palette-classic" }
+        }
+      }
+    },
+    {
+      "id": 30,
+      "type": "row",
+      "title": "Exceptions & JIT",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 35 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 31,
+      "type": "timeseries",
+      "title": "Exceptions / sec by service",
+      "description": "rate(dotnet_exceptions_total). Все throw'ы — managed exceptions. ConcurrencyException, BrokenCircuitException, RedisTimeout = индикаторы инфра-проблем.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 36 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (service_name) (rate(dotnet_exceptions_total{service_name=~\"$service\"}[1m]))",
+          "legendFormat": "{{service_name}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "decimals": 3,
+          "custom": { "lineWidth": 2, "fillOpacity": 10, "drawStyle": "bars" },
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "sum"] } }
+    },
+    {
+      "id": 32,
+      "type": "timeseries",
+      "title": "Top exceptions by type (cumulative)",
+      "description": "Кумулятивные счётчики dotnet_exceptions_total{error_type=...} с момента старта процесса. Не rate — нужен срез \"что вообще вылетает\".",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 36 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "topk(15, sum by (error_type) (dotnet_exceptions_total{service_name=~\"$service\"}))",
+          "legendFormat": "{{error_type}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "lineWidth": 2, "fillOpacity": 5 },
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["last"] } }
+    },
+    {
+      "id": 33,
+      "type": "timeseries",
+      "title": "JIT IL bytes compiled / sec",
+      "description": "rate(dotnet_jit_compiled_il_size_bytes_total). После warmup должно быть ~0. Постоянная компиляция = dynamic code path / ReadyToRun не работает.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 44 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (service_name) (rate(dotnet_jit_compiled_il_size_bytes_total{service_name=~\"$service\"}[5m]))",
+          "legendFormat": "{{service_name}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": { "lineWidth": 2, "fillOpacity": 5 },
+          "color": { "mode": "palette-classic" }
+        }
+      }
+    },
+    {
+      "id": 34,
+      "type": "timeseries",
+      "title": "Active timers + assemblies loaded",
+      "description": "dotnet_timer_count + dotnet_assembly_count. Растущий timer count может означать timer leak.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 44 },
+      "targets": [
+        {
+          "refId": "T",
+          "expr": "sum by (service_name) (dotnet_timer_count{service_name=~\"$service\"})",
+          "legendFormat": "{{service_name}} timers"
+        },
+        {
+          "refId": "A",
+          "expr": "sum by (service_name) (dotnet_assembly_count{service_name=~\"$service\"})",
+          "legendFormat": "{{service_name}} assemblies"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "lineWidth": 2, "fillOpacity": 5 },
+          "color": { "mode": "palette-classic" }
+        }
+      }
+    }
+  ]
+}

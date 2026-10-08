@@ -1,0 +1,3 @@
+[submodule "backend/external/telegram-bot-flow"]
+	path = backend/external/telegram-bot-flow
+	url = https://github.com/KirillSachkov/telegram-bot-flow.git

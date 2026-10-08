@@ -1,0 +1,40 @@
+# VCS and IDE
+.git
+.gitignore
+**/.git
+**/.idea
+**/.vscode
+**/.vs
+**/*.DotSettings*
+
+# Build outputs and caches.
+# NOTE: `**/bin` deliberately NOT excluded — SDK 10.0.203 has a regression
+# where its default EmbeddedResource glob (**/*.resx) fails to expand when
+# the build context omits `bin/` entries (MSB3552). Keeping `bin/` in
+# context is harmless: Release publishes write to a separate output folder.
+# Re-evaluate this when upgrading to a newer SDK patch.
+**/obj
+**/TestResults
+
+# Tests — not needed for production images
+**/tests
+
+# Frontend artifacts that should never leak into backend build context
+**/node_modules
+**/.next
+
+# Local env and secrets — never bake into image
+**/.env
+**/.env.*
+
+# Docs (trim context size). Service .csproj may declare <None Include="*.md">
+# for IDE display, but those items are not used by `dotnet publish`, so
+# excluding .md from the build context is safe.
+**/*.md
+**/CHANGELOG*
+**/LICENSE*
+
+# IDE/misc
+**/*.user
+**/*.suo
+**/*.swp

@@ -1,0 +1,26 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/SolutionFolder/">
+    <File Path="Directory.Build.props" />
+    <File Path="..\.editorconfig" />
+  </Folder>
+  <Project Path="Authentication/Authentication.csproj" />
+  <Project Path="AI/AI/AI.csproj" />
+  <Project Path="AI/AI.OpenAiCompatible/AI.OpenAiCompatible.csproj" />
+  <Project Path="AI/AI.OpenAiCompatible.Tests/AI.OpenAiCompatible.Tests.csproj" />
+  <Project Path="Common/Common.csproj" />
+  <Project Path="Core/Core.csproj" />
+  <Project Path="DomainEvents/DomainEvents.csproj" />
+  <Project Path="Framework/Framework.csproj" />
+  <Project Path="GitHubApp/GitHubApp.csproj" />
+  <Project Path="Messaging/RabbitMqMessaging/RabbitMqMessaging.csproj" />
+  <Project Path="Observability/Observability.csproj" />
+  <Project Path="Ordering/Ordering.Tests/Ordering.Tests.csproj" />
+  <Project Path="PlatformBootstrap/PlatformBootstrap.csproj" />
+  <Project Path="Ordering/Ordering/Ordering.csproj" />
+  <Project Path="SharedKernel/SharedKernel.csproj" />
+</Solution>

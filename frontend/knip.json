@@ -1,0 +1,9 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "ignore": [
+    "public/sw.js",
+    "project/**",
+    "tsconfig.strict.json"
+  ],
+  "ignoreExportsUsedInFile": true
+}

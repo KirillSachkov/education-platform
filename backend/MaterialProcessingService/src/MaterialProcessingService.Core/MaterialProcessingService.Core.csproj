@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\AI\AI\AI.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Authentication\Authentication.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Messaging\RabbitMqMessaging\RabbitMqMessaging.csproj" />
+    <ProjectReference Include="..\..\..\EducationContentService\src\EducationContentService.Contracts\EducationContentService.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\FileService\src\FileService.Contracts\FileService.Contracts.csproj" />
+    <ProjectReference Include="..\MaterialProcessingService.Contracts\MaterialProcessingService.Contracts.csproj" />
+    <ProjectReference Include="..\MaterialProcessingService.Domain\MaterialProcessingService.Domain.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Dapper" />
+    <ProjectReference Include="..\..\..\Shared\Core\Core.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Framework\Framework.csproj" />
+    <PackageReference Include="WolverineFx.EntityFrameworkCore" />
+    <PackageReference Include="WolverineFx.Postgresql" />
+    <PackageReference Include="WolverineFx.RabbitMQ" />
+  </ItemGroup>
+</Project>

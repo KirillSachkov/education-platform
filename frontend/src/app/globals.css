@@ -1,0 +1,1262 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  /* Custom text size: 10px for badges, chips, tiny labels */
+  --text-2xs: 0.625rem;
+  --text-2xs--line-height: 1rem;
+
+  --breakpoint-3xl: 1920px;
+  --breakpoint-4xl: 2560px;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans:
+    var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+  --font-mono: var(--font-jetbrains-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* Semantic / platform colors */
+  --color-teal: var(--teal);
+  --color-cyan: var(--cyan);
+  --color-green: var(--green);
+  --color-yellow: var(--yellow);
+  --color-red: var(--red);
+  --color-purple: var(--purple);
+  --color-blue: var(--blue);
+  --color-orange: var(--orange);
+  --color-surface: var(--surface);
+  --color-gold: var(--gold);
+
+  /* Dim variants (10% opacity backgrounds) */
+  --color-teal-dim: var(--teal-dim);
+  --color-green-dim: var(--green-dim);
+  --color-yellow-dim: var(--yellow-dim);
+  --color-red-dim: var(--red-dim);
+  --color-purple-dim: var(--purple-dim);
+  --color-blue-dim: var(--blue-dim);
+  --color-orange-dim: var(--orange-dim);
+  --color-gold-dim: var(--gold-dim);
+
+  /* Muted variants (35% opacity for badges, tags, indicators) */
+  --color-teal-muted: var(--teal-muted);
+  --color-green-muted: var(--green-muted);
+  --color-yellow-muted: var(--yellow-muted);
+  --color-red-muted: var(--red-muted);
+  --color-purple-muted: var(--purple-muted);
+  --color-blue-muted: var(--blue-muted);
+  --color-orange-muted: var(--orange-muted);
+
+  --background-image-primary-linear-gradient: linear-gradient(
+    135deg,
+    oklch(0.25 0.02 185) 0%,
+    oklch(0.22 0.012 190) 50%,
+    oklch(0.19 0.008 200) 100%
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────
+   LIGHT THEME — Clean Daylight
+   Neutral, paper-clean light mode in the spirit of Notion / GitHub:
+   one unified light-grey shell (page AND sidebar share the same tone),
+   white cards floating on top for separation, and crisp neutral borders.
+   The jade brand accent (primary / active states / focus ring) is
+   preserved so the identity stays intact — only the warm "stone"
+   neutrals are gone. Neutral ramp: #e9ecf0 shell / #d8dde2 border /
+   #1f2328 text / #ffffff cards.
+   ──────────────────────────────────────────────────────────────────── */
+:root {
+  --radius: 0.625rem;
+
+  /* Unified light-grey shell — darker than card so white surfaces "float" */
+  --background: #e9ecf0;
+  --foreground: #1f2328;
+
+  /* Cards: pure white paper, primary surface for content */
+  --card: #ffffff;
+  --card-foreground: #1f2328;
+
+  --popover: #ffffff;
+  --popover-foreground: #1f2328;
+
+  /* Primary: jade accent */
+  --primary: #009e8c;
+  --primary-foreground: #ffffff;
+
+  /* Стабильный «teal платформы» — НЕ перекрывается темой тренажёра
+     (.theme-trainer трогает только --primary, --ring, --sidebar-*, --accent).
+     Используется для контекстной кнопки «Платформа» в хедере (#623). */
+  --platform-primary: #009e8c;
+
+  /* Secondary: light neutral grey, recessed against white */
+  --secondary: #eef1f4;
+  --secondary-foreground: #32383f;
+
+  /* Muted: slightly darker neutral grey for chips/tags */
+  --muted: #eaedf0;
+  --muted-foreground: #59636e;
+
+  /* Accent: jade wash, deeper foreground for active items */
+  --accent: #d8ede7;
+  --accent-foreground: #005a4f;
+
+  --destructive: oklch(0.55 0.2 22);
+  --destructive-foreground: oklch(0.98 0 0);
+
+  /* Borders: neutral grey — visible but soft */
+  --border: #d8dde2;
+  --input: #d8dde2;
+  --ring: #009e8c;
+
+  /* Charts */
+  --chart-1: #009e8c;
+  --chart-2: #007f71;
+  --chart-3: oklch(0.55 0.2 22);
+  --chart-4: #c4882a;
+  --chart-5: oklch(0.48 0.14 295);
+
+  /* Surface: just-off-white, between page and card — for nested sections */
+  --surface: #fbfcfd;
+
+  /* Sidebar — same tone as the page so the shell reads as one surface;
+     separated from content only by its border */
+  --sidebar: #e9ecf0;
+  --sidebar-foreground: #1f2328;
+  --sidebar-primary: #009e8c;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #d8ede7;
+  --sidebar-accent-foreground: #005a4f;
+  --sidebar-border: #d3d8de;
+  --sidebar-ring: #009e8c;
+
+  /* Semantic colors — tuned warm, slightly desaturated */
+  --teal: #009e8c;
+  --teal-dim: rgba(0, 158, 140, 0.1);
+  --cyan: oklch(0.5 0.11 210);
+  --green: oklch(0.5 0.14 148);
+  --green-dim: oklch(0.5 0.14 148 / 10%);
+  --yellow: oklch(0.6 0.14 70);
+  --yellow-dim: oklch(0.6 0.14 70 / 10%);
+  --red: oklch(0.55 0.2 22);
+  --red-dim: oklch(0.55 0.2 22 / 10%);
+  --purple: oklch(0.48 0.14 295);
+  --purple-dim: oklch(0.48 0.14 295 / 10%);
+  --blue: oklch(0.48 0.14 250);
+  --blue-dim: oklch(0.48 0.14 250 / 10%);
+  --orange: oklch(0.58 0.15 50);
+  --orange-dim: oklch(0.58 0.15 50 / 10%);
+
+  /* Muted variants (35% opacity) */
+  --teal-muted: rgba(0, 158, 140, 0.35);
+  --green-muted: oklch(0.5 0.14 148 / 35%);
+  --yellow-muted: oklch(0.6 0.14 70 / 35%);
+  --red-muted: oklch(0.55 0.2 22 / 35%);
+  --purple-muted: oklch(0.48 0.14 295 / 35%);
+  --blue-muted: oklch(0.48 0.14 250 / 35%);
+  --orange-muted: oklch(0.58 0.15 50 / 35%);
+
+  /* Gold — XP, levels, gamification */
+  --gold: oklch(0.58 0.12 80);
+  --gold-dim: oklch(0.58 0.12 80 / 10%);
+
+  /* Code & scrollbar — neutral light surfaces */
+  --code-bg: #f0f2f5;
+  --code-border: #d8dde2;
+  --code-text: #007f71;
+  --code-block-text: #1f2328;
+  --code-header-bg: #ffffff;
+  --code-header-text: #57606a;
+  --syntax-comment: oklch(0.55 0.01 260);
+  --syntax-punctuation: oklch(0.3 0.012 260);
+  --syntax-keyword: oklch(0.46 0.13 148);
+  --syntax-string: oklch(0.55 0.15 50);
+  --syntax-number: oklch(0.58 0.14 70);
+  --syntax-function: oklch(0.46 0.14 250);
+  --syntax-class: oklch(0.48 0.13 178);
+  --syntax-property: oklch(0.48 0.14 295);
+  --syntax-operator: oklch(0.22 0.012 260);
+  --scrollbar-thumb: #c8ccd2;
+  --scrollbar-thumb-hover: #aeb4bc;
+  --blockquote-border: #009e8c;
+  --blockquote-text: #4a4d55;
+}
+
+/* ────────────────────────────────────────────────────────────────────
+   DARK THEME — Лунная ночь
+   Soft night sky with gentle blue moonlight wash. Desaturated,
+   calming, contemplative — like studying in a room lit by the moon.
+   Neutral teal accent, muted semantic colors. Nothing harsh.
+   ──────────────────────────────────────────────────────────────────── */
+.dark {
+  /* Warm dark — slightly warm undertone, easier on the eyes */
+  --background: #13120f;
+  --foreground: oklch(0.92 0.006 260);
+
+  /* Cards: warm-shifted surfaces */
+  --card: #1a1917;
+  --card-foreground: oklch(0.92 0.006 260);
+
+  --popover: #1e1d1a;
+  --popover-foreground: oklch(0.92 0.006 260);
+
+  /* Primary: teal accent #1D9E75 */
+  --primary: #6bada5;
+  --primary-foreground: #ffffff;
+
+  /* Стабильный «teal платформы» (dark) — см. :root (#623). */
+  --platform-primary: #6bada5;
+
+  --secondary: #1e1d1a;
+  --secondary-foreground: oklch(0.92 0.006 260);
+
+  --muted: #1e1d1a;
+  --muted-foreground: rgba(255, 255, 255, 0.45);
+
+  /* Accent: teal with transparency for hover/active */
+  --accent: rgba(107, 173, 165, 0.12);
+  --accent-foreground: rgba(255, 255, 255, 0.95);
+
+  --destructive: oklch(0.62 0.16 20);
+  --destructive-foreground: oklch(0.995 0 0);
+
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.06);
+  --ring: #6bada5;
+
+  --chart-1: #6bada5;
+  --chart-2: oklch(0.6 0.07 295);
+  --chart-3: oklch(0.6 0.08 150);
+  --chart-4: oklch(0.68 0.07 80);
+  --chart-5: oklch(0.62 0.14 20);
+
+  --surface: #161513;
+
+  /* Sidebar */
+  --sidebar: #141311;
+  --sidebar-foreground: oklch(0.92 0.006 260);
+  --sidebar-primary: #6bada5;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgba(107, 173, 165, 0.12);
+  --sidebar-accent-foreground: rgba(255, 255, 255, 0.95);
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: #6bada5;
+
+  /* Semantic colors — desaturated, moonlit, gentle on the eyes */
+  --teal: oklch(0.65 0.07 180);
+  --teal-dim: oklch(0.65 0.07 180 / 12%);
+  --cyan: oklch(0.63 0.05 220);
+  --green: oklch(0.6 0.08 150);
+  --green-dim: oklch(0.6 0.08 150 / 12%);
+  --yellow: oklch(0.7 0.07 80);
+  --yellow-dim: oklch(0.7 0.07 80 / 12%);
+  --red: oklch(0.62 0.15 20);
+  --red-dim: oklch(0.62 0.15 20 / 12%);
+  --purple: oklch(0.6 0.08 295);
+  --purple-dim: oklch(0.6 0.08 295 / 12%);
+  --blue: oklch(0.63 0.06 255);
+  --blue-dim: oklch(0.63 0.06 255 / 12%);
+  --orange: oklch(0.63 0.08 55);
+  --orange-dim: oklch(0.63 0.08 55 / 12%);
+
+  /* Muted variants */
+  --teal-muted: oklch(0.65 0.07 180 / 35%);
+  --green-muted: oklch(0.6 0.08 150 / 35%);
+  --yellow-muted: oklch(0.7 0.07 80 / 35%);
+  --red-muted: oklch(0.62 0.15 20 / 35%);
+  --purple-muted: oklch(0.6 0.08 295 / 35%);
+  --blue-muted: oklch(0.63 0.06 255 / 35%);
+  --orange-muted: oklch(0.63 0.08 55 / 35%);
+
+  /* Gold — XP, levels, gamification: soft moonlit gold */
+  --gold: oklch(0.78 0.08 85);
+  --gold-dim: oklch(0.78 0.08 85 / 12%);
+
+  /* Code & scrollbar — neutral surfaces */
+  --code-bg: color-mix(in oklab, var(--surface) 92%, black 8%);
+  --code-border: color-mix(in oklab, var(--border) 92%, var(--surface));
+  --code-text: oklch(0.73 0.13 180);
+  --code-block-text: oklch(0.92 0.006 260);
+  --code-header-bg: color-mix(in oklab, var(--card) 94%, black 6%);
+  --code-header-text: oklch(0.73 0.13 180);
+  --syntax-comment: oklch(0.56 0.008 260);
+  --syntax-punctuation: oklch(0.86 0.006 260);
+  --syntax-keyword: oklch(0.6 0.14 148);
+  --syntax-string: oklch(0.65 0.13 55);
+  --syntax-number: oklch(0.72 0.12 80);
+  --syntax-function: oklch(0.65 0.1 255);
+  --syntax-class: oklch(0.68 0.12 178);
+  --syntax-property: oklch(0.62 0.14 295);
+  --syntax-operator: oklch(0.93 0.004 260);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.1);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.18);
+  --blockquote-border: oklch(0.73 0.13 180);
+  --blockquote-text: oklch(0.56 0.008 260);
+}
+
+/* Раздел «Тренажёр» — фиолетовая тема (#623). Класс вешается на корень shell'а
+   (SidebarProvider) в AppLayout при accent="trainer" → сайдбар, primary, ring и
+   accent-состояния становятся фиолетовыми: тренажёр читается как отдельная часть
+   платформы. Платформенный teal остаётся доступен через --platform-primary
+   (его .theme-trainer не трогает) — для кнопки «Платформа» в хедере. */
+.theme-trainer {
+  --primary: #7c3aed;
+  --primary-foreground: #ffffff;
+  --ring: #7c3aed;
+  --accent: #ede9fe;
+  --accent-foreground: #5b21b6;
+  --sidebar: #ebe9f2;
+  --sidebar-primary: #7c3aed;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #ede9fe;
+  --sidebar-accent-foreground: #5b21b6;
+  --sidebar-ring: #7c3aed;
+}
+
+.dark .theme-trainer {
+  --primary: #a78bfa;
+  --primary-foreground: #ffffff;
+  --ring: #a78bfa;
+  --accent: rgba(167, 139, 250, 0.14);
+  --accent-foreground: rgba(255, 255, 255, 0.95);
+  --sidebar: #16131b;
+  --sidebar-primary: #a78bfa;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgba(167, 139, 250, 0.14);
+  --sidebar-accent-foreground: rgba(255, 255, 255, 0.95);
+  --sidebar-ring: #a78bfa;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  button,
+  [role="button"],
+  a[href],
+  summary {
+    cursor: pointer;
+  }
+  html {
+    font-size: 16px;
+    /* Honor user's chosen text size — Safari/Chromium on mobile sometimes
+       auto-inflate text on orientation change without an explicit setting. */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    /* Tie form controls (checkbox, radio, range, progress) to the brand
+       colour so they match the rest of the UI without per-component
+       overrides. */
+    accent-color: hsl(var(--primary));
+    /* Опт-ин по color-scheme — браузер использует нативный dark mode для
+       scrollbar/form controls/scrollbar-corner. Без этого Chromium показывает
+       белые встроенные controls на dark surface. */
+    color-scheme: light dark;
+    /* iOS Safari propagates body overflow-x:hidden to the viewport scroll
+       container but still allows horizontal bounce/overscroll at the html
+       level. Setting it here prevents page-level horizontal scroll when any
+       inline element (e.g. inline code) overflows its container. Both html
+       AND body must be set; body alone is ignored on iOS (#543). */
+    overflow-x: hidden;
+  }
+  @media (min-width: 1920px) {
+    html {
+      font-size: 17px;
+    }
+    [data-slot="sidebar-wrapper"] {
+      --sidebar-width: 17rem;
+    }
+  }
+  @media (min-width: 2560px) {
+    html {
+      font-size: 18px;
+    }
+    [data-slot="sidebar-wrapper"] {
+      --sidebar-width: 19rem;
+    }
+  }
+  body {
+    @apply bg-background text-foreground;
+    overflow-x: hidden;
+    /* PWA + iOS safe-area: keep content out from under the notch on the
+       horizontal axis; vertical insets are handled per-layout (header,
+       bottom-nav) so they only affect fixed shells, not page padding. */
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    /* Suppress iOS tap-highlight; we render our own active states. */
+    -webkit-tap-highlight-color: transparent;
+    /* Reserve scrollbar gutter so vertical content reflow doesn't shift
+       horizontal layout when a long page mounts. CLS win on /home + KB. */
+    scrollbar-gutter: stable;
+  }
+
+  /* Headings naturally wrap into balanced lines — `text-wrap: balance`
+     prevents orphan last-words and skinny last lines, which matter most on
+     narrow mobile viewports. Body copy stays default to keep render fast. */
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  /* Scrollbar — thin, no visible track/gutter on any scrollable element */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+    background: transparent;
+  }
+  ::-webkit-scrollbar-track,
+  ::-webkit-scrollbar-track-piece,
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 3px;
+    border: none;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+  }
+
+  /* Усилить scrollbar в high-contrast mode (Windows High Contrast, macOS Display
+     Accommodations, prefers-contrast: more). Браузер сам не подкрутит цвет
+     достаточно сильно. */
+  @media (prefers-contrast: more) {
+    * {
+      scrollbar-width: auto;
+      scrollbar-color: var(--foreground) transparent;
+    }
+    ::-webkit-scrollbar {
+      width: 12px;
+      height: 12px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--foreground);
+      border: 2px solid hsl(var(--background));
+      border-radius: 6px;
+    }
+  }
+
+  /* Code blocks */
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    border-radius: var(--radius-xl);
+    padding: 16px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  code {
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 13px;
+    color: var(--code-text);
+    font-family: var(--font-jetbrains-mono), "JetBrains Mono", monospace;
+    /* Inline code wraps on mobile instead of causing horizontal page overflow. */
+    overflow-wrap: anywhere;
+  }
+  pre code {
+    background: transparent;
+    border: none;
+    padding: 0;
+    color: var(--code-block-text);
+    /* Cancel the overflow-wrap:anywhere from the `code` rule above so that
+       block code uses horizontal scroll (controlled by `pre { overflow-x:auto }`)
+       rather than soft-wrapping long tokens. */
+    overflow-wrap: normal;
+  }
+  .markdown-code-block pre[class*="language-"] {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    padding: 1rem;
+    color: var(--code-block-text);
+    font-size: 0.875rem;
+    line-height: 1.65;
+    font-family: var(--font-jetbrains-mono), "JetBrains Mono", monospace;
+  }
+  .markdown-code-block code[class*="language-"] {
+    color: var(--code-block-text);
+    font-family: var(--font-jetbrains-mono), "JetBrains Mono", monospace;
+    text-shadow: none;
+  }
+  .markdown-code-block .token.comment,
+  .markdown-code-block .token.prolog,
+  .markdown-code-block .token.doctype,
+  .markdown-code-block .token.cdata {
+    color: var(--syntax-comment);
+    font-style: italic;
+  }
+  .markdown-code-block .token.punctuation {
+    color: var(--syntax-punctuation);
+  }
+  .markdown-code-block .token.keyword,
+  .markdown-code-block .token.atrule,
+  .markdown-code-block .token.tag {
+    color: var(--syntax-keyword);
+    font-weight: 600;
+  }
+  .markdown-code-block .token.string,
+  .markdown-code-block .token.char,
+  .markdown-code-block .token.attr-value,
+  .markdown-code-block .token.inserted {
+    color: var(--syntax-string);
+  }
+  .markdown-code-block .token.number,
+  .markdown-code-block .token.boolean,
+  .markdown-code-block .token.constant,
+  .markdown-code-block .token.regex {
+    color: var(--syntax-number);
+  }
+  .markdown-code-block .token.function,
+  .markdown-code-block .token.entity,
+  .markdown-code-block .token.url {
+    color: var(--syntax-function);
+  }
+  .markdown-code-block .token.class-name,
+  .markdown-code-block .token.selector,
+  .markdown-code-block .token.builtin,
+  .markdown-code-block .token.symbol {
+    color: var(--syntax-class);
+  }
+  .markdown-code-block .token.property,
+  .markdown-code-block .token.attr-name,
+  .markdown-code-block .token.variable {
+    color: var(--syntax-property);
+  }
+  .markdown-code-block .token.operator,
+  .markdown-code-block .token.important {
+    color: var(--syntax-operator);
+  }
+  blockquote {
+    border-left: 3px solid var(--blockquote-border);
+    padding-left: 16px;
+    color: var(--blockquote-text);
+    margin: 16px 0;
+    font-style: italic;
+  }
+}
+
+@layer utilities {
+  /* iOS HIG / Material guideline minimum touch target (44pt / 44dp).
+     Scoped to coarse pointers so it only kicks in on touch devices —
+     desktop icon-buttons keep their compact 32-36px hit area. */
+  .min-touch {
+    touch-action: manipulation;
+  }
+  @media (pointer: coarse) {
+    .min-touch {
+      min-width: 44px;
+      min-height: 44px;
+    }
+  }
+
+  /* Helpers for fixed/sticky elements at viewport edges. */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .bg-gradient-primary {
+    background: linear-gradient(135deg, var(--teal) 0%, var(--cyan) 100%);
+  }
+
+  .bg-gradient-warm {
+    background: linear-gradient(135deg, var(--orange) 0%, var(--yellow) 100%);
+  }
+
+  .shadow-sidebar {
+    box-shadow:
+      1px 0 0 var(--sidebar-border),
+      6px 0 20px rgba(0, 0, 0, 0.35);
+  }
+
+  /* Checkmark draw-in animation */
+  @keyframes checkmark-draw {
+    from {
+      stroke-dashoffset: 24;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @keyframes scale-in {
+    0% {
+      transform: scale(0.8);
+      opacity: 0;
+    }
+    50% {
+      transform: scale(1.05);
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  .animate-checkmark-draw {
+    animation: checkmark-draw 0.4s ease-out forwards;
+    stroke-dasharray: 24;
+    stroke-dashoffset: 24;
+  }
+
+  .animate-scale-in {
+    animation: scale-in 0.3s ease-out forwards;
+  }
+
+  @keyframes celebrate-complete {
+    0% {
+      transform: scale(0.8);
+      opacity: 0;
+    }
+    15% {
+      transform: scale(1.05);
+      opacity: 1;
+    }
+    20% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    80% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+
+  .animate-celebrate-complete {
+    animation: celebrate-complete 1.5s ease-out forwards;
+  }
+
+  /* Shimmer — thin highlight sweeps across an element (used on progress bars, hero surfaces) */
+  @keyframes shimmer-sweep {
+    0% {
+      transform: translateX(-120%);
+    }
+    60% {
+      transform: translateX(220%);
+    }
+    100% {
+      transform: translateX(220%);
+    }
+  }
+
+  .animate-shimmer-sweep {
+    animation: shimmer-sweep 3.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+
+  /* Soft float — barely perceptible vertical drift for ambient elements */
+  @keyframes soft-float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-6px);
+    }
+  }
+
+  .animate-soft-float {
+    animation: soft-float 6s ease-in-out infinite;
+  }
+
+  /* Seasonal leaf drift — ambient summer decoration for the header (SeasonalHeaderDecor).
+     Gentle sway within the header band; transform/opacity only (GPU-composited). */
+  @keyframes leaf-drift {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0) rotate(-8deg);
+    }
+    25% {
+      transform: translate3d(6px, -4px, 0) rotate(6deg);
+    }
+    50% {
+      transform: translate3d(12px, 2px, 0) rotate(-4deg);
+    }
+    75% {
+      transform: translate3d(4px, -3px, 0) rotate(8deg);
+    }
+  }
+
+  .animate-leaf-drift {
+    animation: leaf-drift var(--leaf-dur, 12s) ease-in-out infinite;
+    animation-delay: var(--leaf-delay, 0s);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-checkmark-draw,
+  .animate-scale-in,
+  .animate-celebrate-complete,
+  .animate-shimmer-sweep,
+  .animate-soft-float {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  /* Leaves stay put (keep their authored opacity) — no motion, still decorative. */
+  .animate-leaf-drift {
+    animation: none !important;
+  }
+  .grid-cell {
+    animation: none !important;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────────
+   Data Grid Hero — animated grid background with mouse glow
+   ──────────────────────────────────────────────────────────────────── */
+
+.data-grid-hero {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+.data-grid-hero > .grid-container {
+  position: absolute;
+  inset: 0;
+  display: grid;
+}
+
+.data-grid-hero > .grid-container::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(107, 173, 165, 0.15),
+    transparent 40%
+  );
+  opacity: var(--mouse-glow-opacity, 0);
+  transition: opacity 0.3s;
+  z-index: 1;
+}
+
+.data-grid-hero .grid-cell {
+  border-radius: 2px;
+  opacity: var(--opacity-min, 0.05);
+}
+
+.data-grid-hero > .dgh-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.data-grid-hero > .hero-content {
+  position: relative;
+  z-index: 2;
+}
+
+@keyframes cell-pulse {
+  from {
+    opacity: var(--opacity-min, 0.05);
+  }
+  to {
+    opacity: var(--opacity-max, 0.6);
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * Scroll-driven animations utility classes (Baseline Newly Available 2024)
+ *
+ * Применять opt-in через className. Браузеры без поддержки получают NO-OP:
+ * `animation-timeline: scroll()` неизвестное — `animation` не запустится,
+ * элемент остаётся в initial state (scaleX(0) для прогресс-бара = invisible).
+ *
+ * .scroll-progress-bar — фиксированная полоса прогресса сверху viewport,
+ *   ширина = доле проскролленного `root`. Использовать в widget'ах с длинным
+ *   markdown body (material-view).
+ *
+ * .scroll-edge-fade-x — мягкое затухание у краёв горизонтального scroll
+ *   контейнера через mask.
+ * -------------------------------------------------------------------------- */
+@keyframes scroll-progress-grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.scroll-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: hsl(var(--primary));
+  transform-origin: left center;
+  transform: scaleX(0);
+  z-index: 60;
+  pointer-events: none;
+  animation: scroll-progress-grow linear forwards;
+  animation-timeline: scroll(root);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-progress-bar {
+    display: none;
+  }
+}
+
+.scroll-edge-fade-x {
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    black 16px,
+    black calc(100% - 16px),
+    transparent 100%
+  );
+}
+
+/* --------------------------------------------------------------------------
+ * View Transitions API — MPA opt-in (Baseline Newly Available 2024)
+ *
+ * `navigation: auto` enables smooth cross-fade between full-page navigations
+ * (browser back/forward, hard refresh, <a href> navigations that produce a
+ * full document swap). Falls back silently in older browsers.
+ *
+ * NOTE: Next.js Link SPA navigation does NOT trigger this CSS rule — it
+ * needs JS-side `document.startViewTransition()` or React 19
+ * `unstable_ViewTransition`. See tracking issue for the pilot integration.
+ *
+ * `prefers-reduced-motion` guard prevents motion-sensitivity issues.
+ * -------------------------------------------------------------------------- */
+@view-transition {
+  navigation: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0ms !important;
+    animation-delay: 0ms !important;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   transitions.dev — portable, state/event-driven micro-transitions.
+   Tokens + snippets backing the shared/ui primitives (SuccessCheck,
+   AnimatedNumber, IconSwap) + the notification badge. Each block ships
+   its own `prefers-reduced-motion` guard — keep them.
+
+   These are deliberately event-driven (fire on a status change / user
+   action), NOT entrance-stagger with `animation-fill-mode: both` on a
+   re-rendering list — that pattern stuck cards transparent in #377.
+   ════════════════════════════════════════════════════════════════════ */
+:root {
+  /* Success check (10-success-check) */
+  --check-opacity-dur: 550ms;
+  --check-rotate-dur: 550ms;
+  --check-rotate-from: 80deg;
+  --check-bob-dur: 450ms;
+  --check-y-amount: 40px;
+  --check-blur-dur: 500ms;
+  --check-blur-from: 10px;
+  --check-path-dur: 550ms;
+  --check-path-delay: 80ms;
+  --check-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --check-ease-opacity: cubic-bezier(0.22, 1, 0.36, 1);
+  --check-ease-rotate: cubic-bezier(0.22, 1, 0.36, 1);
+  --check-ease-bob: cubic-bezier(0.34, 1.35, 0.64, 1);
+  --check-ease-path: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Number pop-in (02-number-pop-in) */
+  --digit-dur: 500ms;
+  --digit-distance: 8px;
+  --digit-stagger: 70ms;
+  --digit-blur: 2px;
+  --digit-ease: cubic-bezier(0.34, 1.45, 0.64, 1);
+  --digit-dir-x: 0;
+  --digit-dir-y: 1;
+  /* Notification badge (03-notification-badge) */
+  --badge-slide-dur: 260ms;
+  --badge-pop-dur: 500ms;
+  --badge-pop-close-dur: 180ms;
+  --badge-fade-dur: 400ms;
+  --badge-fade-close-dur: 180ms;
+  --badge-blur: 2px;
+  --badge-offset-x: -8.2px;
+  --badge-offset-y: 12.4px;
+  --badge-slide-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --badge-pop-ease: cubic-bezier(0.34, 1.36, 0.64, 1);
+  --badge-close-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  /* Icon swap (09-icon-swap) */
+  --icon-swap-dur: 200ms;
+  --icon-swap-blur: 2px;
+  --icon-swap-start-scale: 0.25;
+  --icon-swap-ease: ease-in-out;
+}
+
+/* ── Success check — appear-only celebration (verbatim 10-success-check).
+   Mount with data-state="in" at the moment of success so the icon fades +
+   rotates + un-blurs + Y-bobs and the stroke draws in. Resting before that
+   is opacity:0, so render it only once the action completes. */
+.t-success-check {
+  display: inline-block;
+  transform-origin: center;
+  opacity: 0;
+  will-change: transform, opacity, filter;
+}
+.t-success-check svg {
+  display: block;
+  overflow: visible;
+}
+.t-success-check svg path {
+  stroke-dasharray: 20;
+  stroke-dashoffset: 20;
+}
+.t-success-check[data-state="in"] {
+  animation:
+    t-check-fade var(--check-opacity-dur) var(--check-ease-opacity) forwards,
+    t-check-rotate var(--check-rotate-dur) var(--check-ease-rotate) forwards,
+    t-check-blur var(--check-blur-dur) var(--check-ease-out) forwards,
+    t-check-bob var(--check-bob-dur) var(--check-ease-bob) forwards;
+}
+.t-success-check[data-state="in"] svg path {
+  animation: t-check-draw var(--check-path-dur) var(--check-ease-path)
+    var(--check-path-delay, 0ms) forwards;
+}
+@keyframes t-check-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes t-check-rotate {
+  from {
+    transform: rotate(var(--check-rotate-from));
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+@keyframes t-check-blur {
+  from {
+    filter: blur(var(--check-blur-from));
+  }
+  to {
+    filter: blur(0);
+  }
+}
+@keyframes t-check-bob {
+  from {
+    translate: 0 var(--check-y-amount);
+  }
+  to {
+    translate: 0 0;
+  }
+}
+@keyframes t-check-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .t-success-check {
+    animation: none !important;
+    opacity: 1;
+  }
+  .t-success-check svg path {
+    animation: none !important;
+    stroke-dashoffset: 0 !important;
+  }
+}
+
+/* ── Number pop-in (verbatim 02-number-pop-in). Digits rest visible; adding
+   .is-animating replays the pop-in. AnimatedNumber toggles it on value change. */
+@keyframes t-digit-pop-in {
+  0% {
+    transform: translate(
+      calc(var(--digit-distance) * var(--digit-dir-x)),
+      calc(var(--digit-distance) * var(--digit-dir-y))
+    );
+    opacity: 0;
+    filter: blur(var(--digit-blur));
+  }
+  100% {
+    transform: translate(0, 0);
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+.t-digit-group {
+  display: inline-flex;
+  align-items: baseline;
+}
+.t-digit {
+  display: inline-block;
+}
+.t-digit-group.is-animating .t-digit {
+  /* Promote to a composite layer only while animating — idle numbers (the
+     common case, e.g. a rank that never changes) stay off the GPU. */
+  will-change: transform, opacity, filter;
+  animation: t-digit-pop-in var(--digit-dur) var(--digit-ease) both;
+}
+.t-digit-group.is-animating .t-digit[data-stagger="1"] {
+  animation-delay: var(--digit-stagger);
+}
+.t-digit-group.is-animating .t-digit[data-stagger="2"] {
+  animation-delay: calc(var(--digit-stagger) * 2);
+}
+@media (prefers-reduced-motion: reduce) {
+  .t-digit-group .t-digit {
+    animation: none !important;
+  }
+}
+
+/* ── Notification badge (03-notification-badge, anchor left to the caller).
+   The dot pops independently of the trigger so the bell never moves. */
+@keyframes t-badge-slide-in {
+  from {
+    transform: translate(var(--badge-offset-x), var(--badge-offset-y));
+  }
+  to {
+    transform: translate(0, 0);
+  }
+}
+.t-badge {
+  pointer-events: none;
+  will-change: transform;
+}
+.t-badge[data-open="true"] {
+  animation: t-badge-slide-in var(--badge-slide-dur) var(--badge-slide-ease);
+}
+.t-badge-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform-origin: center;
+  transform: scale(1);
+  opacity: 1;
+  filter: blur(0);
+  transition:
+    transform var(--badge-pop-dur) var(--badge-pop-ease),
+    opacity var(--badge-fade-dur) var(--badge-pop-ease),
+    filter var(--badge-pop-dur) var(--badge-pop-ease);
+  will-change: transform, opacity, filter;
+}
+.t-badge[data-open="false"] .t-badge-dot {
+  transform: scale(0);
+  opacity: 0;
+  filter: blur(var(--badge-blur));
+  transition:
+    transform var(--badge-pop-close-dur) var(--badge-close-ease),
+    opacity var(--badge-fade-close-dur) var(--badge-close-ease),
+    filter var(--badge-pop-close-dur) var(--badge-close-ease);
+}
+@media (prefers-reduced-motion: reduce) {
+  .t-badge,
+  .t-badge-dot {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ── Icon swap (adapted from 09-icon-swap — generalised from data-state a/b
+   to an N-way crossfade driven by `.is-active`, so a tri-state theme toggle
+   and a 2-state bookmark can share one component). Stacked in one grid cell;
+   the active icon fades in, the rest fade out with blur + scale. */
+.t-icon-swap {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+}
+.t-icon-swap .t-icon {
+  grid-area: 1 / 1;
+  display: inline-flex;
+  opacity: 0;
+  filter: blur(var(--icon-swap-blur));
+  transform: scale(var(--icon-swap-start-scale));
+  transition:
+    opacity var(--icon-swap-dur) var(--icon-swap-ease),
+    filter var(--icon-swap-dur) var(--icon-swap-ease),
+    transform var(--icon-swap-dur) var(--icon-swap-ease);
+  will-change: opacity, filter, transform;
+}
+.t-icon-swap .t-icon.is-active {
+  opacity: 1;
+  filter: blur(0);
+  transform: scale(1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .t-icon-swap .t-icon {
+    transition: none !important;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   Trainer design system (#568) — material cards + mount cascade.
+   Single source for the trainer's "material card" surface (hairline
+   border + faint top sheen, composes with any bg / status tint) and the
+   cascade-in used on /trainer/stats and across the hub.
+
+   Entrance is mount-only via @starting-style (NOT @keyframes +
+   animation-fill-mode: both — that pattern stuck cards transparent on
+   re-render, #377). @starting-style fires once on first render and rests
+   at the final state, so re-renders never re-trigger it. Reduced-motion
+   guard included (see frontend-fsd convention).
+   ════════════════════════════════════════════════════════════════════ */
+:root {
+  --t-fill-dur: 700ms; /* mastery ring / progress-bar fill */
+  --t-enter-dur: 420ms; /* card cascade-in */
+  --t-enter-rise: 10px;
+  --t-enter-stagger: 45ms;
+  --t-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Material card: hairline border + radius + faint status-tinted top sheen.
+   Deliberately does NOT set background — compose with `bg-card` or the
+   status surface from getTopicStatusSurface() so tints don't fight. Tint the
+   sheen via --t-tint (defaults to a neutral foreground wash). */
+.t-card {
+  position: relative;
+  isolation: isolate;
+  border: 1px solid color-mix(in oklch, var(--border) 65%, transparent);
+  border-radius: var(--radius-lg);
+}
+.t-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklch, var(--t-tint, var(--foreground)) 5%, transparent),
+    transparent 55%
+  );
+  pointer-events: none;
+}
+
+/* Cascade-in entrance. Add `t-enter` to each item and set --t-i to its index
+   for a staggered rise. Mount-only (see block header) — safe on lists. */
+.t-enter {
+  opacity: 1;
+  translate: 0 0;
+  transition:
+    opacity var(--t-enter-dur) var(--t-ease-out),
+    translate var(--t-enter-dur) var(--t-ease-out);
+  transition-delay: calc(var(--t-i, 0) * var(--t-enter-stagger));
+}
+@starting-style {
+  .t-enter {
+    opacity: 0;
+    translate: 0 var(--t-enter-rise);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .t-enter {
+    transition-duration: 1ms;
+    transition-delay: 0ms;
+    translate: none;
+  }
+  @starting-style {
+    .t-enter {
+      translate: none;
+    }
+  }
+}
+
+/* ── Price swap (#595) — lightweight fade+lift when the pricing hero swaps the
+   active term (Навсегда ⇄ На месяц). Re-mounted via `key={term}` so the
+   keyframe replays on each toggle. Reduced-motion shows the new price instantly. */
+@keyframes price-swap-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.price-swap {
+  animation: price-swap-in 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+@media (prefers-reduced-motion: reduce) {
+  .price-swap {
+    animation: none !important;
+  }
+}
+
+/* ── Timer urgency pulse (#614 E) — last ≤15s of a mock-interview countdown.
+   Functional cue (time almost up), NOT decoration. Animates opacity only
+   (compositor-thread, no layout). Looping `infinite` is intentional and safe:
+   it is steady-state on a live element (no @starting-style / animation-fill-mode
+   that stuck cards transparent in #377), and the runner stops rendering the
+   timer once the session is complete. Reduced-motion drops the pulse entirely —
+   the red colour tier already conveys urgency without motion. */
+@keyframes t-timer-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+.t-timer-pulse {
+  animation: t-timer-pulse 1s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .t-timer-pulse {
+    animation: none;
+  }
+}

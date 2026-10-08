@@ -1,0 +1,11 @@
+[Unit]
+Description=Validate a fresh offsite GitLab data backup weekly
+
+[Timer]
+OnCalendar=Sun *-*-* 05:30:00 UTC
+RandomizedDelaySec=15m
+Persistent=true
+Unit=gitlab-restore-drill.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,113 @@
+{
+  "uid": "logs-explorer",
+  "title": "Logs Explorer",
+  "tags": ["platform", "logs"],
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "graphTooltip": 1,
+  "time": { "from": "now-1h", "to": "now" },
+  "refresh": "30s",
+  "timepicker": {
+    "refresh_intervals": ["10s", "30s", "1m", "5m", "15m", "30m", "1h"]
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "label": "Service",
+        "type": "query",
+        "datasource": { "type": "loki", "uid": "loki" },
+        "query": { "label": "compose_service", "type": 1, "stream": "" },
+        "refresh": 1,
+        "includeAll": true,
+        "multi": true,
+        "sort": 1,
+        "current": { "text": "All", "value": "$__all" }
+      },
+      {
+        "name": "level",
+        "label": "Level",
+        "type": "custom",
+        "query": "All : .+,Debug,Information,Warning,Error,Fatal",
+        "includeAll": false,
+        "multi": false,
+        "current": { "text": "All", "value": ".+" }
+      },
+      {
+        "name": "search",
+        "label": "Search",
+        "type": "textbox",
+        "current": { "text": "", "value": "" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Log volume by service",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (compose_service) (count_over_time({compose_service=~\"$service\"}[$__auto]))",
+          "legendFormat": "{{compose_service}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "lineWidth": 1, "fillOpacity": 25, "stacking": { "mode": "normal" }, "gradientMode": "none" },
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max"] } }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Errors + Warnings by service",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (compose_service) (count_over_time({compose_service=~\"$service\", level=~\"Error|Fatal|Warning\"}[$__auto]))",
+          "legendFormat": "{{compose_service}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "lineWidth": 2, "fillOpacity": 15 },
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max", "sum"] } }
+    },
+    {
+      "id": 3,
+      "type": "logs",
+      "title": "Logs",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 18, "w": 24, "x": 0, "y": 7 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{compose_service=~\"$service\"} | level =~ \"$level\" |~ \"(?i)$search\"",
+          "maxLines": 1000
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "dedupStrategy": "none",
+        "sortOrder": "Descending"
+      }
+    }
+  ]
+}

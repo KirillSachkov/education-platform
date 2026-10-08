@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\Core\Core.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Framework\Framework.csproj" />
+    <PackageReference Include="WolverineFx.EntityFrameworkCore" />
+    <PackageReference Include="WolverineFx.RabbitMQ" />
+    <PackageReference Include="WolverineFx.Postgresql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\AuthService\src\AuthService.Contracts\AuthService.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\EducationContentService\src\EducationContentService.Contracts\EducationContentService.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Authentication\Authentication.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Common\Common.csproj" />
+    <ProjectReference Include="..\..\..\Shared\ContentAccess\ContentAccess\ContentAccess.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Messaging\RabbitMqMessaging\RabbitMqMessaging.csproj" />
+    <ProjectReference Include="..\CommentService.Contracts\CommentService.Contracts.csproj" />
+    <ProjectReference Include="..\CommentService.Domain\CommentService.Domain.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Database\Database.csproj" />
+  </ItemGroup>
+</Project>

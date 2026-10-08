@@ -1,0 +1,6 @@
+# The versioned Inside skill snapshot preserves upstream formatting byte-for-byte.
+.inside-harness/skills/** whitespace=-trailing-space,-blank-at-eof
+# Third-party license texts retain the exact upstream or embedded font notice bytes.
+THIRD_PARTY_LICENSES/*.txt whitespace=-trailing-space,-blank-at-eof
+THIRD_PARTY_LICENSES/SkiaSharp*.txt -text whitespace=cr-at-eol,-trailing-space,-blank-at-eof
+frontend/public/fonts/OFL.txt whitespace=-trailing-space,-blank-at-eof

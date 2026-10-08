@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Dapper" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Npgsql" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="WolverineFx.EntityFrameworkCore" />
+    <PackageReference Include="WolverineFx.Postgresql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AccessService.Core\AccessService.Core.csproj" />
+    <ProjectReference Include="..\AccessService.Domain\AccessService.Domain.csproj" />
+    <ProjectReference Include="..\..\..\Shared\DomainEvents\DomainEvents.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Database\Database.csproj" />
+  </ItemGroup>
+
+</Project>

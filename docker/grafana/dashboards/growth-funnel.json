@@ -1,0 +1,222 @@
+{
+  "annotations": { "list": [] },
+  "description": "Server-authoritative growth funnel: level-test fetch → anonymous submission → claim after authentication → checkout → paid order. Browser acquisition events and UTMs remain in Yandex Metrica; Prometheus panels intentionally cover only backend-confirmed actions.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Level tests opened · 24h",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(increase(level_test_fetched_total[24h])) or vector(0)",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false },
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 } }
+    },
+    {
+      "id": 2,
+      "title": "Anonymous tests submitted · 24h",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(increase(level_test_submitted_total{subject=\"anonymous\"}[24h])) or vector(0)",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false },
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 } }
+    },
+    {
+      "id": 3,
+      "title": "Level-test claims · 24h",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(increase(level_test_claimed_total[24h])) or vector(0)",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false },
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 } }
+    },
+    {
+      "id": 4,
+      "title": "Paid orders · 24h",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(increase(payments_order_paid_total[24h])) or vector(0)",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false },
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "blue", "value": null }]
+          }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Open → anonymous submit · 24h",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Windowed approximation, not a cohort conversion. A user may open or submit outside the selected 24h window.",
+      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 4 },
+      "targets": [
+        {
+          "expr": "100 * (sum(increase(level_test_submitted_total{subject=\"anonymous\"}[24h])) or vector(0)) / clamp_min(sum(increase(level_test_fetched_total[24h])) or vector(0), 1)",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "fieldConfig": { "defaults": { "unit": "percent", "decimals": 1, "min": 0 } }
+    },
+    {
+      "id": 6,
+      "title": "Anonymous submit → claim · 24h",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Windowed approximation, not a cohort conversion. Claim is counted only after the backend attaches an anonymous attempt to the authenticated user.",
+      "gridPos": { "h": 4, "w": 8, "x": 8, "y": 4 },
+      "targets": [
+        {
+          "expr": "100 * (sum(increase(level_test_claimed_total[24h])) or vector(0)) / clamp_min(sum(increase(level_test_submitted_total{subject=\"anonymous\"}[24h])) or vector(0), 1)",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "fieldConfig": { "defaults": { "unit": "percent", "decimals": 1, "min": 0 } }
+    },
+    {
+      "id": 7,
+      "title": "Checkout → paid · 24h",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Windowed approximation based on backend-created orders and backend-confirmed PAID transitions.",
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 4 },
+      "targets": [
+        {
+          "expr": "100 * (sum(increase(payments_order_paid_total[24h])) or vector(0)) / clamp_min(sum(increase(payments_order_created_total[24h])) or vector(0), 1)",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "fieldConfig": { "defaults": { "unit": "percent", "decimals": 1, "min": 0 } }
+    },
+    {
+      "id": 8,
+      "title": "Level-test activity",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "sum(increase(level_test_fetched_total[1h]))",
+          "legendFormat": "opened",
+          "refId": "A"
+        },
+        {
+          "expr": "sum by (subject) (increase(level_test_submitted_total[1h]))",
+          "legendFormat": "submitted · {{subject}}",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(increase(level_test_claimed_total[1h]))",
+          "legendFormat": "claimed",
+          "refId": "C"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short", "decimals": 0, "custom": { "drawStyle": "line" } }
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "id": 9,
+      "title": "Order outcomes",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        {
+          "expr": "sum(increase(payments_order_created_total[1h]))",
+          "legendFormat": "created",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(increase(payments_order_paid_total[1h]))",
+          "legendFormat": "paid",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(increase(payments_order_failed_total[1h]))",
+          "legendFormat": "failed",
+          "refId": "C"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short", "decimals": 0, "custom": { "drawStyle": "line" } }
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 39,
+  "tags": ["growth-funnel", "business", "level-test", "billing"],
+  "templating": { "list": [] },
+  "time": { "from": "now-7d", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Growth Funnel",
+  "uid": "growth-funnel",
+  "version": 1,
+  "weekStart": ""
+}

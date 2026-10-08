@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>SharedKernel</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CSharpFunctionalExtensions" />
+  </ItemGroup>
+</Project>

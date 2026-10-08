@@ -1,0 +1,195 @@
+# Global AnalyzerConfig — higher-priority source for analyzer severity
+# than .editorconfig. Keep .editorconfig for code style only (csharp_*,
+# dotnet_style_*, naming conventions). Keep dotnet_diagnostic.* here.
+#
+# Auto-discovered by the SDK when named `.globalconfig` at a project root.
+# Do NOT register via <GlobalAnalyzerConfigFiles/> — duplicates silently
+# drop severity overrides.
+#
+# Policy: every rule is either an error (fixed at every call site) or
+# disabled (none) with a documented reason. No open-ended "suggestion"
+# rules — those rot into background noise.
+
+is_global = true
+
+# ==============================================================================
+# Category-wide severity
+# ==============================================================================
+dotnet_analyzer_diagnostic.category-security.severity = error
+
+# ==============================================================================
+# .NET CA rules — disabled with reasons
+# ==============================================================================
+
+# Domain terms conflict with generic type param names
+dotnet_diagnostic.CA1716.severity = none
+# Underscore in test method names (tests also have NoWarn)
+dotnet_diagnostic.CA1707.severity = none
+# IComparable overrides not needed for value objects
+dotnet_diagnostic.CA1036.severity = none
+# Nullable reference types handle null checks
+dotnet_diagnostic.CA1062.severity = none
+# .Any() vs .Count > 0 — marginal, noisy
+dotnet_diagnostic.CA1860.severity = none
+# Enum zero value conflicts with domain enums
+dotnet_diagnostic.CA1008.severity = none
+# char overload for StartsWith — minor, very noisy
+dotnet_diagnostic.CA1873.severity = none
+# Concrete type suggestion conflicts with DI patterns
+dotnet_diagnostic.CA1859.severity = none
+# Public types needed for cross-project access
+dotnet_diagnostic.CA1515.severity = none
+# ConfigureAwait irrelevant for ASP.NET Core
+dotnet_diagnostic.CA2007.severity = none
+# LoggerMessage source gen — valuable but too noisy to migrate now
+dotnet_diagnostic.CA1848.severity = none
+# False positives with DI-instantiated classes
+dotnet_diagnostic.CA1812.severity = none
+# Nested types — vertical slice pattern (Command/Handler in one file)
+dotnet_diagnostic.CA1034.severity = none
+# Param naming conflicts with domain terms
+dotnet_diagnostic.CA1725.severity = none
+# URI string params — codebase uses strings for URLs
+dotnet_diagnostic.CA1056.severity = none
+dotnet_diagnostic.CA1054.severity = none
+# String literals — error messages in Russian by convention
+dotnet_diagnostic.CA1303.severity = none
+# Static on generic types — Result<T> pattern
+dotnet_diagnostic.CA1000.severity = none
+# Pass URI instead of string — same as CA1056
+dotnet_diagnostic.CA2234.severity = none
+# ToUpperInvariant vs ToLower — not security-relevant here
+dotnet_diagnostic.CA1308.severity = none
+# Mark as static — conflicts with DI, testing, and handler patterns
+dotnet_diagnostic.CA1822.severity = none
+# Constant arrays as args — marginal perf, noisy in test-like patterns
+dotnet_diagnostic.CA1861.severity = none
+# "Raise" naming for domain events, not .NET events
+dotnet_diagnostic.CA1030.severity = none
+# Empty marker interfaces used in DDD
+dotnet_diagnostic.CA1040.severity = none
+# Domain entity "Collection" is a legitimate name, not a .NET collection type
+dotnet_diagnostic.CA1711.severity = none
+# General catch — intentional in health checks, token providers, infra
+dotnet_diagnostic.CA1031.severity = none
+# Dispose — many false positives with DI-managed lifetimes
+dotnet_diagnostic.CA2000.severity = none
+# Complex body in route handler — vertical slice pattern
+dotnet_diagnostic.ASP0020.severity = none
+# Unused params — framework-required handler/endpoint signatures (CancellationToken, HttpContext, ...)
+dotnet_diagnostic.IDE0060.severity = none
+
+dotnet_code_quality.ca1802.api_surface = private, internal
+
+# ==============================================================================
+# Meziantou.Analyzer — MA rules
+# ==============================================================================
+
+# ConfigureAwait not needed in ASP.NET Core
+dotnet_diagnostic.MA0004.severity = none
+# File name / type name matching — conflicts with vertical slice (multiple types per file)
+dotnet_diagnostic.MA0048.severity = none
+dotnet_diagnostic.MA0049.severity = none
+# Method length — vertical slice handlers are intentionally long, advisory metric doesn't fit
+dotnet_diagnostic.MA0051.severity = none
+# Sealed classes — too aggressive for DDD entities and EF DbContexts
+dotnet_diagnostic.MA0053.severity = none
+# TODO/FIXME/HACK comments — signposts, not defects
+dotnet_diagnostic.MA0026.severity = none
+# StringComparison — important for correctness
+dotnet_diagnostic.MA0001.severity = warning
+# Use string.Equals — important for correctness
+dotnet_diagnostic.MA0006.severity = warning
+# IFormatProvider — false positives on Guid/enum ToString
+dotnet_diagnostic.MA0011.severity = none
+# IEqualityComparer<string> — false-positive-heavy on Dictionary<string, X> with
+# hardcoded ASCII keys (MIME types, route constants). MA0001 (StringComparison
+# on .Equals/.Contains) already catches the correctness-relevant cases.
+dotnet_diagnostic.MA0002.severity = none
+# StructLayoutAttribute on structs — not needed for record structs / simple DTOs
+dotnet_diagnostic.MA0008.severity = none
+# Regex timeout — audited; no untrusted-input regexes in hot paths
+dotnet_diagnostic.MA0009.severity = none
+# Prefer collection abstraction — too noisy, internal code uses concrete types
+dotnet_diagnostic.MA0016.severity = none
+# NotImplementedException — used as TODO markers in stubs
+dotnet_diagnostic.MA0025.severity = none
+# Method overrides should not change default values — conflicts with framework patterns
+dotnet_diagnostic.MA0061.severity = none
+# Implicit culture-sensitive ToString — too aggressive for non-user-facing code
+dotnet_diagnostic.MA0132.severity = none
+
+# ==============================================================================
+# Roslynator — RCS rules
+# ==============================================================================
+
+# ConfigureAwait — not needed for ASP.NET Core
+dotnet_diagnostic.RCS1090.severity = none
+# Add braces — already enforced by csharp_prefer_braces
+dotnet_diagnostic.RCS1007.severity = none
+# Use explicit type instead of var — conflicts with var preferences in this project
+dotnet_diagnostic.RCS1012.severity = none
+
+# ==============================================================================
+# AsyncFixer
+# ==============================================================================
+
+# Unnecessary async/await — removing async changes exception behavior in middleware/interfaces
+dotnet_diagnostic.AsyncFixer01.severity = none
+
+# ==============================================================================
+# SonarAnalyzer — S rules
+# ==============================================================================
+
+# Constants returned from methods — noisy on route constants, connection string names
+dotnet_diagnostic.S3400.severity = none
+# TODO / FIXME / HACK tracking — covered by MA0026
+dotnet_diagnostic.S1135.severity = none
+# Unused private member — MA0076 covers this; Sonar trips on EF shadow props, DI-only classes
+dotnet_diagnostic.S1144.severity = none
+# Unused parameter — framework-required handler/endpoint signatures
+dotnet_diagnostic.S1172.severity = none
+# Redundant default initializer — stylistic, not worth a break
+dotnet_diagnostic.S3604.severity = none
+# Loops should be simplified (LINQ) — hot paths sometimes benefit from explicit loops
+dotnet_diagnostic.S3267.severity = none
+# Unassigned auto-property — false positive for Dapper DTOs (set via reflection)
+dotnet_diagnostic.S3459.severity = none
+# Method overrides must re-declare default values — matched by MA0061 = none
+dotnet_diagnostic.S1006.severity = none
+# Parameter names must match base declaration — framework-specified signatures
+dotnet_diagnostic.S927.severity = none
+# ILogger<T> enclosing type — flagged on 30+ call sites where the logger is
+# injected into a service that also creates ad-hoc ILogger<Other> for domain
+# events (e.g., ILogger<AuthAudit>). Keeping those explicit source contexts
+# is more valuable than the diagnostic; readers rely on the generic arg to
+# filter Loki streams.
+dotnet_diagnostic.S6672.severity = none
+# Nested ternary — ~22 call sites, mostly in SQL-row → DTO projections
+# (leaderboard, search lookups) where the ternary mirrors the underlying
+# CASE expression. Extracting a helper would fragment the projection.
+dotnet_diagnostic.S3358.severity = none
+# Redundant Boolean literal — idiomatic explicit comparisons preferred clean; fixed at every site
+dotnet_diagnostic.S1125.severity = error
+# Collapsible if — fixed where safe; explicit guard clauses kept when semantically distinct
+dotnet_diagnostic.S1066.severity = error
+# Extract nested block into separate method — fixed all violations
+dotnet_diagnostic.S1199.severity = error
+# Empty marker classes — used for ILogger<T> structured-logging source contexts (AuthAudit)
+dotnet_diagnostic.S2094.severity = none
+# Catch-log-rethrow — legitimate in entry points and BackgroundService hosts
+dotnet_diagnostic.S2139.severity = none
+# FirstOrDefaultAsync — false positive on DbContext.X.Local.AsQueryable() (in-memory)
+dotnet_diagnostic.S6966.severity = none
+# Serilog template placeholder order — fix at every site
+dotnet_diagnostic.S6673.severity = error
+# Empty catch / empty code block — fix at every site; must have a comment if intentionally empty
+dotnet_diagnostic.S108.severity = error
+# Hardcoded URIs — external provider endpoints (GitHub API, Kinescope, Typesense) are legit constants
+dotnet_diagnostic.S1075.severity = none
+# Empty method body — EF Core Down() in no-op migrations, partial-method stubs
+dotnet_diagnostic.S1186.severity = none
+# Floating-point equality — Kinescope doubles are stable seconds; audited
+dotnet_diagnostic.S1244.severity = none
+# S6667 already fixed (logging in catch passes exception)
+dotnet_diagnostic.S6667.severity = error

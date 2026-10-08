@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="coverlet.collector"/>
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk"/>
+        <PackageReference Include="NSubstitute" />
+        <PackageReference Include="Respawn" />    <ProjectReference Include="..\..\..\Shared\Core\Core.csproj" />
+        <PackageReference Include="Testcontainers.PostgreSql" />
+        <PackageReference Include="Testcontainers.RabbitMq" />
+        <PackageReference Include="xunit"/>
+        <PackageReference Include="xunit.runner.visualstudio"/>
+        
+    </ItemGroup>
+
+    <ItemGroup>
+        <Using Include="Xunit"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\src\ProgressService.Web\ProgressService.Web.csproj" />
+      <ProjectReference Include="..\..\..\Shared\DomainEvents\DomainEvents.csproj" />
+      <ProjectReference Include="..\..\..\Shared\ContentAccess\ContentAccess.TestSupport\ContentAccess.TestSupport.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Features\" />
+    </ItemGroup>
+
+
+</Project>

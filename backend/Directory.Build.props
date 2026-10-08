@@ -1,0 +1,67 @@
+<Project>
+  <!-- Common properties for ALL backend projects -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>All</AnalysisMode>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <CodeAnalysisTreatWarningsAsErrors>true</CodeAnalysisTreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AllowMissingPrunePackageData>true</AllowMissingPrunePackageData>
+    <!--
+      Globally exclude bin/obj from default items. Replaces per-project
+      <Content Remove="bin\**\*" /> / <None Remove="obj\**\*" /> blocks
+      and the Dockerfile `mkdir bin/Debug obj/Debug` workaround the old
+      per-project pattern required for containerized restore.
+    -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);**/bin/**;**/obj/**</DefaultItemExcludes>
+  </PropertyGroup>
+
+  <!-- Analyzer packages: applied to ALL projects -->
+  <ItemGroup>
+    <PackageReference Include="Roslynator.Analyzers">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Meziantou.Analyzer">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="AsyncFixer">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="SonarAnalyzer.CSharp">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <!-- Banned API symbols file -->
+  <ItemGroup>
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)BannedSymbols.txt" Condition="Exists('$(MSBuildThisFileDirectory)BannedSymbols.txt')" />
+  </ItemGroup>
+
+  <!--
+    backend/.globalconfig is picked up automatically by the SDK — no explicit
+    <GlobalAnalyzerConfigFiles/> item is needed (adding one causes duplicates
+    which can silently suppress severity overrides).
+  -->
+
+  <!-- Test project relaxation -->
+  <PropertyGroup Condition="'$(IsTestProject)' == 'true' OR $(MSBuildProjectName.EndsWith('Tests')) OR $(MSBuildProjectName.EndsWith('IntegrationTests'))">
+    <NoWarn>$(NoWarn);RS0030;RS0031</NoWarn>
+    <NoWarn>$(NoWarn);CA1707</NoWarn>
+    <NoWarn>$(NoWarn);CA1515;CA1812;CA1051</NoWarn>
+    <NoWarn>$(NoWarn);MA0004;MA0006;MA0025;MA0026;MA0048;MA0051;MA0053;MA0062;MA0076</NoWarn>
+    <!-- Sonar rules relaxed for tests: identical theory impls, smoke tests, redundant explicit interfaces. -->
+    <NoWarn>$(NoWarn);S4144;S2925;S125;S1481;S2325;S2699;S1939</NoWarn>
+  </PropertyGroup>
+</Project>

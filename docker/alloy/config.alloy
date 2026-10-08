@@ -1,0 +1,114 @@
+// Grafana Alloy config (RIVER syntax). Replaces deprecated Promtail.
+//
+// Что делает:
+//   1. Подписывается на Docker daemon, читает stdout/stderr всех контейнеров.
+//   2. Прикрепляет labels: container, image, compose_service.
+//   3. Извлекает level/severity из тела структурированных логов (Serilog → JSON).
+//   4. Отправляет в Loki.
+//
+// Документация: https://grafana.com/docs/alloy/latest/
+
+// ── Discovery: Docker containers ─────────────────────────────────────────────
+discovery.docker "containers" {
+    host             = "unix:///var/run/docker.sock"
+    refresh_interval = "5s"
+}
+
+// ── Label rewriting ──────────────────────────────────────────────────────────
+discovery.relabel "containers" {
+    targets = discovery.docker.containers.targets
+
+    rule {
+        source_labels = ["__meta_docker_container_name"]
+        regex         = "/(.*)"
+        target_label  = "container"
+    }
+    rule {
+        source_labels = ["__meta_docker_container_log_stream"]
+        target_label  = "logstream"
+    }
+    rule {
+        source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+        target_label  = "compose_service"
+    }
+    rule {
+        source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+        target_label  = "compose_project"
+    }
+}
+
+// ── Source: Docker container logs ────────────────────────────────────────────
+loki.source.docker "containers" {
+    host          = "unix:///var/run/docker.sock"
+    targets       = discovery.relabel.containers.output
+    forward_to    = [loki.process.parse.receiver]
+    relabel_rules = discovery.relabel.containers.rules
+}
+
+// ── Processing: extract log level (для быстрого поиска {level="error"}) ──────
+loki.process "parse" {
+    forward_to = [loki.write.local.receiver]
+
+    // Serilog JSON: {"@t":"...","@l":"Information","@m":"..."}.
+    stage.json {
+        expressions = {
+            level     = "\"@l\"",
+            timestamp = "\"@t\"",
+            message   = "\"@m\"",
+            trace_id  = "TraceId",
+        }
+    }
+
+    // Serilog Console (`Level:u3`) format: `[10:50:12.357 INF] [SourceContext] msg`.
+    // Capture 3-letter abbrev (VRB/DBG/INF/WRN/ERR/FTL), затем template stage
+    // расширяет до full name (Verbose/Debug/Information/Warning/Error/Fatal),
+    // чтобы дашборды могли фильтровать `level=~"Error|Fatal"` как в Grafana UI.
+    stage.regex {
+        expression = "^\\[\\d{2}:\\d{2}:\\d{2}\\.\\d{3} (?P<level_abbr>VRB|DBG|INF|WRN|ERR|FTL)\\]"
+    }
+
+    stage.template {
+        source   = "level"
+        template = "{{ if eq .level_abbr \"VRB\" }}Verbose{{ else if eq .level_abbr \"DBG\" }}Debug{{ else if eq .level_abbr \"INF\" }}Information{{ else if eq .level_abbr \"WRN\" }}Warning{{ else if eq .level_abbr \"ERR\" }}Error{{ else if eq .level_abbr \"FTL\" }}Fatal{{ end }}"
+    }
+
+    // Postgres slow log → отдельный pseudo-level.
+    stage.match {
+        selector = "{compose_service=\"postgres\"}"
+        stage.regex {
+            expression = "duration: (?P<duration_ms>\\d+\\.\\d+) ms"
+        }
+        stage.labels {
+            values = { duration_ms = "" }
+        }
+    }
+
+    // Nginx access log: вытащим status, method, path.
+    stage.match {
+        selector = "{compose_service=\"nginx\"}"
+        stage.regex {
+            expression = "^(?P<remote_addr>\\S+) \\S+ \\S+ \\[\\S+ \\S+\\] \"(?P<method>\\S+) (?P<path>\\S+) \\S+\" (?P<status>\\d+)"
+        }
+        stage.labels {
+            values = {
+                method = "",
+                status = "",
+            }
+        }
+    }
+
+    // Финально — уровень в label.
+    stage.labels {
+        values = { level = "" }
+    }
+}
+
+// ── Sink: Loki ───────────────────────────────────────────────────────────────
+loki.write "local" {
+    endpoint {
+        url = "http://loki:3100/loki/api/v1/push"
+    }
+    external_labels = {
+        cluster = sys.env("CLUSTER_NAME"),
+    }
+}

@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
+    <ProjectReference Include="..\..\..\Shared\Framework\Framework.csproj" />
+    <PackageReference Include="Scalar.AspNetCore" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\Authentication\Authentication.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Observability\Observability.csproj" />
+    <ProjectReference Include="..\MaterialProcessingService.Core\MaterialProcessingService.Core.csproj" />
+    <ProjectReference Include="..\MaterialProcessingService.Domain\MaterialProcessingService.Domain.csproj" />
+    <ProjectReference Include="..\MaterialProcessingService.Infrastructure.FFmpeg\MaterialProcessingService.Infrastructure.FFmpeg.csproj" />
+    <ProjectReference Include="..\MaterialProcessingService.Infrastructure.AI\MaterialProcessingService.Infrastructure.AI.csproj" />
+    <ProjectReference Include="..\MaterialProcessingService.Infrastructure.Postgres\MaterialProcessingService.Infrastructure.Postgres.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\..\..\Shared\Observability\serilog*.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

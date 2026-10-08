@@ -1,0 +1,101 @@
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 5s
+    send_batch_size: 1024
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 256
+    spike_limit_mib: 64
+  resource:
+    attributes:
+      - key: deployment.environment
+        value: production
+        action: upsert
+  filter/noise:
+    error_mode: ignore
+    traces:
+      span:
+        - 'attributes["url.path"] == "/health"'
+        - 'attributes["http.route"] == "/health"'
+        - 'attributes["url.path"] == "/metrics"'
+    metrics:
+      metric:
+        - 'HasAttrOnDatapoint("http.route", "/health")'
+        - 'HasAttrOnDatapoint("url.path", "/health")'
+
+  # Tail-based sampling: ALL errors + ALL slow + 10% rest.
+  # Tuned для single-server prod: 5000 traces buffer (~50 MB), 30 traces/sec
+  # expected — соответствует малой и средней нагрузке. На рост — увеличить
+  # num_traces (1 trace ≈ 10 KB).
+  tail_sampling:
+    decision_wait: 10s
+    num_traces: 5000
+    expected_new_traces_per_sec: 30
+    policies:
+      - name: errors
+        type: status_code
+        status_code:
+          status_codes: [ERROR]
+      - name: slow
+        type: latency
+        latency:
+          threshold_ms: 1000
+      - name: probabilistic
+        type: probabilistic
+        probabilistic:
+          sampling_percentage: 10
+
+exporters:
+  # Traces -> Tempo
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+    sending_queue:
+      enabled: true
+      num_consumers: 4
+      queue_size: 500
+
+  # Metrics -> Prometheus (scraped via /metrics)
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    resource_to_telemetry_conversion:
+      enabled: true
+
+# Логи через OTLP сюда НЕ ходят — Serilog пишет в Console (stdout), Alloy
+# собирает stdout всех Docker-контейнеров и пушит в Loki напрямую. Это ловит
+# и app-логи (.NET сервисы), и infra (nginx, postgres, redis), и переживает
+# крэши процесса (stdout сохраняется Docker'ом).
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, filter/noise, tail_sampling, batch]
+      exporters: [otlp/tempo]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, filter/noise, batch]
+      exporters: [prometheus]
+
+  telemetry:
+    logs:
+      level: warn
+    metrics:
+      address: 0.0.0.0:8888

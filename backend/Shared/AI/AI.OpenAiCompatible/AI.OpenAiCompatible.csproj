@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Shared.AI.OpenAiCompatible</RootNamespace>
+    <NoWarn>$(NoWarn);OPENAI001</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AI\AI.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Http" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+    <PackageReference Include="OpenAI" />
+    <PackageReference Include="SharpToken" />
+    <PackageReference Include="JsonSchema.Net" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,129 @@
+{
+  "uid": "trainer-stats",
+  "title": "Trainer stats",
+  "tags": ["trainer", "platform", "business"],
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "graphTooltip": 1,
+  "time": { "from": "now-30d", "to": "now" },
+  "refresh": "",
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "Использование тренажёра",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Сессии в день (по режиму)",
+      "description": "Стартованные training-сессии по дням, разрез по режиму (DRILL / LEARN / MOCK). Источник — trainer.training_sessions.started_at.",
+      "datasource": { "type": "postgres", "uid": "education-postgres" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 1 },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "editorMode": "code",
+          "rawSql": "SELECT date_trunc('day', started_at) AS time, mode AS metric, count(*) AS value FROM trainer.training_sessions WHERE $__timeFilter(started_at) GROUP BY 1, 2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "min": 0, "custom": { "drawStyle": "bars", "stacking": { "mode": "normal" } } } }
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Активные пользователи в день",
+      "description": "Уникальные user_id, стартовавшие хотя бы одну сессию за день. Источник — trainer.training_sessions.",
+      "datasource": { "type": "postgres", "uid": "education-postgres" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 1 },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "editorMode": "code",
+          "rawSql": "SELECT date_trunc('day', started_at) AS time, count(DISTINCT user_id) AS \"активные пользователи\" FROM trainer.training_sessions WHERE $__timeFilter(started_at) GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "min": 0 } }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Доля завершённых сессий",
+      "description": "COMPLETED / стартованных за день. Сигнал вовлечённости — добивают ли студенты сессию до конца. Источник — trainer.training_sessions.status.",
+      "datasource": { "type": "postgres", "uid": "education-postgres" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 9 },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "editorMode": "code",
+          "rawSql": "SELECT date_trunc('day', started_at) AS time, count(*) FILTER (WHERE status = 'COMPLETED')::float / NULLIF(count(*), 0) AS \"доля завершённых\" FROM trainer.training_sessions WHERE $__timeFilter(started_at) GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1 } }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Средняя точность ответов в день",
+      "description": "Средний score_percent оценённых item'ов по дню ответа (0–100). Авто-грейд choice/exact + AI-оценённые открытые; PENDING/без балла не в среднем. Источник — trainer.training_session_items.",
+      "datasource": { "type": "postgres", "uid": "education-postgres" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 9 },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "editorMode": "code",
+          "rawSql": "SELECT date_trunc('day', answered_at) AS time, avg(score_percent) AS \"средняя точность\" FROM trainer.training_session_items WHERE $__timeFilter(answered_at) AND score_percent IS NOT NULL GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 } }
+    },
+    {
+      "id": 6,
+      "type": "row",
+      "title": "AI-расходы",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 17 },
+      "collapsed": false
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "AI-стоимость в день (₽)",
+      "description": "SUM(cost_micro_rub) / 1e6 по дню. cost_micro_rub = ₽×1 000 000 (микрорубли), поэтому делим на 1e6 для рублей. Источник — trainer.ai_usage.created_at.",
+      "datasource": { "type": "postgres", "uid": "education-postgres" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 18 },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "editorMode": "code",
+          "rawSql": "SELECT date_trunc('day', created_at) AS time, SUM(cost_micro_rub) / 1e6 AS \"стоимость ₽\" FROM trainer.ai_usage WHERE $__timeFilter(created_at) GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "currencyRUB", "min": 0 } }
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "AI-операции в день (по типу)",
+      "description": "Число AI-вызовов по дням, разрез по операции (OPEN_ANSWER_GRADE / MOCK_AGGREGATE / TRANSCRIPTION). Источник — trainer.ai_usage.operation.",
+      "datasource": { "type": "postgres", "uid": "education-postgres" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 18 },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "editorMode": "code",
+          "rawSql": "SELECT date_trunc('day', created_at) AS time, operation AS metric, count(*) AS value FROM trainer.ai_usage WHERE $__timeFilter(created_at) GROUP BY 1, 2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "min": 0 } }
+    }
+  ]
+}

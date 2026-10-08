@@ -1,0 +1,206 @@
+{
+  "mandatory": {
+    "harness": [
+      "**/AGENTS.md",
+      "**/CLAUDE.md",
+      ".agents/**/*",
+      ".claude/**/*",
+      ".codex/**/*",
+      ".gitattributes",
+      ".github/**/*",
+      ".gitlab-ci.yml",
+      ".harness/**/*",
+      ".inside-harness/**/*",
+      ".templates/**/*",
+      "WORKFLOW.md",
+      "backend/Shared/Messaging/RabbitMqMessaging/MESSAGING_CONVENTIONS.md",
+      "docs/RUNBOOK.md",
+      "docs/agents/**/*",
+      "docs/contributing-ci.md",
+      "docs/ops.md",
+      "frontend/eslint.config.mjs",
+      "scripts/ci/github-*",
+      "scripts/ci/test-agent-template-contract.sh",
+      "scripts/ci/test-github-*",
+      "scripts/ci/validate-agent-instructions.py"
+    ],
+    "templates": [
+      ".github/**/*",
+      ".gitlab-ci.yml",
+      ".gitmodules",
+      ".templates/**/*",
+      "backend/Directory.Build.props",
+      "backend/Directory.Packages.props",
+      "backend/Shared/**/*",
+      "backend/nuget.config.ci",
+      "global.json",
+      "scripts/ci/github-*",
+      "scripts/ci/test-agent-template-contract.sh",
+      "scripts/ci/test-github-*"
+    ],
+    "migrations": [
+      ".github/**/*",
+      "backend/**/*",
+      "scripts/ci/github-*",
+      "scripts/ci/test-github-*",
+      "scripts/ci/github-check-migrations.sh"
+    ],
+    "compose": [
+      ".github/**/*",
+      ".gitlab-ci.yml",
+      "docker-compose.prod.yml",
+      "docker-compose.yml",
+      "nginx.prod.conf",
+      "scripts/check-production-rollback.sh",
+      "scripts/ci/fixtures/fake-docker-compose.sh",
+      "scripts/ci/fixtures/fake-npm-audit.sh",
+      "scripts/ci/github-*",
+      "scripts/ci/npm-audit-with-retry.sh",
+      "scripts/ci/test-github-*",
+      "scripts/ci/test-npm-audit-with-retry.sh",
+      "scripts/ci/test-production-env-export.sh",
+      "scripts/ci/test-production-rollback-guard.sh",
+      "scripts/ci/test-run-production-migrations.sh",
+      "scripts/ci/test-validate-production-env.sh",
+      "scripts/ci/validate-compose-contracts.sh",
+      "scripts/ci/validate-nginx-contracts.sh",
+      "scripts/ops/**/*",
+      "scripts/run-production-migrations.sh",
+      "scripts/validate-production-env.sh"
+    ],
+    "images": [
+      ".github/**/*",
+      ".gitlab-ci.yml",
+      ".gitmodules",
+      "ASSET_NOTICE.md",
+      "LICENSE",
+      "THIRD_PARTY_LICENSES/**/*",
+      "backend/*/Dockerfile",
+      "backend/*/src/*.Web/*.csproj",
+      "backend/.dockerignore",
+      "backend/docker/**/*",
+      "frontend/.dockerignore",
+      "frontend/Dockerfile",
+      "global.json",
+      "scripts/ci/github-*",
+      "scripts/ci/prepare-image-notices.sh",
+      "scripts/ci/test-github-*",
+      "scripts/ci/validate-dev-runtime.sh",
+      "scripts/ci/validate-service-image-contracts.py",
+      "frontend/scripts/collect-dependency-notices.mjs",
+      ".templates/**/*"
+    ],
+    "admin": [
+      ".github/**/*",
+      ".gitlab-ci.yml",
+      "mcp/admin-server/**/*",
+      "scripts/ci/github-*",
+      "scripts/ci/npm-audit-with-retry.sh",
+      "scripts/ci/test-github-*"
+    ],
+    "frontend": [
+      ".github/**/*",
+      "frontend/**/*",
+      "scripts/ci/eslint-ratchet.sh",
+      "scripts/ci/github-*",
+      "scripts/ci/prettier-check-diff.sh",
+      "scripts/ci/test-github-*",
+      "scripts/ci/ts-strict-ratchet.sh",
+      "scripts/ci/test-prettier-check-diff.sh"
+    ],
+    "backend": [
+      ".github/**/*",
+      ".gitlab-ci.yml",
+      ".gitmodules",
+      "backend/**/*",
+      "global.json",
+      "scripts/ci/github-*",
+      "scripts/ci/test-github-*"
+    ],
+    "rules": [
+      ".github/**/*",
+      ".gitlab-ci.yml",
+      ".gitmodules",
+      "backend/**/*.csproj",
+      "backend/*/Directory.Build.props",
+      "global.json",
+      "scripts/ci/github-*",
+      "scripts/ci/test-deploy-proxy-boundary.sh",
+      "scripts/ci/test-github-*",
+      "scripts/ci/validate-arch.sh",
+      "scripts/ci/validate-test-rules.sh"
+    ]
+  },
+  "images": [
+    {
+      "name": "auth-service",
+      "dockerfile": "backend/AuthService/Dockerfile",
+      "context": "backend"
+    },
+    {
+      "name": "education-service",
+      "dockerfile": "backend/EducationContentService/Dockerfile",
+      "context": "backend"
+    },
+    {
+      "name": "file-service",
+      "dockerfile": "backend/FileService/Dockerfile",
+      "context": "backend"
+    },
+    {
+      "name": "progress-service",
+      "dockerfile": "backend/ProgressService/Dockerfile",
+      "context": "backend"
+    },
+    {
+      "name": "comment-service",
+      "dockerfile": "backend/CommentService/Dockerfile",
+      "context": "backend"
+    },
+    {
+      "name": "tag-service",
+      "dockerfile": "backend/TagService/Dockerfile",
+      "context": "backend"
+    },
+    {
+      "name": "notification-service",
+      "dockerfile": "backend/NotificationService/Dockerfile",
+      "context": "backend"
+    },
+    {
+      "name": "telegram-bot-service",
+      "dockerfile": "backend/TelegramBotService/Dockerfile",
+      "context": "backend"
+    },
+    {
+      "name": "search-service",
+      "dockerfile": "backend/SearchService/Dockerfile",
+      "context": "backend"
+    },
+    {
+      "name": "access-service",
+      "dockerfile": "backend/AccessService/Dockerfile",
+      "context": "backend"
+    },
+    {
+      "name": "assignment-review-service",
+      "dockerfile": "backend/AssignmentReviewService/Dockerfile",
+      "context": "backend"
+    },
+    {
+      "name": "material-processing-service",
+      "dockerfile": "backend/MaterialProcessingService/Dockerfile",
+      "context": "backend"
+    },
+    {
+      "name": "trainer-service",
+      "dockerfile": "backend/TrainerService/Dockerfile",
+      "context": "backend"
+    },
+    {
+      "name": "frontend",
+      "dockerfile": "frontend/Dockerfile",
+      "context": "frontend"
+    }
+  ]
+}

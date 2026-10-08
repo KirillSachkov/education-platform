@@ -1,0 +1,196 @@
+<Solution>
+    <Folder Name="/EducationContentService/">
+        <Project Path="EducationContentService/src/EducationContentService.Contracts/EducationContentService.Contracts.csproj" />
+        <Project Path="EducationContentService/src/EducationContentService.Core/EducationContentService.Core.csproj" />
+        <Project Path="EducationContentService/src/EducationContentService.Domain/EducationContentService.Domain.csproj" />
+        <Project Path="EducationContentService/src/EducationContentService.Infrastructure.Postgres/EducationContentService.Infrastructure.Postgres.csproj" />
+        <Project Path="EducationContentService/src/EducationContentService.Web/EducationContentService.Web.csproj" />
+    </Folder>
+    <Folder Name="/EducationContentService/tests/">
+        <Project Path="EducationContentService/tests/EducationContentService.IntegrationTests/EducationContentService.IntegrationTests.csproj" />
+    </Folder>
+
+    <Folder Name="/FileService/">
+        <Project Path="FileService/src/FileService.Contracts/FileService.Contracts.csproj" />
+        <Project Path="FileService/src/FileService.Core/FileService.Core.csproj" />
+        <Project Path="FileService/src/FileService.Domain/FileService.Domain.csproj" />
+        <Project Path="FileService/src/FileService.Infrastructure.Imaging/FileService.Infrastructure.Imaging.csproj" />
+        <Project Path="FileService/src/FileService.Infrastructure.Kinescope/FileService.Infrastructure.Kinescope.csproj" />
+        <Project Path="FileService/src/FileService.Infrastructure.Postgres/FileService.Infrastructure.Postgres.csproj" />
+        <Project Path="FileService/src/FileService.Infrastructure.S3/FileService.Infrastructure.S3.csproj" />
+        <Project Path="FileService/src/FileService.Web/FileService.Web.csproj" />
+    </Folder>
+    <Folder Name="/FileService/tests/">
+        <Project Path="FileService/tests/FileService.IntegrationTests/FileService.IntegrationTests.csproj" />
+        <Project Path="FileService/tests/FileService.UnitTests/FileService.UnitTests.csproj" />
+    </Folder>
+
+    <Folder Name="/ProgressService/">
+        <Project Path="ProgressService/src/ProgressService.Contracts/ProgressService.Contracts.csproj" />
+        <Project Path="ProgressService/src/ProgressService.Core/ProgressService.Core.csproj" />
+        <Project Path="ProgressService/src/ProgressService.Domain/ProgressService.Domain.csproj" />
+        <Project Path="ProgressService/src/ProgressService.Infrastructure.Postgres/ProgressService.Infrastructure.Postgres.csproj" />
+        <Project Path="ProgressService/src/ProgressService.Web/ProgressService.Web.csproj" />
+    </Folder>
+    <Folder Name="/ProgressService/tests/">
+        <Project Path="ProgressService/tests/ProgressService.IntegrationTests/ProgressService.IntegrationTests.csproj" />
+    </Folder>
+    <Folder Name="/CommentService/" />
+
+    <Folder Name="/CommentService/src/">
+        <Project Path="CommentService/src/CommentService.Contracts/CommentService.Contracts.csproj" />
+        <Project Path="CommentService/src/CommentService.Core/CommentService.Core.csproj" />
+        <Project Path="CommentService/src/CommentService.Domain/CommentService.Domain.csproj" />
+        <Project Path="CommentService/src/CommentService.Infrastructure.Postgres/CommentService.Infrastructure.Postgres.csproj" />
+        <Project Path="CommentService/src/CommentService.Web/CommentService.Web.csproj" />
+    </Folder>
+    <Folder Name="/CommentService/tests/">
+        <Project Path="CommentService/tests/CommentService.IntegrationTests/CommentService.IntegrationTests.csproj" />
+    </Folder>
+    <Folder Name="/AccessService/" />
+    <Folder Name="/AccessService/src/">
+        <Project Path="AccessService/src/AccessService.Contracts/AccessService.Contracts.csproj" />
+        <Project Path="AccessService/src/AccessService.Core/AccessService.Core.csproj" />
+        <Project Path="AccessService/src/AccessService.Domain/AccessService.Domain.csproj" />
+        <Project Path="AccessService/src/AccessService.Infrastructure.Postgres/AccessService.Infrastructure.Postgres.csproj" />
+        <Project Path="AccessService/src/AccessService.Web/AccessService.Web.csproj" />
+    </Folder>
+    <Folder Name="/AccessService/tests/">
+        <Project Path="AccessService/tests/AccessService.IntegrationTests/AccessService.IntegrationTests.csproj" />
+    </Folder>
+
+    <Folder Name="/AssignmentReviewService/" />
+    <Folder Name="/AssignmentReviewService/src/">
+        <Project Path="AssignmentReviewService/src/AssignmentReviewService.Contracts/AssignmentReviewService.Contracts.csproj" />
+        <Project Path="AssignmentReviewService/src/AssignmentReviewService.Core/AssignmentReviewService.Core.csproj" />
+        <Project Path="AssignmentReviewService/src/AssignmentReviewService.Domain/AssignmentReviewService.Domain.csproj" />
+        <Project Path="AssignmentReviewService/src/AssignmentReviewService.Infrastructure.Postgres/AssignmentReviewService.Infrastructure.Postgres.csproj" />
+        <Project Path="AssignmentReviewService/src/AssignmentReviewService.Web/AssignmentReviewService.Web.csproj" />
+    </Folder>
+    <Folder Name="/AssignmentReviewService/tests/">
+        <Project Path="AssignmentReviewService/tests/AssignmentReviewService.IntegrationTests/AssignmentReviewService.IntegrationTests.csproj" />
+    </Folder>
+
+    <Folder Name="/AuthService/">
+        <Project Path="AuthService/src/AuthService.Contracts/AuthService.Contracts.csproj" />
+        <Project Path="AuthService/src/AuthService.Core/AuthService.Core.csproj" />
+        <Project Path="AuthService/src/AuthService.Domain/AuthService.Domain.csproj" />
+
+        <Project Path="AuthService/src/AuthService.Infrastructure.Postgres/AuthService.Infrastructure.Postgres.csproj" />
+        <Project Path="AuthService/src/AuthService.Web/AuthService.Web.csproj" />
+    </Folder>
+    <Folder Name="/AuthService/tests/">
+        <Project Path="AuthService/tests/AuthService.IntegrationTests/AuthService.IntegrationTests.csproj" />
+    </Folder>
+    <Folder Name="/TagService/" />
+
+    <Folder Name="/TagService/src/">
+        <Project Path="TagService/src/TagService.Contracts/TagService.Contracts.csproj" />
+        <Project Path="TagService/src/TagService.Core/TagService.Core.csproj" />
+        <Project Path="TagService/src/TagService.Domain/TagService.Domain.csproj" />
+        <Project Path="TagService/src/TagService.Infrastructure.Postgres/TagService.Infrastructure.Postgres.csproj" />
+        <Project Path="TagService/src/TagService.Web/TagService.Web.csproj" />
+    </Folder>
+    <Folder Name="/TagService/tests/">
+        <Project Path="TagService/tests/TagService.IntegrationTests/TagService.IntegrationTests.csproj" />
+    </Folder>
+    <Folder Name="/SearchService/" />
+
+    <Folder Name="/SearchService/src/">
+        <Project Path="SearchService/src/SearchService.Contracts/SearchService.Contracts.csproj" />
+        <Project Path="SearchService/src/SearchService.Core/SearchService.Core.csproj" />
+        <Project Path="SearchService/src/SearchService.Domain/SearchService.Domain.csproj" />
+        <Project Path="SearchService/src/SearchService.Infrastructure.Typesense/SearchService.Infrastructure.Typesense.csproj" />
+        <Project Path="SearchService/src/SearchService.Infrastructure.Postgres/SearchService.Infrastructure.Postgres.csproj" />
+        <Project Path="SearchService/src/SearchService.Web/SearchService.Web.csproj" />
+    </Folder>
+    <Folder Name="/SearchService/tests/">
+        <Project Path="SearchService/tests/SearchService.IntegrationTests/SearchService.IntegrationTests.csproj" />
+    </Folder>
+    <Folder Name="/MaterialProcessingService/" />
+    <Folder Name="/MaterialProcessingService/src/">
+        <Project Path="MaterialProcessingService/src/MaterialProcessingService.Contracts/MaterialProcessingService.Contracts.csproj" />
+        <Project Path="MaterialProcessingService/src/MaterialProcessingService.Core/MaterialProcessingService.Core.csproj" />
+        <Project Path="MaterialProcessingService/src/MaterialProcessingService.Domain/MaterialProcessingService.Domain.csproj" />
+        <Project Path="MaterialProcessingService/src/MaterialProcessingService.Infrastructure.AI/MaterialProcessingService.Infrastructure.AI.csproj" />
+        <Project Path="MaterialProcessingService/src/MaterialProcessingService.Infrastructure.FFmpeg/MaterialProcessingService.Infrastructure.FFmpeg.csproj" />
+        <Project Path="MaterialProcessingService/src/MaterialProcessingService.Infrastructure.Postgres/MaterialProcessingService.Infrastructure.Postgres.csproj" />
+        <Project Path="MaterialProcessingService/src/MaterialProcessingService.Web/MaterialProcessingService.Web.csproj" />
+    </Folder>
+    <Folder Name="/MaterialProcessingService/tests/">
+        <Project Path="MaterialProcessingService/tests/MaterialProcessingService.IntegrationTests/MaterialProcessingService.IntegrationTests.csproj" />
+    </Folder>
+
+    <Folder Name="/NotificationService/" />
+
+    <Folder Name="/NotificationService/src/">
+        <Project Path="NotificationService/src/NotificationService.Contracts/NotificationService.Contracts.csproj" />
+        <Project Path="NotificationService/src/NotificationService.Core/NotificationService.Core.csproj" />
+        <Project Path="NotificationService/src/NotificationService.Domain/NotificationService.Domain.csproj" />
+        <Project Path="NotificationService/src/NotificationService.Infrastructure.Postgres/NotificationService.Infrastructure.Postgres.csproj" />
+        <Project Path="NotificationService/src/NotificationService.Web/NotificationService.Web.csproj" />
+    </Folder>
+    <Folder Name="/NotificationService/tests/">
+        <Project Path="NotificationService/tests/NotificationService.IntegrationTests/NotificationService.IntegrationTests.csproj" />
+        <Project Path="NotificationService/tests/NotificationService.UnitTests/NotificationService.UnitTests.csproj" />
+    </Folder>
+
+    <Folder Name="/TelegramBotService/" />
+
+    <Folder Name="/TelegramBotService/src/">
+        <Project Path="TelegramBotService/src/TelegramBotService.Contracts/TelegramBotService.Contracts.csproj" />
+        <Project Path="TelegramBotService/src/TelegramBotService.Core/TelegramBotService.Core.csproj" />
+        <Project Path="TelegramBotService/src/TelegramBotService.Domain/TelegramBotService.Domain.csproj" />
+        <Project Path="TelegramBotService/src/TelegramBotService.Infrastructure.Postgres/TelegramBotService.Infrastructure.Postgres.csproj" />
+        <Project Path="TelegramBotService/src/TelegramBotService.Web/TelegramBotService.Web.csproj" />
+    </Folder>
+    <Folder Name="/TelegramBotService/tests/">
+        <Project Path="TelegramBotService/tests/TelegramBotService.IntegrationTests/TelegramBotService.IntegrationTests.csproj" />
+    </Folder>
+
+    <Folder Name="/Shared/">
+        <Project Path="Shared/AI/AI/AI.csproj" />
+        <Project Path="Shared/AI/AI.OpenAiCompatible/AI.OpenAiCompatible.csproj" />
+        <Project Path="Shared/AI/AI.OpenAiCompatible.Tests/AI.OpenAiCompatible.Tests.csproj" />
+        <Project Path="Shared/Common/Common.csproj" />
+        <Project Path="Shared/Common.Tests/Common.Tests.csproj" />
+        <Project Path="Shared/Authentication/Authentication.csproj" />
+        <Project Path="Shared/Authentication.Tests/Authentication.Tests.csproj" />
+        <Project Path="Shared/Core/Core.csproj" />
+        <Project Path="Shared/Core.Tests/Core.Tests.csproj" />
+        <Project Path="Shared/Database/Database.csproj" />
+        <Project Path="Shared/DomainEvents/DomainEvents.csproj" />
+        <Project Path="Shared/Framework/Framework.csproj" />
+        <Project Path="Shared/GitHubApp/GitHubApp.csproj" />
+        <Project Path="Shared/Observability/Observability.csproj" />
+        <Project Path="Shared/ContentAccess/ContentAccess/ContentAccess.csproj" />
+        <Project Path="Shared/ContentAccess/ContentAccess.Redis/ContentAccess.Redis.csproj" />
+        <Project Path="Shared/ContentAccess/ContentAccess.Tests/ContentAccess.Tests.csproj" />
+        <Project Path="Shared/Ordering/Ordering/Ordering.csproj" />
+        <Project Path="Shared/Ordering/Ordering.Tests/Ordering.Tests.csproj" />
+        <Project Path="Shared/PlatformBootstrap/PlatformBootstrap.csproj" />
+        <Project Path="Shared/SharedKernel/SharedKernel.csproj" />
+        <Project Path="Shared/Wolverine.Testing/Wolverine.Testing.csproj" />
+    </Folder>
+    <Folder Name="/Shared/ContentAccess/">
+        <Project Path="Shared/ContentAccess/ContentAccess.TestSupport/ContentAccess.TestSupport.csproj" />
+    </Folder>
+    <Folder Name="/Shared/Messaging/">
+        <Project Path="Shared/Messaging/RabbitMqMessaging/RabbitMqMessaging.csproj" />
+    </Folder>
+    <Folder Name="/Shared/Navigation/">
+        <Project Path="Shared/Navigation/Navigation.csproj" />
+    </Folder>
+    <Folder Name="/TrainerService/" />
+    <Folder Name="/TrainerService/src/">
+        <Project Path="TrainerService/src/TrainerService.Contracts/TrainerService.Contracts.csproj" />
+        <Project Path="TrainerService/src/TrainerService.Core/TrainerService.Core.csproj" />
+        <Project Path="TrainerService/src/TrainerService.Domain/TrainerService.Domain.csproj" />
+        <Project Path="TrainerService/src/TrainerService.Infrastructure.Postgres/TrainerService.Infrastructure.Postgres.csproj" />
+        <Project Path="TrainerService/src/TrainerService.Web/TrainerService.Web.csproj" />
+    </Folder>
+    <Folder Name="/TrainerService/tests/">
+        <Project Path="TrainerService/tests/TrainerService.IntegrationTests/TrainerService.IntegrationTests.csproj" />
+    </Folder>
+
+</Solution>

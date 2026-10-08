@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.NET.Test.Sdk"/>
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="Respawn" />
+    <ProjectReference Include="..\..\..\Shared\Core\Core.csproj" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="xunit"/>
+    <PackageReference Include="xunit.runner.visualstudio">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Тесты работают с handler'ами напрямую (без BotApplication host'а, т.к. TBF startup
+         требует валидный BOT__TOKEN для setMyCommands). .Core + .Infrastructure.Postgres
+         достаточны — Wolverine/TBF pipeline не поднимаем, это handler-level integration tests. -->
+    <ProjectReference Include="..\..\src\TelegramBotService.Core\TelegramBotService.Core.csproj" />
+    <ProjectReference Include="..\..\src\TelegramBotService.Infrastructure.Postgres\TelegramBotService.Infrastructure.Postgres.csproj" />
+    <ProjectReference Include="..\..\..\Shared\ContentAccess\ContentAccess.TestSupport\ContentAccess.TestSupport.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Wolverine.Testing\Wolverine.Testing.csproj" />
+  </ItemGroup>
+
+
+</Project>

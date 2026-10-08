@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="WolverineFx.EntityFrameworkCore" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CommentService.Core\CommentService.Core.csproj" />
+    <ProjectReference Include="..\CommentService.Domain\CommentService.Domain.csproj" />
+    <ProjectReference Include="..\..\..\Shared\DomainEvents\DomainEvents.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Database\Database.csproj" />
+  </ItemGroup>
+</Project>

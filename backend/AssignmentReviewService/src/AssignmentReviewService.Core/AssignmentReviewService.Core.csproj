@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="CSharpFunctionalExtensions" />
+    <PackageReference Include="FluentValidation" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    <ProjectReference Include="..\..\..\Shared\Core\Core.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Framework\Framework.csproj" />
+    <ProjectReference Include="..\..\..\Shared\SharedKernel\SharedKernel.csproj" />
+    <PackageReference Include="WolverineFx.EntityFrameworkCore" />
+    <PackageReference Include="WolverineFx.RabbitMQ" />
+    <PackageReference Include="WolverineFx.Postgresql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AssignmentReviewService.Contracts\AssignmentReviewService.Contracts.csproj" />
+    <ProjectReference Include="..\AssignmentReviewService.Domain\AssignmentReviewService.Domain.csproj" />
+    <ProjectReference Include="..\..\..\AuthService\src\AuthService.Contracts\AuthService.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Authentication\Authentication.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Messaging\RabbitMqMessaging\RabbitMqMessaging.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Database\Database.csproj" />
+    <ProjectReference Include="..\..\..\Shared\GitHubApp\GitHubApp.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Observability\Observability.csproj" />
+    <ProjectReference Include="..\..\..\Shared\AI\AI\AI.csproj" />
+  </ItemGroup>
+
+</Project>

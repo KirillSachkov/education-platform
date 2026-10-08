@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="CSharpFunctionalExtensions" />
+    <ProjectReference Include="..\..\..\Shared\SharedKernel\SharedKernel.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\DomainEvents\DomainEvents.csproj" />
+  </ItemGroup>
+
+</Project>

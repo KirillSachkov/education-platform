@@ -1,0 +1,302 @@
+{
+  "uid": "notification-pipeline",
+  "title": "Notification Pipeline",
+  "tags": ["notification-pipeline", "platform", "wolverine", "telegram"],
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "graphTooltip": 1,
+  "time": { "from": "now-3h", "to": "now" },
+  "refresh": "30s",
+  "templating": {
+    "list": [
+      {
+        "name": "type",
+        "label": "Notification type",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "query": "label_values(notification_outbox_publish_lag_seconds_count, notification_type)",
+        "refresh": 1,
+        "includeAll": true,
+        "multi": true,
+        "sort": 1,
+        "current": { "text": "All", "value": "$__all" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "End-to-end latency",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Outbox publish lag (NotificationCreated → consumer ack), p95",
+      "description": "Время от создания нотификации в NotificationDispatcher до прихода consumer'а. Скачок = stuck outgoing envelope (issue #20 регрессия) или забитая очередь.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 1 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le, consumer) (rate(notification_outbox_publish_lag_seconds_bucket{notification_type=~\"$type\"}[5m])))",
+          "legendFormat": "p95 / {{consumer}}"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.5, sum by (le, consumer) (rate(notification_outbox_publish_lag_seconds_bucket{notification_type=~\"$type\"}[5m])))",
+          "legendFormat": "p50 / {{consumer}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": { "mode": "palette-classic" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 5 },
+              { "color": "red", "value": 30 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Telegram handler lag (NotificationCreated → handler start), p95",
+      "description": "Лаг от выпуска NotificationCreated до начала Handle в TG-боте. Покрывает outbox flush в NS + RabbitMQ routing + listener pickup.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 1 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(telegram_handler_lag_seconds_bucket[5m])))",
+          "legendFormat": "p95"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(telegram_handler_lag_seconds_bucket[5m])))",
+          "legendFormat": "p50"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": { "mode": "palette-classic" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 5 },
+              { "color": "red", "value": 30 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 10,
+      "type": "row",
+      "title": "Telegram delivery",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 },
+      "collapsed": false
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "TG send duration, p50/p95/p99",
+      "description": "Реальное время IBotNotifier.SendTextAsync (Telegram Bot API + сеть).",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 10 },
+      "targets": [
+        { "refId": "A", "expr": "histogram_quantile(0.5,  sum by (le) (rate(telegram_send_duration_seconds_bucket[5m])))", "legendFormat": "p50" },
+        { "refId": "B", "expr": "histogram_quantile(0.95, sum by (le) (rate(telegram_send_duration_seconds_bucket[5m])))", "legendFormat": "p95" },
+        { "refId": "C", "expr": "histogram_quantile(0.99, sum by (le) (rate(telegram_send_duration_seconds_bucket[5m])))", "legendFormat": "p99" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s", "color": { "mode": "palette-classic" } } }
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "TG per-chat throttle wait, p95",
+      "description": "Сколько PerChatBotThrottler удерживал send (1s/chat gate + semaphore-wait). Высокий p95 = listener concurrency недостаточен для fan-out'а.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 10 },
+      "targets": [
+        { "refId": "A", "expr": "histogram_quantile(0.95, sum by (le) (rate(telegram_throttle_wait_seconds_bucket[5m])))", "legendFormat": "p95" },
+        { "refId": "B", "expr": "histogram_quantile(0.5,  sum by (le) (rate(telegram_throttle_wait_seconds_bucket[5m])))", "legendFormat": "p50" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s", "color": { "mode": "palette-classic" } } }
+    },
+    {
+      "id": 13,
+      "type": "barchart",
+      "title": "TG delivery outcomes (rate / 5m)",
+      "description": "Делится по outcome (delivered / failed / skipped) и error_code.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 10 },
+      "targets": [
+        { "refId": "A", "expr": "sum by (outcome, error_code) (rate(telegram_delivery_outcomes_total[5m]))", "legendFormat": "{{outcome}} / {{error_code}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops", "color": { "mode": "palette-classic" } } }
+    },
+    {
+      "id": 20,
+      "type": "row",
+      "title": "Notification dispatcher",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 18 },
+      "collapsed": false
+    },
+    {
+      "id": 21,
+      "type": "timeseries",
+      "title": "Dispatch duration p95 (per type)",
+      "description": "Время одного NotificationRequest в NotificationDispatcher (render + БД + outbox).",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 19 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le, notification_type) (rate(notification_dispatch_duration_seconds_bucket[5m])))",
+          "legendFormat": "{{notification_type}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s", "color": { "mode": "palette-classic" } } }
+    },
+    {
+      "id": 22,
+      "type": "timeseries",
+      "title": "Delivery outcomes (per channel)",
+      "description": "notification_deliveries записи по каналу/статусу.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 19 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (channel, status) (rate(notification_delivery_outcomes_total[5m]))",
+          "legendFormat": "{{channel}} / {{status}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops", "color": { "mode": "palette-classic" } } }
+    },
+    {
+      "id": 30,
+      "type": "row",
+      "title": "Wolverine durability (built-in OTel)",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 27 },
+      "collapsed": false
+    },
+    {
+      "id": 31,
+      "type": "timeseries",
+      "title": "Wolverine outbox/inbox depth (per service)",
+      "description": "wolverine_outbox_count_default_Messages — глубина persisted outbox. Скачок = primary publish path не работает, recovery sweep подбирает с задержкой OutboxStaleTime.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 28 },
+      "targets": [
+        { "refId": "A", "expr": "wolverine_outbox_count_default_Messages", "legendFormat": "outbox / {{service_name}}" },
+        { "refId": "B", "expr": "wolverine_inbox_count_default_Messages",  "legendFormat": "inbox / {{service_name}}" },
+        { "refId": "C", "expr": "wolverine_scheduled_count_default_Messages", "legendFormat": "scheduled / {{service_name}}" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "palette-classic" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 50 },
+              { "color": "red", "value": 200 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 32,
+      "type": "timeseries",
+      "title": "Wolverine handler duration p95 (ms)",
+      "description": "wolverine_execution_time — время выполнения handler'а. wolverine_effective_time — без queue wait.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 28 },
+      "targets": [
+        { "refId": "A", "expr": "histogram_quantile(0.95, sum by (le, service_name) (rate(wolverine_execution_time_Milliseconds_bucket[5m])))", "legendFormat": "execution p95 / {{service_name}}" },
+        { "refId": "B", "expr": "histogram_quantile(0.95, sum by (le, service_name) (rate(wolverine_effective_time_Milliseconds_bucket[5m])))", "legendFormat": "effective p95 / {{service_name}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ms", "color": { "mode": "palette-classic" } } }
+    },
+    {
+      "id": 33,
+      "type": "timeseries",
+      "title": "Wolverine throughput (msgs/s)",
+      "description": "Received → Succeeded должны быть в один в один. Сильное расхождение = handler errors.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 36 },
+      "targets": [
+        { "refId": "A", "expr": "sum by (service_name) (rate(wolverine_messages_received_Messages_total[5m]))", "legendFormat": "received / {{service_name}}" },
+        { "refId": "B", "expr": "sum by (service_name) (rate(wolverine_messages_succeeded_Messages_total[5m]))", "legendFormat": "succeeded / {{service_name}}" },
+        { "refId": "C", "expr": "sum by (service_name) (rate(wolverine_messages_sent_Messages_total[5m]))", "legendFormat": "sent / {{service_name}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops", "color": { "mode": "palette-classic" } } }
+    },
+    {
+      "id": 40,
+      "type": "row",
+      "title": "RabbitMQ — notification queues",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 44 },
+      "collapsed": false
+    },
+    {
+      "id": 41,
+      "type": "timeseries",
+      "title": "Queue depth — notifications.* + telegram_bot.*",
+      "description": "Ready+unacked сообщений на очереди. Скачок = consumer не успевает.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 16, "x": 0, "y": 45 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rabbitmq_queue_messages{queue=~\"notifications\\\\..*|telegram_bot\\\\..*\"}",
+          "legendFormat": "{{queue}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "palette-classic" } } }
+    },
+    {
+      "id": 42,
+      "type": "stat",
+      "title": "DLQ depth",
+      "description": "wolverine-dead-letter-queue — сообщения, которые упали после всех retry'ев.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 45 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(rabbitmq_queue_messages{queue=\"wolverine-dead-letter-queue\"})"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 50 }
+            ]
+          }
+        }
+      },
+      "options": { "colorMode": "background", "graphMode": "area", "textMode": "value_and_name" }
+    }
+  ]
+}

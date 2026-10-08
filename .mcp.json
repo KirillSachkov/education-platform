@@ -1,0 +1,43 @@
+{
+  "mcpServers": {
+    "postgres": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "postgresql://postgres:postgres@localhost:5434/education_platform"
+      ]
+    },
+    "redis-local": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/redis/mcp-redis.git",
+        "redis-mcp-server",
+        "--url",
+        "redis://localhost:6379/0"
+      ]
+    },
+    "grafana-local": {
+      "command": "./scripts/mcp/grafana-local.sh",
+      "args": []
+    },
+    "grafana-prod": {
+      "command": "./scripts/mcp/grafana-prod.sh",
+      "args": []
+    },
+    "platform-admin-dev": {
+      "command": "node",
+      "args": ["./mcp/admin-server/dist/index.js"],
+      "env": {
+        "PLATFORM_BASE_URL": "http://localhost",
+        "MCP_CLIENT_ID": "mcp-admin",
+        "MCP_CLIENT_SECRET": "DEV-ONLY-mcp-admin-secret"
+      }
+    },
+    "platform-admin-prod": {
+      "command": "./scripts/mcp/platform-admin-prod.sh",
+      "args": []
+    }
+  }
+}

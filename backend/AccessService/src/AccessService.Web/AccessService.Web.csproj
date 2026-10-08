@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <ItemGroup>
+    <Content Remove="bin\**\*;obj\**\*" />
+    <None Remove="bin\**\*;obj\**\*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <ProjectReference Include="..\..\..\Shared\Framework\Framework.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AccessService.Core\AccessService.Core.csproj" />
+    <ProjectReference Include="..\AccessService.Domain\AccessService.Domain.csproj" />
+    <ProjectReference Include="..\AccessService.Infrastructure.Postgres\AccessService.Infrastructure.Postgres.csproj" />
+    <ProjectReference Include="..\..\..\AuthService\src\AuthService.Contracts\AuthService.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\EducationContentService\src\EducationContentService.Contracts\EducationContentService.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\TelegramBotService\src\TelegramBotService.Contracts\TelegramBotService.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Messaging\RabbitMqMessaging\RabbitMqMessaging.csproj" />
+    <ProjectReference Include="..\..\..\Shared\PlatformBootstrap\PlatformBootstrap.csproj" />
+    <ProjectReference Include="..\..\..\Shared\ContentAccess\ContentAccess.Redis\ContentAccess.Redis.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\..\..\Shared\Observability\serilog*.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

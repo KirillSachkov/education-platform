@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/SolutionFolder/">
+    <File Path="..\Directory.Build.props" />
+    <File Path="..\..\..\.editorconfig" />
+  </Folder>
+  <Project Path="Common.csproj" />
+  <Project Path="..\Common.Tests\Common.Tests.csproj" />
+</Solution>

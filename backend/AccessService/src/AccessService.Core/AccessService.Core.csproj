@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="CSharpFunctionalExtensions" />
+    <PackageReference Include="FluentValidation" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    <ProjectReference Include="..\..\..\Shared\Core\Core.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Framework\Framework.csproj" />
+    <ProjectReference Include="..\..\..\Shared\SharedKernel\SharedKernel.csproj" />
+    <PackageReference Include="WolverineFx.EntityFrameworkCore" />
+    <PackageReference Include="WolverineFx.RabbitMQ" />
+    <PackageReference Include="WolverineFx.Postgresql" />
+    <PackageReference Include="Microsoft.IdentityModel.Tokens" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
+    <PackageReference Include="StackExchange.Redis" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AccessService.Contracts\AccessService.Contracts.csproj" />
+    <ProjectReference Include="..\AccessService.Domain\AccessService.Domain.csproj" />
+    <ProjectReference Include="..\..\..\AuthService\src\AuthService.Contracts\AuthService.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\EducationContentService\src\EducationContentService.Contracts\EducationContentService.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\TelegramBotService\src\TelegramBotService.Contracts\TelegramBotService.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Authentication\Authentication.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Messaging\RabbitMqMessaging\RabbitMqMessaging.csproj" />
+    <ProjectReference Include="..\..\..\Shared\ContentAccess\ContentAccess\ContentAccess.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Database\Database.csproj" />
+    <ProjectReference Include="..\..\..\Shared\GitHubApp\GitHubApp.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Observability\Observability.csproj" />
+  </ItemGroup>
+
+</Project>

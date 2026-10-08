@@ -1,0 +1,23 @@
+[Unit]
+Description=Validate the freshest offsite GitLab data backup
+After=network-online.target
+Wants=network-online.target
+OnFailure=gitlab-backup-alert@%n.service
+OnFailureJobMode=replace
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/gitlab-restore-drill.sh --validate-only
+TimeoutStartSec=1h
+User=root
+Group=root
+UMask=0077
+PrivateTmp=true
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

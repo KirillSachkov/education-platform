@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="src/ServiceName/ServiceName.csproj" />
+  <Project Path="src/ServiceName.Contracts/ServiceName.Contracts.csproj" />
+  <Project Path="tests/ServiceName.IntegrationTests/ServiceName.IntegrationTests.csproj" />
+</Solution>

@@ -1,0 +1,90 @@
+{
+  "uid": "redis-platform",
+  "title": "Redis — Cache & Entitlements",
+  "tags": ["platform", "redis", "infra"],
+  "schemaVersion": 39,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Memory Used / Max",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "redis_memory_used_bytes", "legendFormat": "used", "refId": "A" },
+        { "expr": "redis_memory_max_bytes", "legendFormat": "max", "refId": "B" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "bytes" } }
+    },
+    {
+      "id": 2,
+      "title": "Hit Rate (cache effectiveness)",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "targets": [{
+        "expr": "rate(redis_keyspace_hits_total[5m]) / clamp_min(rate(redis_keyspace_hits_total[5m]) + rate(redis_keyspace_misses_total[5m]), 1)",
+        "legendFormat": "hit ratio",
+        "refId": "A"
+      }],
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1 } }
+    },
+    {
+      "id": 3,
+      "title": "Evicted Keys (CRITICAL — should be 0 with noeviction)",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 0, "y": 8, "w": 6, "h": 6 },
+      "targets": [{
+        "expr": "increase(redis_evicted_keys_total[1h])",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Connected Clients",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 6, "y": 8, "w": 6, "h": 6 },
+      "targets": [{ "expr": "redis_connected_clients", "refId": "A" }]
+    },
+    {
+      "id": 5,
+      "title": "Commands per Second",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 6 },
+      "targets": [{
+        "expr": "rate(redis_commands_processed_total[1m])",
+        "legendFormat": "ops/s",
+        "refId": "A"
+      }]
+    },
+    {
+      "id": 6,
+      "title": "Top 10 Commands by Latency p99 (ms)",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 0, "y": 14, "w": 24, "h": 9 },
+      "targets": [{
+        "expr": "topk(10, histogram_quantile(0.99, sum by (le, cmd) (rate(redis_commands_latencies_usec_bucket[5m]))) / 1000)",
+        "legendFormat": "{{cmd}}",
+        "refId": "A"
+      }],
+      "fieldConfig": { "defaults": { "unit": "ms" } }
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+stream_over_http_enabled: true
+
+server:
+  http_listen_port: 3200
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+
+ingester:
+  trace_idle_period: 10s
+  max_block_duration: 5m
+
+compactor:
+  compaction:
+    block_retention: 168h        # 7 days
+
+# RED metrics generated from spans → remote_write into Prometheus
+metrics_generator:
+  registry:
+    external_labels:
+      source: tempo
+      cluster: docker
+  storage:
+    path: /var/tempo/generator/wal
+    remote_write:
+      - url: http://prometheus:9090/api/v1/write
+        send_exemplars: true
+  processor:
+    span_metrics:
+      dimensions:
+        - service.name
+        - http.route
+        - http.method
+        - http.status_code
+    service_graphs: {}
+
+storage:
+  trace:
+    backend: local
+    local:
+      path: /var/tempo/traces
+    wal:
+      path: /var/tempo/wal
+
+overrides:
+  defaults:
+    metrics_generator:
+      processors: [service-graphs, span-metrics]

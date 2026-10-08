@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\FileService.Core\FileService.Core.csproj"/>
+    <ProjectReference Include="..\..\..\Shared\DomainEvents\DomainEvents.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Database\Database.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL"/>
+    <PackageReference Include="WolverineFx.EntityFrameworkCore"/>
+  </ItemGroup>
+
+</Project>

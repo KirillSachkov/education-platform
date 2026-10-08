@@ -1,0 +1,211 @@
+{
+  "uid": "onboarding-pipeline",
+  "title": "Plan Onboarding Pipeline",
+  "tags": ["onboarding-pipeline", "platform", "github-app", "access"],
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "graphTooltip": 1,
+  "time": { "from": "now-3h", "to": "now" },
+  "refresh": "30s",
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "GitHub App invitations",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Invitation outcomes per minute",
+      "description": "Per-action (create / sync) и outcome (created / already_member / accepted / not_member / failed_*).",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 1 },
+      "targets": [
+        {
+          "expr": "sum by (action, outcome) (rate(onboarding_invitation_outcomes_total[5m]))",
+          "legendFormat": "{{action}} / {{outcome}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops" } }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Invitation success rate (1h)",
+      "description": "(created + already_member + accepted) / total. <90% — что-то ломается на стороне GitHub API или App установлен не у всех авторов.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
+      "targets": [
+        {
+          "expr": "sum(rate(onboarding_invitation_outcomes_total{outcome=~\"created|already_member|accepted\"}[1h])) / sum(rate(onboarding_invitation_outcomes_total[1h]))",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 0.9 },
+              { "color": "green", "value": 0.97 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Failed invitations (1h)",
+      "description": "Per-failure-reason. >0 — смотреть failure_reason: github_user_not_found, token_invalid, no_installation.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
+      "targets": [
+        {
+          "expr": "sum by (outcome) (increase(onboarding_invitation_outcomes_total{outcome=~\"failed_.*\"}[1h]))",
+          "legendFormat": "{{outcome}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "row",
+      "title": "Webhook security",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 },
+      "collapsed": false
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Webhook signature verification rate",
+      "description": "valid / invalid / missing. Persistent invalid → security incident OR разъехавшийся WebhookSecret между Infisical и github.com.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 10 },
+      "targets": [
+        {
+          "expr": "sum by (result) (rate(onboarding_webhook_signature_total[5m]))",
+          "legendFormat": "{{result}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops" } }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Webhook events received",
+      "description": "Per (event, action) — installation/created, installation/deleted, organization/member_added etc.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 10 },
+      "targets": [
+        {
+          "expr": "sum by (event, action) (rate(onboarding_webhook_event_total[5m]))",
+          "legendFormat": "{{event}}/{{action}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops" } }
+    },
+    {
+      "id": 8,
+      "type": "row",
+      "title": "GitHub API performance",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 18 },
+      "collapsed": false
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "GitHub API duration (p50/p95) per endpoint",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 19 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, endpoint) (rate(onboarding_github_api_duration_seconds_bucket[5m])))",
+          "legendFormat": "p95 {{endpoint}}",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.50, sum by (le, endpoint) (rate(onboarding_github_api_duration_seconds_bucket[5m])))",
+          "legendFormat": "p50 {{endpoint}}",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Token cache hit ratio",
+      "description": "hit / (hit + miss). Низкое значение = кэш не работает (TTL слишком короткий или wrong cache key).",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 19 },
+      "targets": [
+        {
+          "expr": "sum(rate(onboarding_token_cache_total{outcome=\"hit\"}[5m])) / (sum(rate(onboarding_token_cache_total{outcome=\"hit\"}[5m])) + sum(rate(onboarding_token_cache_total{outcome=\"miss\"}[5m])))",
+          "legendFormat": "hit ratio",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percentunit" } }
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "State store consume hit/miss",
+      "description": "consume_miss = expired token (нормально) либо attack (мониторить если spike).",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 19 },
+      "targets": [
+        {
+          "expr": "sum by (outcome) (rate(onboarding_state_store_total[5m]))",
+          "legendFormat": "{{outcome}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops" } }
+    },
+    {
+      "id": 12,
+      "type": "row",
+      "title": "Onboarding completion",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 27 },
+      "collapsed": false
+    },
+    {
+      "id": 13,
+      "type": "stat",
+      "title": "Pending onboardings",
+      "description": "Раз в N минут scrape'ает access.user_plan_onboardings WHERE completed_at IS NULL (требует postgres-exporter custom query).",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 28 },
+      "targets": [
+        {
+          "expr": "pg_stat_user_tables_n_live_tup{schemaname=\"access\",relname=\"user_plan_onboardings\"}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "type": "stat",
+      "title": "Pending invitations stuck >7d",
+      "description": "GitHub-side invitations expire через 7 дней. Если копится — значит юзеры не нажимают «Принять» (или забыли пройти онбординг).",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 28 },
+      "targets": [
+        {
+          "expr": "pg_stat_user_tables_n_live_tup{schemaname=\"access\",relname=\"github_org_invitations\"}",
+          "refId": "A"
+        }
+      ]
+    }
+  ]
+}

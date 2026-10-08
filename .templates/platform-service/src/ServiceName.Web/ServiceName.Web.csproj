@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <ItemGroup>
+    <Content Remove="bin\**\*;obj\**\*" />
+    <None Remove="bin\**\*;obj\**\*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <ProjectReference Include="..\..\..\Shared\Framework\Framework.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ServiceName.Core\ServiceName.Core.csproj" />
+    <ProjectReference Include="..\ServiceName.Domain\ServiceName.Domain.csproj" />
+    <ProjectReference Include="..\ServiceName.Infrastructure.Postgres\ServiceName.Infrastructure.Postgres.csproj" />
+    <ProjectReference Include="..\..\..\Shared\PlatformBootstrap\PlatformBootstrap.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\..\..\Shared\Observability\serilog*.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

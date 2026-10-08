@@ -1,0 +1,1100 @@
+name: ${COMPOSE_PROJECT_NAME:-edu-platform}
+
+services:
+  # Comment Service
+  comment-service-migrations:
+    profiles: ["app"]
+    build:
+      context: ./backend
+      dockerfile: CommentService/Dockerfile
+      secrets:
+        - nuget_config
+    # Сначала EF schema, потом backfill target_author_id для исторических комментов
+    # (идемпотентно: исправляет NULL и устаревшие target_author_id).
+    entrypoint: ["/bin/sh", "-c", "./efbundle --connection \"$$CONNECTIONSTRINGS__DATABASE\" && dotnet CommentService.Web.dll backfill-target-author-id"]
+    env_file:
+      - .env
+    environment:
+      CONNECTIONSTRINGS__DATABASE: ${COMMENT_DB_CONNECTION}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      # ECS owns education.comment_target_ownership_v1. Install the provider
+      # contract before Comment migrations reconcile target_author_id.
+      education-service-migrations:
+        condition: service_completed_successfully
+    restart: "no"
+    networks:
+      - platform-network
+
+  comment-service:
+    profiles: ["app"]
+    build:
+      context: ./backend
+      dockerfile: CommentService/Dockerfile
+      secrets:
+        - nuget_config
+    ports:
+      - "${COMMENT_HOST_PORT:-8004}:8004"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      comment-service-migrations:
+        condition: service_completed_successfully
+      education-service-migrations:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_URLS: http://+:8004
+      OTEL_SERVICE_NAME: CommentService
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      CONNECTIONSTRINGS__DATABASE: ${COMMENT_DB_CONNECTION}
+    healthcheck:
+      test: ["CMD", "dotnet", "healthcheck/healthcheck.dll", "8004"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+    restart: always
+    networks:
+      - platform-network
+
+  # Tag Service
+  tag-service-migrations:
+    profiles: ["app"]
+    build:
+      context: ./backend
+      dockerfile: TagService/Dockerfile
+      secrets:
+        - nuget_config
+    entrypoint: ["/bin/sh", "-c", "dotnet TagService.Web.dll reconcile-migration-history && ./efbundle --connection \"$$CONNECTIONSTRINGS__DATABASE\""]
+    env_file:
+      - .env
+    environment:
+      CONNECTIONSTRINGS__DATABASE: ${TAG_DB_CONNECTION}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - platform-network
+
+  tag-service:
+    profiles: ["app"]
+    build:
+      context: ./backend
+      dockerfile: TagService/Dockerfile
+      secrets:
+        - nuget_config
+    ports:
+      - "${TAG_HOST_PORT:-8007}:8007"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      tag-service-migrations:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_URLS: http://+:8007
+      OTEL_SERVICE_NAME: TagService
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      CONNECTIONSTRINGS__DATABASE: ${TAG_DB_CONNECTION}
+    healthcheck:
+      test: ["CMD", "dotnet", "healthcheck/healthcheck.dll", "8007"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+    restart: always
+    networks:
+      - platform-network
+
+  # Notification Service
+  notification-service-migrations:
+    profiles: ["app"]
+    build:
+      context: ./backend
+      dockerfile: NotificationService/Dockerfile
+      secrets:
+        - nuget_config
+    entrypoint: ["/bin/sh", "-c", "./efbundle --connection \"$$CONNECTIONSTRINGS__DATABASE\""]
+    env_file:
+      - .env
+    environment:
+      CONNECTIONSTRINGS__DATABASE: ${NOTIFICATION_DB_CONNECTION}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - platform-network
+
+  notification-service:
+    profiles: ["app"]
+    build:
+      context: ./backend
+      dockerfile: NotificationService/Dockerfile
+      secrets:
+        - nuget_config
+    ports:
+      - "${NOTIFICATION_HOST_PORT:-8006}:8006"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      notification-service-migrations:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_URLS: http://+:8006
+      OTEL_SERVICE_NAME: NotificationService
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      CONNECTIONSTRINGS__DATABASE: ${NOTIFICATION_DB_CONNECTION}
+    healthcheck:
+      test: ["CMD", "dotnet", "healthcheck/healthcheck.dll", "8006"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+    restart: always
+    networks:
+      - platform-network
+
+  # Telegram Bot Service
+  telegram-bot-service-migrations:
+    profiles: ["app"]
+    build:
+      context: ./backend
+      dockerfile: TelegramBotService/Dockerfile
+      secrets:
+        - nuget_config
+    entrypoint: ["/bin/sh", "-c", "./efbundle --connection \"$$CONNECTIONSTRINGS__DATABASE\""]
+    env_file:
+      - .env
+    environment:
+      CONNECTIONSTRINGS__DATABASE: ${TELEGRAM_DB_CONNECTION}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - platform-network
+
+  telegram-bot-service:
+    profiles: ["app"]
+    build:
+      context: ./backend
+      dockerfile: TelegramBotService/Dockerfile
+      secrets:
+        - nuget_config
+    ports:
+      - "${TELEGRAM_HOST_PORT:-8008}:8008"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      telegram-bot-service-migrations:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_URLS: http://+:8008
+      OTEL_SERVICE_NAME: TelegramBotService
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      CONNECTIONSTRINGS__DATABASE: ${TELEGRAM_DB_CONNECTION}
+      BOT__TOKEN: ${BOT__TOKEN}
+      # Override appsettings.Docker FrontendBaseUrl: bot шлёт URL'ы в Telegram
+      # inline-кнопки, требуется publicly resolvable HTTPS host. По умолчанию ведём
+      # на prod (sachkov-learn.net) — даже в dev юзер увидит работающие кнопки.
+      # Override через PUBLIC_FRONTEND_URL в .env при необходимости.
+      TELEGRAMNOTIFICATION__FRONTENDBASEURL: ${PUBLIC_FRONTEND_URL:-https://sachkov-learn.net}
+    healthcheck:
+      test: ["CMD", "dotnet", "healthcheck/healthcheck.dll", "8008"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+    # on-failure, а не always: если BOT__TOKEN не задан (dev), Program.cs делает
+    # graceful exit 0 — мы не хотим бесконечного рестарта. В prod токен всегда задан.
+    restart: on-failure
+    networks:
+      - platform-network
+
+  # Search Service (Typesense-backed)
+  search-service-migrations:
+    profiles: ["app"]
+    build:
+      context: ./backend
+      dockerfile: SearchService/Dockerfile
+      secrets:
+        - nuget_config
+    entrypoint: ["/bin/sh", "-c", "./efbundle --connection \"$$CONNECTIONSTRINGS__DATABASE\""]
+    env_file:
+      - .env
+    environment:
+      CONNECTIONSTRINGS__DATABASE: ${SEARCH_DB_CONNECTION}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - platform-network
+
+  search-service:
+    profiles: ["app"]
+    build:
+      context: ./backend
+      dockerfile: SearchService/Dockerfile
+      secrets:
+        - nuget_config
+    ports:
+      - "${SEARCH_HOST_PORT:-8009}:8009"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      typesense:
+        condition: service_started
+      education-service:
+        condition: service_healthy
+      tag-service:
+        condition: service_healthy
+      search-service-migrations:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_URLS: http://+:8009
+      OTEL_SERVICE_NAME: SearchService
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      CONNECTIONSTRINGS__DATABASE: ${SEARCH_DB_CONNECTION}
+      TYPESENSEOPTIONS__APIKEY: ${TYPESENSE_API_KEY}
+    healthcheck:
+      test: ["CMD", "dotnet", "healthcheck/healthcheck.dll", "8009"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+    restart: always
+    networks:
+      - platform-network
+
+  # Access Service
+  access-service-migrations:
+    profiles: ["app"]
+    build:
+      context: ./backend
+      dockerfile: AccessService/Dockerfile
+      secrets:
+        - nuget_config
+    entrypoint: ["/bin/sh", "-c", "./efbundle --connection \"$$CONNECTIONSTRINGS__DATABASE\""]
+    env_file:
+      - .env
+    environment:
+      CONNECTIONSTRINGS__DATABASE: ${ACCESS_DB_CONNECTION}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - platform-network
+
+  access-service:
+    profiles: ["app"]
+    build:
+      context: ./backend
+      dockerfile: AccessService/Dockerfile
+      secrets:
+        - nuget_config
+    ports:
+      - "${ACCESS_HOST_PORT:-8010}:8010"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      access-service-migrations:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_URLS: http://+:8010
+      OTEL_SERVICE_NAME: AccessService
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      CONNECTIONSTRINGS__DATABASE: ${ACCESS_DB_CONNECTION}
+    healthcheck:
+      test: ["CMD", "dotnet", "healthcheck/healthcheck.dll", "8010"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+    restart: always
+    networks:
+      - platform-network
+
+  # Assignment Review Service (AI-проверка студенческих PR на GitHub)
+  assignment-review-service-migrations:
+    profiles: ["app"]
+    build:
+      context: ./backend
+      dockerfile: AssignmentReviewService/Dockerfile
+      secrets:
+        - nuget_config
+    entrypoint: ["/bin/sh", "-c", "./efbundle --connection \"$$CONNECTIONSTRINGS__DATABASE\""]
+    env_file:
+      - .env
+    environment:
+      CONNECTIONSTRINGS__DATABASE: ${ASSIGNMENT_REVIEW_DB_CONNECTION}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - platform-network
+
+  assignment-review-service:
+    profiles: ["app"]
+    build:
+      context: ./backend
+      dockerfile: AssignmentReviewService/Dockerfile
+      secrets:
+        - nuget_config
+    ports:
+      - "${ASSIGNMENT_REVIEW_HOST_PORT:-8012}:8012"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      assignment-review-service-migrations:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_URLS: http://+:8012
+      OTEL_SERVICE_NAME: AssignmentReviewService
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      CONNECTIONSTRINGS__DATABASE: ${ASSIGNMENT_REVIEW_DB_CONNECTION}
+    healthcheck:
+      test: ["CMD", "dotnet", "healthcheck/healthcheck.dll", "8012"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+    restart: always
+    networks:
+      - platform-network
+
+  # Material Processing Service (transcription + AI synopsis + timecodes)
+  material-processing-service-migrations:
+    profiles: ["app"]
+    build:
+      context: ./backend
+      dockerfile: MaterialProcessingService/Dockerfile
+      secrets:
+        - nuget_config
+    entrypoint: ["/bin/sh", "-c", "./efbundle --connection \"$$CONNECTIONSTRINGS__DATABASE\""]
+    env_file:
+      - .env
+    environment:
+      CONNECTIONSTRINGS__DATABASE: ${MATERIAL_PROCESSING_DB_CONNECTION}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - platform-network
+
+  material-processing-service:
+    profiles: ["app"]
+    build:
+      context: ./backend
+      dockerfile: MaterialProcessingService/Dockerfile
+      secrets:
+        - nuget_config
+    ports:
+      - "${MATERIAL_PROCESSING_HOST_PORT:-8011}:8011"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      material-processing-service-migrations:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_URLS: http://+:8011
+      OTEL_SERVICE_NAME: MaterialProcessingService
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      CONNECTIONSTRINGS__DATABASE: ${MATERIAL_PROCESSING_DB_CONNECTION}
+      FILESERVICEOPTIONS__URL: http://file-service:8002
+      EDUCATIONSERVICEOPTIONS__URL: http://education-service:8001
+      AI__PROVIDERS__AITUNNEL__APIKEY: ${AI__PROVIDERS__AITUNNEL__APIKEY:-}
+    healthcheck:
+      test: ["CMD", "dotnet", "healthcheck/healthcheck.dll", "8011"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+    restart: always
+    networks:
+      - platform-network
+
+  # Trainer Service (interview-prep drill trainer — Ф1: no Wolverine/Redis)
+  trainer-service-migrations:
+    profiles: ["app"]
+    build:
+      context: ./backend
+      dockerfile: TrainerService/Dockerfile
+      secrets:
+        - nuget_config
+    entrypoint: ["/bin/sh", "-c", "./efbundle --connection \"$$CONNECTIONSTRINGS__DATABASE\""]
+    env_file:
+      - .env
+    environment:
+      CONNECTIONSTRINGS__DATABASE: ${TRAINER_DB_CONNECTION}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - platform-network
+
+  trainer-service:
+    profiles: ["app"]
+    build:
+      context: ./backend
+      dockerfile: TrainerService/Dockerfile
+      secrets:
+        - nuget_config
+    ports:
+      - "${TRAINER_HOST_PORT:-8013}:8013"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      trainer-service-migrations:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_URLS: http://+:8013
+      OTEL_SERVICE_NAME: TrainerService
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      CONNECTIONSTRINGS__DATABASE: ${TRAINER_DB_CONNECTION}
+      EDUCATIONSERVICEOPTIONS__URL: http://education-service:8001
+    healthcheck:
+      test: ["CMD", "dotnet", "healthcheck/healthcheck.dll", "8013"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+    restart: always
+    networks:
+      - platform-network
+
+  # Education Content Service
+  education-service-migrations:
+    profiles: ["app"]
+    build:
+      context: ./backend
+      dockerfile: EducationContentService/Dockerfile
+      secrets:
+        - nuget_config
+    entrypoint: ["/bin/sh", "-c", "./efbundle --connection \"$$CONNECTIONSTRINGS__DATABASE\" && dotnet EducationContentService.Web.dll migrate-data"]
+    env_file:
+      - .env
+    environment:
+      CONNECTIONSTRINGS__DATABASE: ${EDUCATION_DB_CONNECTION}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - platform-network
+
+  education-service:
+    profiles: ["app"]
+    build:
+      context: ./backend
+      dockerfile: EducationContentService/Dockerfile
+      secrets:
+        - nuget_config
+    ports:
+      - "${EDUCATION_HOST_PORT:-8001}:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      education-service-migrations:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_URLS: http://+:8001
+      OTEL_SERVICE_NAME: EducationContentService
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      CONNECTIONSTRINGS__DATABASE: ${EDUCATION_DB_CONNECTION}
+    healthcheck:
+      test: ["CMD", "dotnet", "healthcheck/healthcheck.dll", "8001"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+    restart: always
+    networks:
+      - platform-network
+
+  # File Service
+  file-service-migrations:
+    profiles: ["app"]
+    build:
+      context: ./backend
+      dockerfile: FileService/Dockerfile
+      secrets:
+        - nuget_config
+    entrypoint: ["/bin/sh", "-c", "./efbundle --connection \"$$CONNECTIONSTRINGS__DATABASE\""]
+    env_file:
+      - .env
+    environment:
+      CONNECTIONSTRINGS__DATABASE: ${FILE_DB_CONNECTION}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      education-service:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - platform-network
+
+  file-service:
+    profiles: ["app"]
+    build:
+      context: ./backend
+      dockerfile: FileService/Dockerfile
+      secrets:
+        - nuget_config
+    ports:
+      - "${FILE_HOST_PORT:-8002}:8002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      education-service:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      file-service-migrations:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_URLS: http://+:8002
+      OTEL_SERVICE_NAME: FileService
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      CONNECTIONSTRINGS__DATABASE: ${FILE_DB_CONNECTION}
+      EDUCATIONSERVICEOPTIONS__URL: http://education-service:8001
+      TARGETENTITYOPTIONS__ALLOWEDTARGETENTITYTYPES__0: material
+      TARGETENTITYOPTIONS__ALLOWEDTARGETENTITYTYPES__1: module
+      TARGETENTITYOPTIONS__ALLOWEDTARGETENTITYTYPES__2: issue
+      TARGETENTITYOPTIONS__ALLOWEDTARGETENTITYTYPES__3: course
+      TARGETENTITYOPTIONS__ALLOWEDTARGETENTITYTYPES__4: user
+      TARGETENTITYOPTIONS__ALLOWEDTARGETENTITYTYPES__5: profile
+      TARGETENTITYOPTIONS__ALLOWEDTARGETENTITYTYPES__6: collection
+      TARGETENTITYOPTIONS__ALLOWEDTARGETENTITYTYPES__7: project
+    healthcheck:
+      test: ["CMD", "dotnet", "healthcheck/healthcheck.dll", "8002"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+    restart: always
+    networks:
+      - platform-network
+
+  # Progress Service
+  progress-service-migrations:
+    profiles: ["app"]
+    build:
+      context: ./backend
+      dockerfile: ProgressService/Dockerfile
+      secrets:
+        - nuget_config
+    entrypoint: ["/bin/sh", "-c", "./efbundle --connection \"$$CONNECTIONSTRINGS__DATABASE\""]
+    env_file:
+      - .env
+    environment:
+      CONNECTIONSTRINGS__DATABASE: ${PROGRESS_DB_CONNECTION}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - platform-network
+
+  progress-service:
+    profiles: ["app"]
+    build:
+      context: ./backend
+      dockerfile: ProgressService/Dockerfile
+      secrets:
+        - nuget_config
+    ports:
+      - "${PROGRESS_HOST_PORT:-8003}:8003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      progress-service-migrations:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_URLS: http://+:8003
+      OTEL_SERVICE_NAME: ProgressService
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      CONNECTIONSTRINGS__DATABASE: ${PROGRESS_DB_CONNECTION}
+      AI__PROVIDERS__AITUNNEL__APIKEY: ${AI__PROVIDERS__AITUNNEL__APIKEY:-}
+    healthcheck:
+      test: ["CMD", "dotnet", "healthcheck/healthcheck.dll", "8003"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+    restart: always
+    networks:
+      - platform-network
+
+  # Profile Service
+  auth-service-migrations:
+    profiles: ["app"]
+    build:
+      context: ./backend
+      dockerfile: AuthService/Dockerfile
+      secrets:
+        - nuget_config
+    entrypoint: ["/bin/sh", "-c", "./efbundle --connection \"$$CONNECTIONSTRINGS__DATABASE\""]
+    env_file:
+      - .env
+    environment:
+      CONNECTIONSTRINGS__DATABASE: ${AUTH_DB_CONNECTION}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - platform-network
+
+  auth-service:
+    profiles: ["app"]
+    build:
+      context: ./backend
+      dockerfile: AuthService/Dockerfile
+      secrets:
+        - nuget_config
+    ports:
+      - "${AUTH_HOST_PORT:-8005}:8005"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      auth-service-migrations:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_URLS: http://+:8005
+      OTEL_SERVICE_NAME: AuthService
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      OPENIDDICT__ISSUER: http://localhost/
+      CONNECTIONSTRINGS__DATABASE: ${AUTH_DB_CONNECTION}
+    healthcheck:
+      test: ["CMD", "dotnet", "healthcheck/healthcheck.dll", "8005"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+    restart: always
+    networks:
+      - platform-network
+
+  # Frontend (dev mode with hot reload)
+  frontend:
+    profiles: ["frontend"]
+    image: node:22-alpine
+    working_dir: /app
+    command: sh -c "rm -rf /app/.next/* && npm install && npm run dev"
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+      - frontend_next:/app/.next
+    env_file:
+      - .env
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost/api}
+      - NEXT_PUBLIC_AUTH_ORIGIN=${NEXT_PUBLIC_AUTH_ORIGIN:-http://localhost}
+      - NEXT_PUBLIC_VAPID_PUBLIC_KEY=${NEXT_PUBLIC_VAPID_PUBLIC_KEY:-}
+      - API_URL_INTERNAL=http://nginx/api
+      - AUTH_OIDC_ISSUER=http://nginx/
+      - AUTH_URL=http://localhost
+      - HOSTNAME=0.0.0.0
+      - WATCHPACK_POLLING=true
+    ports:
+      - "${FRONTEND_HOST_PORT:-3000}:3000"
+    depends_on:
+      nginx:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - platform-network
+
+  # Mailpit (dev email testing)
+  mailpit:
+    profiles: ["infra"]
+    image: axllent/mailpit:latest
+    ports:
+      - "${MAILPIT_UI_PORT:-8025}:8025" # Web UI
+      - "${MAILPIT_SMTP_PORT:-1025}:1025" # SMTP
+    restart: unless-stopped
+    networks:
+      - platform-network
+
+  # Nginx
+  nginx:
+    profiles: ["app"]
+    image: nginx:alpine
+    ports:
+      - "${NGINX_HOST_PORT:-80}:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      education-service:
+        condition: service_healthy
+      file-service:
+        condition: service_healthy
+      progress-service:
+        condition: service_healthy
+      comment-service:
+        condition: service_healthy
+      tag-service:
+        condition: service_healthy
+      notification-service:
+        condition: service_healthy
+      search-service:
+        condition: service_healthy
+      access-service:
+        condition: service_healthy
+      assignment-review-service:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+    restart: always
+    networks:
+      - platform-network
+
+  # Infrastructure
+  postgres:
+    profiles: ["infra"]
+    # pgvector image — drop-in replacement для postgres:16-alpine с поддержкой
+    # vector (pgvector). Binary-совместим: существующий volume читается без
+    # миграции данных. Используется AssignmentReviewService для RAG-индексов.
+    image: pgvector/pgvector:pg16
+    env_file:
+      - .env
+    ports:
+      - "${POSTGRES_HOST_PORT:-5434}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init-databases.sql:/docker-entrypoint-initdb.d/01-init-databases.sql:ro
+      - ./docker/postgres/init-monitoring.sh:/docker-entrypoint-initdb.d/02-init-monitoring.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: always
+    networks:
+      - platform-network
+
+  minio:
+    profiles: ["infra"]
+    image: minio/minio:latest
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    env_file:
+      - .env
+    command: server --console-address ":9001" /data
+    volumes:
+      - minio_data:/data
+    restart: always
+    networks:
+      - platform-network
+
+  redis:
+    profiles: ["infra"]
+    image: redis:alpine
+    # AOF + RDB персистенция.
+    # noeviction — при переполнении лучше отказать записи, чем потерять access-теги
+    # (eviction → пустой set → fail-closed → 401 для всех).
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync everysec
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+      --maxmemory 512mb
+      --maxmemory-policy noeviction
+    ports:
+      - "${REDIS_HOST_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    restart: always
+    networks:
+      - platform-network
+
+  typesense:
+    profiles: ["infra"]
+    image: typesense/typesense:30.1
+    restart: always
+    ports:
+      - "${TYPESENSE_HOST_PORT:-8108}:8108"
+    environment:
+      - TYPESENSE_DATA_DIR=/data
+      - TYPESENSE_API_KEY=${TYPESENSE_API_KEY}
+      - TYPESENSE_CORS_DOMAINS=http://localhost:8006
+    volumes:
+      - typesense_data:/data
+    networks:
+      - platform-network
+
+  rabbitmq:
+    profiles: ["infra"]
+    image: rabbitmq:4-management-alpine
+    ports:
+      - "${RABBITMQ_HOST_PORT:-5672}:5672"
+      - "${RABBITMQ_UI_PORT:-15672}:15672"
+      - "${RABBITMQ_METRICS_PORT:-15692}:15692"   # Prometheus metrics endpoint
+    env_file:
+      - .env
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./docker/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
+      - ./docker/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+    networks:
+      - platform-network
+
+  # Observability
+  otel-collector:
+    profiles: ["obs"]
+    image: otel/opentelemetry-collector-contrib:0.120.0
+    command: ["--config", "/etc/otelcol/otel-collector-config.yaml"]
+    volumes:
+      - ./docker/otel-collector/otel-collector-config.yaml:/etc/otelcol/otel-collector-config.yaml:ro
+    ports:
+      - "${OTEL_GRPC_PORT:-4317}:4317"
+      - "${OTEL_HTTP_PORT:-4318}:4318"
+      - "${OTEL_PROM_PORT:-8889}:8889"
+    depends_on:
+      tempo:
+        condition: service_started
+      loki:
+        condition: service_started
+    restart: always
+    networks:
+      - platform-network
+
+  postgres-exporter:
+    profiles: ["obs"]
+    image: prometheuscommunity/postgres-exporter:v0.18.1
+    env_file:
+      - .env
+    environment:
+      DATA_SOURCE_NAME: "postgresql://postgres_exporter:${POSTGRES_EXPORTER_PASSWORD:-exporter}@postgres:5432/postgres?sslmode=disable"
+      PG_EXPORTER_AUTO_DISCOVER_DATABASES: "true"
+    ports:
+      - "${PG_EXPORTER_PORT:-9187}:9187"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: always
+    networks:
+      - platform-network
+
+  redis-exporter:
+    profiles: ["obs"]
+    image: oliver006/redis_exporter:v1.69.0-alpine
+    environment:
+      REDIS_ADDR: "redis://redis:6379"
+    ports:
+      - "${REDIS_EXPORTER_PORT:-9121}:9121"
+    depends_on:
+      redis:
+        condition: service_started
+    restart: always
+    networks:
+      - platform-network
+
+  alloy:
+    profiles: ["obs"]
+    image: grafana/alloy:v1.5.1
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    environment:
+      CLUSTER_NAME: docker
+    volumes:
+      - ./docker/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - alloy_data:/var/lib/alloy/data
+    ports:
+      - "${ALLOY_PORT:-12345}:12345"   # Alloy UI
+    depends_on:
+      loki:
+        condition: service_healthy
+    restart: always
+    networks:
+      - platform-network
+
+  tempo:
+    profiles: ["obs"]
+    image: grafana/tempo:2.7.2
+    command: ["-config.file=/etc/tempo/tempo-config.yaml"]
+    volumes:
+      - ./docker/tempo/tempo-config.yaml:/etc/tempo/tempo-config.yaml:ro
+      - tempo_data:/var/tempo
+    ports:
+      - "${TEMPO_PORT:-3200}:3200"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3200/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: always
+    networks:
+      - platform-network
+
+  loki:
+    profiles: ["obs"]
+    image: grafana/loki:3.4.2
+    command: -config.file=/etc/loki/loki-config.yaml
+    volumes:
+      - ./docker/loki/loki-config.yaml:/etc/loki/loki-config.yaml:ro
+      - loki_data:/loki
+    ports:
+      - "${LOKI_PORT:-3100}:3100"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3100/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: always
+    networks:
+      - platform-network
+
+  prometheus:
+    profiles: ["obs"]
+    image: prom/prometheus:latest
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=7d"
+      - "--web.enable-remote-write-receiver"
+      - "--enable-feature=exemplar-storage"
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    depends_on:
+      otel-collector:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: always
+    networks:
+      - platform-network
+
+  grafana:
+    profiles: ["obs"]
+    image: grafana/grafana:latest
+    env_file:
+      - .env
+    volumes:
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./docker/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+    restart: always
+    networks:
+      - platform-network
+
+secrets:
+  nuget_config:
+    file: ./backend/nuget.config
+
+networks:
+  platform-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  minio_data:
+  rabbitmq_data:
+  redis_data:
+  typesense_data:
+  loki_data:
+  prometheus_data:
+  tempo_data:
+  grafana_data:
+  alloy_data:
+  frontend_node_modules:
+  frontend_next:

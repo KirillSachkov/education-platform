@@ -1,0 +1,193 @@
+{
+  "uid": "assignment-review-pipeline",
+  "title": "Assignment Review Pipeline",
+  "tags": ["assignment-review-pipeline", "platform", "ai"],
+  "schemaVersion": 39,
+  "version": 3,
+  "editable": true,
+  "graphTooltip": 1,
+  "time": { "from": "now-6h", "to": "now" },
+  "refresh": "30s",
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "Iterations",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Iteration duration p50/p95/p99",
+      "description": "End-to-end длительность run-iteration (от accept до persist).",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 1 },
+      "targets": [
+        { "refId": "A", "expr": "histogram_quantile(0.5, sum by (le) (rate(assignment_review_iteration_duration_seconds_bucket[5m])))", "legendFormat": "p50" },
+        { "refId": "B", "expr": "histogram_quantile(0.95, sum by (le) (rate(assignment_review_iteration_duration_seconds_bucket[5m])))", "legendFormat": "p95" },
+        { "refId": "C", "expr": "histogram_quantile(0.99, sum by (le) (rate(assignment_review_iteration_duration_seconds_bucket[5m])))", "legendFormat": "p99" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s", "min": 0 } }
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Iteration outcomes per second",
+      "description": "RPS run-iteration, разрез по verdict (LOOKS_GOOD / MINOR_ISSUES / MAJOR_ISSUES / OFF_TOPIC) и failure code.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 1 },
+      "targets": [
+        { "refId": "A", "expr": "sum by (outcome) (rate(assignment_review_iteration_outcomes_total[5m]))", "legendFormat": "{{outcome}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps", "min": 0 } }
+    },
+    {
+      "id": 4,
+      "type": "row",
+      "title": "Diff & GitHub",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 },
+      "collapsed": false
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Diff size (additions) p50/p95",
+      "description": "Сколько строк добавляется в PR'ах, что мы реально проверяем.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 10 },
+      "targets": [
+        { "refId": "A", "expr": "histogram_quantile(0.5, sum by (le) (rate(assignment_review_diff_additions_bucket[15m])))", "legendFormat": "p50" },
+        { "refId": "B", "expr": "histogram_quantile(0.95, sum by (le) (rate(assignment_review_diff_additions_bucket[15m])))", "legendFormat": "p95" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "min": 0 } }
+    },
+    {
+      "id": 8,
+      "type": "stat",
+      "title": "GitHub reviews posted (1h)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 10 },
+      "targets": [
+        { "refId": "A", "expr": "sum(increase(assignment_review_github_reviews_posted_total[1h]))", "legendFormat": "posted" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "min": 0 } }
+    },
+    {
+      "id": 11,
+      "type": "row",
+      "title": "Cost & rate limits (#327)",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 18 },
+      "collapsed": false
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "AI tokens consumed (24h, by model)",
+      "description": "Кумулятивные input + output токены за окно. Используется для оценки ежедневного расхода. Cost = tokens × price_per_token (см. провайдер pricing).",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 19 },
+      "targets": [
+        { "refId": "A", "expr": "sum by (model) (increase(ai_input_tokens_total{service=\"assignment-review-service\"}[24h]))", "legendFormat": "in / {{model}}" },
+        { "refId": "B", "expr": "sum by (model) (increase(ai_output_tokens_total{service=\"assignment-review-service\"}[24h]))", "legendFormat": "out / {{model}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "min": 0 } }
+    },
+    {
+      "id": 13,
+      "type": "timeseries",
+      "title": "Rate-limit rejections per scope (1h)",
+      "description": "Сколько раз rate-limit резал запрос. Скоупы: submission / user/24h / author/24h (#327). Рост по author = популярный курс упирается в author-cap, рассмотри увеличение MaxIterationsPerAuthorPerDay.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 19 },
+      "targets": [
+        { "refId": "A", "expr": "sum(increase(assignment_review_iteration_outcomes_total{outcome=\"review.rate_limit.exceeded\"}[1h]))", "legendFormat": "rate-limited" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "min": 0 } }
+    },
+    {
+      "id": 14,
+      "type": "row",
+      "title": "Feedback quality (#327)",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 27 },
+      "collapsed": false
+    },
+    {
+      "id": 15,
+      "type": "timeseries",
+      "title": "Iteration feedback per verdict + helpful (24h)",
+      "description": "Сколько 👍/👎 submit'ов авторов на iteration'ы. Высокая доля helpful=false по конкретному verdict'у = пересмотри prompt или модель для этой ниши.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 28 },
+      "targets": [
+        { "refId": "A", "expr": "sum by (verdict, helpful) (increase(assignment_review_iteration_feedback_total[24h]))", "legendFormat": "{{verdict}} · {{helpful}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "min": 0 } }
+    },
+    {
+      "id": 16,
+      "type": "stat",
+      "title": "Feedback helpful ratio (24h)",
+      "description": "Доля 👍 от всех submitted фидбэков за окно. <0.5 — повод пересмотреть AI-конфиг.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 28 },
+      "targets": [
+        { "refId": "A", "expr": "sum(increase(assignment_review_iteration_feedback_total{helpful=\"true\"}[24h])) / sum(increase(assignment_review_iteration_feedback_total[24h]))", "legendFormat": "helpful ratio" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1 } }
+    },
+    {
+      "id": 10,
+      "type": "stat",
+      "title": "Iteration error rate (5m)",
+      "description": "Доля iteration'ов с failure кодом за окно.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 36 },
+      "targets": [
+        { "refId": "A", "expr": "sum(rate(assignment_review_iteration_outcomes_total{outcome=~\"review\\\\..*\"}[5m])) / sum(rate(assignment_review_iteration_outcomes_total[5m]))", "legendFormat": "error rate" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1 } }
+    },
+    {
+      "id": 17,
+      "type": "row",
+      "title": "Stuck reviews (#690)",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 42 },
+      "collapsed": false
+    },
+    {
+      "id": 18,
+      "type": "stat",
+      "title": "AI reviews stuck (last watchdog sweep)",
+      "description": "Сколько QUEUED/RUNNING ревью stale-watchdog нашёл зависшими (без прогресса дольше StaleReviewMaxAgeMinutes) и переотправил в последнем проходе (#690). Норма — 0. Устойчиво >0 = что-то ломает прогон ревью (LLM-провайдер лёг, краши воркера) — смотри логи StaleRunningReviewRecovery. Алерт: this > 0.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 43 },
+      "targets": [
+        { "refId": "A", "expr": "max(assignment_review_stuck_reviews)", "legendFormat": "stuck" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "red", "value": 1 }
+          ] }
+        }
+      },
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 19,
+      "type": "timeseries",
+      "title": "Stuck reviews requeued over time",
+      "description": "Динамика зависших ревью, найденных и переотправленных watchdog'ом каждый проход (#690). Всплески = периоды нестабильности пайплайна (провайдер/воркер).",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 7, "w": 16, "x": 8, "y": 43 },
+      "targets": [
+        { "refId": "A", "expr": "max(assignment_review_stuck_reviews)", "legendFormat": "stuck" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "min": 0 } }
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\FileService.Core\FileService.Core.csproj"/>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.Extensions.NETCore.Setup"/>
+    <PackageReference Include="AWSSDK.S3"/>
+  </ItemGroup>
+</Project>

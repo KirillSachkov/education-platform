@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="FluentValidation" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    <!-- #614 C2: TrainerQuotaService uses IConnectionMultiplexer directly for INCR+EXPIRE quota counters. -->
+    <PackageReference Include="StackExchange.Redis" />
+    <!-- #681 T2: TrainerService → AuthService user-lookup client (Polly resilience + HybridCache decorator). -->
+    <PackageReference Include="Microsoft.Extensions.Http.Polly" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Hybrid" />
+    <ProjectReference Include="..\..\..\Shared\Core\Core.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Framework\Framework.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TrainerService.Contracts\TrainerService.Contracts.csproj" />
+    <ProjectReference Include="..\TrainerService.Domain\TrainerService.Domain.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Authentication\Authentication.csproj" />
+    <ProjectReference Include="..\..\..\Shared\ContentAccess\ContentAccess\ContentAccess.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Ordering\Ordering\Ordering.csproj" />
+    <ProjectReference Include="..\..\..\Shared\AI\AI\AI.csproj" />
+  </ItemGroup>
+
+</Project>

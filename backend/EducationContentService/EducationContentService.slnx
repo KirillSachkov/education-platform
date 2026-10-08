@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".dockerignore" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="Dockerfile" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/EducationContentService.IntegrationTests/EducationContentService.IntegrationTests.csproj" />
+  </Folder>
+  <Project Path="src/EducationContentService.Contracts/EducationContentService.Contracts.csproj" />
+  <Project Path="src/EducationContentService.Core/EducationContentService.Core.csproj" />
+  <Project Path="src/EducationContentService.Domain/EducationContentService.Domain.csproj" />
+  <Project Path="src/EducationContentService.Infrastructure.Postgres/EducationContentService.Infrastructure.Postgres.csproj" />
+  <Project Path="src/EducationContentService.Web/EducationContentService.Web.csproj" />
+</Solution>

@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="src/AccessService.Contracts/AccessService.Contracts.csproj" />
+  <Project Path="src/AccessService.Core/AccessService.Core.csproj" />
+  <Project Path="src/AccessService.Domain/AccessService.Domain.csproj" />
+  <Project Path="src/AccessService.Infrastructure.Postgres/AccessService.Infrastructure.Postgres.csproj" />
+  <Project Path="src/AccessService.Web/AccessService.Web.csproj" />
+  <Project Path="tests/AccessService.IntegrationTests/AccessService.IntegrationTests.csproj" />
+</Solution>

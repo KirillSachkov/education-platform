@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\FileService.Core\FileService.Core.csproj"/>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp" GeneratePathProperty="true"/>
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" GeneratePathProperty="true"/>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions"/>
+  </ItemGroup>
+  <!-- Package paths also work inside the backend-only Docker build context. The
+       public source inventory retains byte-identical copies and package hashes. -->
+  <ItemGroup>
+    <None Include="$(PkgSkiaSharp)/LICENSE.txt" Link="licenses/SkiaSharp-MIT.txt"
+          CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest"/>
+    <None Include="$(PkgSkiaSharp_NativeAssets_Linux_NoDependencies)/LICENSE.txt" Link="licenses/SkiaSharp-NativeAssets-MIT.txt"
+          CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest"/>
+    <None Include="$(PkgSkiaSharp_NativeAssets_Linux_NoDependencies)/THIRD-PARTY-NOTICES.txt" Link="licenses/SkiaSharp-NativeAssets-THIRD-PARTY-NOTICES.txt"
+          CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest"/>
+  </ItemGroup>
+</Project>

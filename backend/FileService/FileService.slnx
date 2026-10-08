@@ -1,0 +1,23 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/SolutionFolder/">
+    <File Path=".editorconfig" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/FileService.IntegrationTests/FileService.IntegrationTests.csproj" />
+    <Project Path="tests/FileService.UnitTests/FileService.UnitTests.csproj" />
+  </Folder>
+  <Project Path="src/FileService.Contracts/FileService.Contracts.csproj" />
+  <Project Path="src/FileService.Core/FileService.Core.csproj" />
+  <Project Path="src/FileService.Domain/FileService.Domain.csproj" />
+  <Project Path="src/FileService.Infrastructure.Kinescope/FileService.Infrastructure.Kinescope.csproj" />
+  <Project Path="src/FileService.Infrastructure.Postgres/FileService.Infrastructure.Postgres.csproj" />
+  <Project Path="src/FileService.Infrastructure.S3/FileService.Infrastructure.S3.csproj" />
+  <Project Path="src/FileService.Web/FileService.Web.csproj" />
+</Solution>

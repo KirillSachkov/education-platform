@@ -1,0 +1,45 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: docker
+    environment: development
+
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
+scrape_configs:
+  # ── App metrics из OTEL Collector ────────────────────────────────
+  - job_name: "otel-collector-app"
+    static_configs:
+      - targets: ["otel-collector:8889"]
+        labels:
+          source: app
+
+  # ── Self-telemetry самого OTEL Collector ─────────────────────────
+  - job_name: "otel-collector-internal"
+    static_configs:
+      - targets: ["otel-collector:8888"]
+        labels:
+          source: collector
+
+  # ── Prometheus сам ───────────────────────────────────────────────
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["prometheus:9090"]
+
+  # ── Postgres ─────────────────────────────────────────────────────
+  - job_name: "postgres"
+    static_configs:
+      - targets: ["postgres-exporter:9187"]
+
+  # ── Redis ────────────────────────────────────────────────────────
+  - job_name: "redis"
+    static_configs:
+      - targets: ["redis-exporter:9121"]
+
+  # ── RabbitMQ (built-in prometheus plugin) ────────────────────────
+  - job_name: "rabbitmq"
+    static_configs:
+      - targets: ["rabbitmq:15692"]
+    metrics_path: /metrics

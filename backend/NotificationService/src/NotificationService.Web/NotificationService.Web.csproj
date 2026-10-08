@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+    <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
+        <PackageReference Include="Scalar.AspNetCore" />
+        <ProjectReference Include="..\..\..\Shared\Framework\Framework.csproj" />
+        <PackageReference Include="StackExchange.Redis" />
+    </ItemGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\..\..\AccessService\src\AccessService.Contracts\AccessService.Contracts.csproj" />
+      <ProjectReference Include="..\..\..\Shared\Authentication\Authentication.csproj" />
+      <ProjectReference Include="..\..\..\Shared\Observability\Observability.csproj" />
+      <ProjectReference Include="..\..\..\Shared\PlatformBootstrap\PlatformBootstrap.csproj" />
+      <ProjectReference Include="..\NotificationService.Contracts\NotificationService.Contracts.csproj" />
+      <ProjectReference Include="..\NotificationService.Core\NotificationService.Core.csproj" />
+      <ProjectReference Include="..\NotificationService.Domain\NotificationService.Domain.csproj" />
+      <ProjectReference Include="..\NotificationService.Infrastructure.Postgres\NotificationService.Infrastructure.Postgres.csproj" />
+      <Content Include="..\..\..\Shared\Observability\serilog*.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    </ItemGroup>
+
+</Project>
