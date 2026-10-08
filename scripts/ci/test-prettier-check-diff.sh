@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# This script owns its Git fixture and diff, independently of the caller's CI event.
+unset CI_DIFF_BASE CI_DIFF_HEAD GITHUB_EVENT_NAME GITHUB_EVENT_PATH GITHUB_REPOSITORY
 root="$(cd "$(dirname "$0")/../.." && pwd)"
 fixture="$(mktemp -d)"
 trap 'rm -rf "$fixture"' EXIT
