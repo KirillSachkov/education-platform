@@ -1,7 +1,13 @@
 {
-  "active_provider": "gitlab",
+  "active_provider": "github",
   "gitlab_project": "miracle-generation/education-platform",
   "github_tracker": "KirillSachkov/education-platform-internal",
   "github_source": "KirillSachkov/education-platform",
-  "activation": null
+  "activation": {
+    "owner_command": "https://github.com/KirillSachkov/education-platform-internal/issues/14#issuecomment-6067513571",
+    "import_receipt": "https://github.com/KirillSachkov/education-platform-internal/issues/14#issuecomment-6067513571",
+    "checks_receipt": "https://github.com/KirillSachkov/education-platform/actions/runs/37832151254",
+    "archive_receipt": "https://github.com/KirillSachkov/education-platform-internal/issues/14#issuecomment-6067513571",
+    "activated_at": "2026-10-08T19:36:41Z"
+  }
 }
