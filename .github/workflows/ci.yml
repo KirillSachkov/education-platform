@@ -14,9 +14,9 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  DOTNET_NOLOGO: 'true'
-  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
-  DOCKER_BUILD_RECORD_UPLOAD: 'false'
+  DOTNET_NOLOGO: "true"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+  DOCKER_BUILD_RECORD_UPLOAD: "false"
 
 jobs:
   select:
@@ -130,6 +130,7 @@ jobs:
           bash scripts/ci/test-production-rollback-guard.sh
           bash scripts/ci/test-production-env-export.sh
           bash scripts/ci/test-validate-production-env.sh
+          PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts/ops/production -p 'test_*.py'
           bash scripts/ci/test-npm-audit-with-retry.sh
 
   images:
@@ -164,7 +165,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '22'
+          node-version: "22"
           package-manager-cache: false
       - working-directory: mcp/admin-server
         run: |
@@ -189,7 +190,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '22'
+          node-version: "22"
           package-manager-cache: false
       - working-directory: frontend
         run: |
@@ -253,7 +254,20 @@ jobs:
   required-checks:
     name: required-checks
     if: always()
-    needs: [select, whitespace, harness, templates, migrations, compose, images, admin, frontend, backend, rules]
+    needs:
+      [
+        select,
+        whitespace,
+        harness,
+        templates,
+        migrations,
+        compose,
+        images,
+        admin,
+        frontend,
+        backend,
+        rules,
+      ]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     env:

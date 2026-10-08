@@ -1,0 +1,81 @@
+name: Production
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Readiness probe, deploy, or rollback
+        required: true
+        default: probe
+        type: choice
+        options: [probe, deploy, rollback]
+      release:
+        description: Explicit approved release; normal builds require both identifiers
+        required: true
+        default: current
+        type: choice
+        options: [current, previous, recorded-previous, normal-public-build]
+      source_sha:
+        description: Full public source SHA for normal-public-build only
+        required: false
+        type: string
+      build_run_id:
+        description: Successful trusted-main image build run for normal-public-build only
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  operation:
+    if: github.repository == 'KirillSachkov/education-platform' && github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    environment: production
+    outputs:
+      source_sha: ${{ steps.apply.outputs.source_sha }}
+      version: ${{ steps.apply.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - id: apply
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+          GH_TOKEN: ${{ github.token }}
+          PRODUCTION_OPERATION: ${{ inputs.operation }}
+          PRODUCTION_RELEASE: ${{ inputs.release }}
+          PRODUCTION_SOURCE_SHA: ${{ inputs.source_sha }}
+          PRODUCTION_BUILD_RUN_ID: ${{ inputs.build_run_id }}
+          PRODUCTION_SSH_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
+          PRODUCTION_SSH_KNOWN_HOSTS: ${{ secrets.PRODUCTION_SSH_KNOWN_HOSTS }}
+          PRODUCTION_SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
+          LEGACY_RELEASE_MANIFEST: ${{ secrets.LEGACY_RELEASE_MANIFEST }}
+          LEGACY_GHCR_READ_TOKEN: ${{ secrets.LEGACY_GHCR_READ_TOKEN }}
+          INFISICAL_CLIENT_ID: ${{ secrets.INFISICAL_CLIENT_ID }}
+          INFISICAL_CLIENT_SECRET: ${{ secrets.INFISICAL_CLIENT_SECRET }}
+          INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
+          NORMAL_RUNTIME_APPROVAL: ${{ secrets.NORMAL_RUNTIME_APPROVAL }}
+        run: python3 scripts/ops/production/github_production.py
+
+  tag-deployed-version:
+    needs: operation
+    if: inputs.operation == 'deploy' && inputs.release == 'normal-public-build' && needs.operation.result == 'success'
+    permissions:
+      contents: write
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          DEPLOYED_SOURCE_SHA: ${{ needs.operation.outputs.source_sha }}
+          DEPLOYED_VERSION: ${{ needs.operation.outputs.version }}
+        run: python3 scripts/ops/production/tag_deployed_version.py

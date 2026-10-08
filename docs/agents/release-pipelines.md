@@ -1,5 +1,15 @@
 ---
-paths: [".gitlab-ci.yml", ".github/workflows/**", "docker-compose*", "docker/**", "scripts/**", "docs/ops.md", "docs/RUNBOOK.md", "**/Dockerfile*"]
+paths:
+  [
+    ".gitlab-ci.yml",
+    ".github/workflows/**",
+    "docker-compose*",
+    "docker/**",
+    "scripts/**",
+    "docs/ops.md",
+    "docs/RUNBOOK.md",
+    "**/Dockerfile*",
+  ]
 ---
 
 # Release pipelines
@@ -38,6 +48,9 @@ images → manual owner-authorized deploy`
 Use the project `release` skill after an explicit owner command for the exact release input.
 Discover the reviewed manual production workflow in `.github/workflows`; verify its inputs before
 calling `gh workflow run <workflow> --repo KirillSachkov/education-platform --ref main ...`.
+The reviewed implementation is `production.yml`; see
+[GitHub production workflow](../github-production.md) for its explicit inputs,
+immutable manifests, private environment and recovery behavior.
 The dispatch implementation must independently require the trusted repository and
 `refs/heads/main`, plus `environment: production` restricted to branch `main`.
 
