@@ -1,1 +1,1 @@
-Temporary required-checks acceptance probe.  
+Temporary required-checks acceptance probe.
