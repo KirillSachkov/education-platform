@@ -76,6 +76,23 @@ npm includes LGPL-3.0-or-later libvips and MPL-2.0 packages. Image publishers mu
 retain their package notices and satisfy applicable artifact distribution terms.
 Source readiness does not certify an image-level license bundle.
 
+The Linux musl x64 frontend uses Sharp 0.35.5 with libvips 8.18.7 from
+`@img/sharp-libvips-linuxmusl-x64` 1.3.4. Its
+[native license bundle](../frontend/third-party/sharp-libvips-1.3.4/README.md)
+includes complete GPL-3.0 and LGPL-3.0 texts, original component copyrights,
+the upstream licensing table and exact component versions. The build verifies
+notice checksums and installed versions before copying the bundle to
+`/app/licenses/native-libvips/` in the frontend image.
+
+[Matching sources](https://github.com/KirillSachkov/education-platform/releases/download/third-party-sharp-libvips-1.3.4/sharp-libvips-1.3.4-matching-source.tar.gz)
+are supplied alongside the object code without charge.
+SHA256: `a9bb4442d7c9edd8a6caec054416590e106d92005942ddea8438e29293dc6e4f`.
+The archive preserves component licenses, exact archives and patches, pinned
+build scripts and checksum-verified Rust sources. The platform's MIT license
+does not replace these licenses. The bundle describes how to replace the shared
+library with an interface-compatible modified library. Reverse engineering to
+debug such modifications is permitted under the applicable license.
+
 The original product graphics, portrait and legal PDFs/Markdown are excluded.
 Neutral geometric replacement graphics are original work under root MIT; see
 [the asset boundary](../ASSET_NOTICE.md). The public tree includes no proprietary

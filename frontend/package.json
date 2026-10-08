@@ -10,7 +10,7 @@
     "lint": "LINT_TYPED=1 eslint",
     "lint:fast": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "node --test scripts/collect-dependency-notices.test.mjs && vitest run",
     "test:watch": "vitest",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

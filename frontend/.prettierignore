@@ -14,3 +14,6 @@ project/
 
 # Юридические документы: форматирование меняет рендер пунктов (10.2.6 уходит в список)
 content/legal/
+
+# Preserve upstream license and copyright bytes.
+third-party/
