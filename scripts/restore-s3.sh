@@ -190,7 +190,8 @@ docker run -d \
 
 READY=false
 for _ in {1..60}; do
-    if docker exec "$CONTAINER_NAME" pg_isready -U postgres -d postgres >/dev/null 2>&1; then
+    # The entrypoint's temporary initialization server accepts only Unix sockets.
+    if docker exec "$CONTAINER_NAME" pg_isready -h 127.0.0.1 -U postgres -d postgres >/dev/null 2>&1; then
         READY=true
         break
     fi
