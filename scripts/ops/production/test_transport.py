@@ -133,6 +133,28 @@ class ProductionTransport(unittest.TestCase):
                 transport.main()
             self.assertEqual(output.getvalue(), "")
 
+    def test_secret_key_without_final_newline_loads_in_real_openssh(self):
+        real_run = subprocess.run
+        receipt = subprocess.CompletedProcess([], 0, b'{"status":"PASS","operation":"probe","applications":14,"health_services":13}', b"")
+        with tempfile.TemporaryDirectory(prefix="production-key-test-") as directory:
+            generated = Path(directory) / "generated"
+            real_run(["ssh-keygen", "-q", "-t", "ed25519", "-N", "", "-f", str(generated)], check=True, capture_output=True)
+            original = generated.read_text().rstrip("\r\n")
+            expected_public = real_run(["ssh-keygen", "-y", "-P", "", "-f", str(generated)], check=True, capture_output=True).stdout
+
+            def inspect_identity(command, **kwargs):
+                identity = Path(command[command.index("-i") + 1])
+                self.assertEqual(identity.stat().st_mode & 0o777, 0o600)
+                loaded = real_run(["ssh-keygen", "-y", "-P", "", "-f", str(identity)], check=True, capture_output=True)
+                self.assertEqual(loaded.stdout, expected_public)
+                return receipt
+
+            for suffix in ("", "\n", "\r\n"):
+                environment = self.environment()
+                environment["PRODUCTION_SSH_PRIVATE_KEY"] = original + suffix
+                with self.subTest(suffix=repr(suffix)), patch.dict(os.environ, environment, clear=True), patch.object(transport.subprocess, "run", side_effect=inspect_identity), contextlib.redirect_stdout(io.StringIO()):
+                    transport.main()
+
 
 if __name__ == "__main__":
     unittest.main()
