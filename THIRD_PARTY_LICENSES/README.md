@@ -86,7 +86,7 @@ notice checksums and installed versions before copying the bundle to
 
 [Matching sources](https://github.com/KirillSachkov/education-platform/releases/download/third-party-sharp-libvips-1.3.4/sharp-libvips-1.3.4-matching-source.tar.gz)
 are supplied alongside the object code without charge.
-SHA256: `a9bb4442d7c9edd8a6caec054416590e106d92005942ddea8438e29293dc6e4f`.
+SHA256: `7d4d9a75a0dc2a9af400a673847156155d025b7e5e7f720143432964a7fe5d58`.
 The archive preserves component licenses, exact archives and patches, pinned
 build scripts and checksum-verified Rust sources. The platform's MIT license
 does not replace these licenses. The bundle describes how to replace the shared

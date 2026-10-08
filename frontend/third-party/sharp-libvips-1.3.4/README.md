@@ -10,8 +10,8 @@ The original platform's MIT license does not replace these component licenses.
 
 Matching sources: sharp-libvips-1.3.4-matching-source.tar.gz contains exact source archives, patches, pinned build scripts and Cargo-lock-verified crate sources.
 Download: https://github.com/KirillSachkov/education-platform/releases/download/third-party-sharp-libvips-1.3.4/sharp-libvips-1.3.4-matching-source.tar.gz
-SHA256: a9bb4442d7c9edd8a6caec054416590e106d92005942ddea8438e29293dc6e4f
-Size: 175037909 bytes. The archive retains the original component licenses.
+SHA256: 7d4d9a75a0dc2a9af400a673847156155d025b7e5e7f720143432964a7fe5d58
+Size: 175037945 bytes. The archive retains the original component licenses.
 Source provenance, patches, crate checksums and build directions are inside the archive.
 
 To replace the native library, build an interface-compatible Linux musl x64 libvips-cpp.so.8.18.7 from the matching sources, retaining its SONAME and C++ ABI.
