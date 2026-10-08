@@ -4,3 +4,5 @@
 THIRD_PARTY_LICENSES/*.txt whitespace=-trailing-space,-blank-at-eof
 THIRD_PARTY_LICENSES/SkiaSharp*.txt -text whitespace=cr-at-eol,-trailing-space,-blank-at-eof
 frontend/public/fonts/OFL.txt whitespace=-trailing-space,-blank-at-eof
+# Native dependency notices retain original license and copyright bytes.
+frontend/third-party/** -text whitespace=cr-at-eol,-trailing-space,-blank-at-eof,-space-before-tab

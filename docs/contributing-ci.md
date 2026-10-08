@@ -108,7 +108,13 @@ use this manifest, rather than infer completeness from a successful matrix membe
 Canonical source notices enter builds through the `image_notices` BuildKit file
 secret. Backend images retain restored package metadata and notice files.
 Frontend images retain installed npm metadata, license files and README notices,
-including the libvips dependency notice. FileService also includes the three
+including the libvips dependency notice. They also retain the
+[complete native libvips bundle](../frontend/third-party/sharp-libvips-1.3.4/README.md)
+under `/app/licenses/native-libvips/`: GNU texts, component copyrights,
+exact versions and matching-source download directions. The collector verifies
+all supplement checksums and rejects mismatched installed native versions.
+`npm test` covers missing licenses, changed copyrights and dependency upgrades.
+FileService also includes the three
 canonical SkiaSharp notice files directly under `/app/licenses/`.
 Image acceptance must inspect final filesystem contents and applicable binary
 distribution terms. Source checks alone do not certify image-level licensing.
