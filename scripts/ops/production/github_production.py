@@ -180,7 +180,9 @@ def main():
         raise ValueError("bounded production packet exceeded")
     with tempfile.TemporaryDirectory(prefix="github-production-") as directory:
         folder = Path(directory)
-        key = folder / "identity"; key.write_text(required_secret("PRODUCTION_SSH_PRIVATE_KEY")); key.chmod(0o600)
+        # GitHub CLI trims trailing newlines when setting a secret from stdin.
+        # OpenSSH requires the final newline in its private-key file format.
+        key = folder / "identity"; key.write_text(required_secret("PRODUCTION_SSH_PRIVATE_KEY").rstrip("\r\n") + "\n"); key.chmod(0o600)
         known = folder / "known_hosts"; known.write_text(known_hosts); known.chmod(0o600)
         command = ["ssh", "-i", str(key), "-o", "IdentitiesOnly=yes", "-o", "BatchMode=yes",
                    "-o", "StrictHostKeyChecking=yes", "-o", "UserKnownHostsFile=" + str(known),
