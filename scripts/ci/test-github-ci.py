@@ -328,6 +328,20 @@ class NoticePackaging(unittest.TestCase):
             self.assertFalse((output / "nuget/dependency/1.0/library.dll").exists())
 
 
+class FixtureIsolation(unittest.TestCase):
+    def test_prettier_fixture_ignores_outer_github_event_and_diff(self):
+        result = subprocess.run(
+            ["bash", str(ROOT / "scripts/ci/test-prettier-check-diff.sh")],
+            cwd=ROOT,
+            env={**os.environ, "GITHUB_EVENT_NAME": "push",
+                 "GITHUB_EVENT_PATH": "/nonexistent/outer-github-event.json",
+                 "GITHUB_REPOSITORY": formatting.PUBLIC_REPO,
+                 "CI_DIFF_BASE": "f" * 40, "CI_DIFF_HEAD": "e" * 40},
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+        )
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+
+
 class WorkflowContract(unittest.TestCase):
     def test_aggregate_and_trusted_publish_boundaries(self):
         workflow = (ROOT / ".github/workflows/ci.yml").read_text()
