@@ -12,21 +12,6 @@ fail() {
 
 [[ -f "$GUARD_UNDER_TEST" ]] || fail "missing $GUARD_UNDER_TEST"
 
-rollback_job="$(awk '
-    /^rollback-production:/ { capture = 1 }
-    capture && /^  rules:/ { exit }
-    capture { print }
-' "$ROOT_DIR/.gitlab-ci.yml")"
-[[ "$rollback_job" == *'/opt/education-platform/scripts/check-production-rollback.sh'* ]] ||
-    fail "rollback-production does not invoke the protocol guard"
-[[ "$rollback_job" != *'#347 guard'* ]] ||
-    fail "rollback-production still contains the fail-open recovery block"
-
-compose_up_line="$(grep -nF 'docker compose -f docker-compose.prod.yml up -d --force-recreate &&' <<<"$rollback_job" | cut -d: -f1)"
-metadata_swap_line="$(grep -nF "mv \\\$RELEASES_DIR/current.env \\\$RELEASES_DIR/rolled-back-from.env &&" <<<"$rollback_job" | cut -d: -f1)"
-((compose_up_line < metadata_swap_line)) ||
-    fail "rollback metadata is changed before compose startup succeeds"
-
 temp_dir="$(mktemp -d)"
 trap 'rm -rf "$temp_dir"' EXIT
 current="$temp_dir/current.env"

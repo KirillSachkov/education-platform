@@ -6,7 +6,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
-BASE="${CI_DIFF_BASE:-${CI_MERGE_REQUEST_DIFF_BASE_SHA:-}}"
+BASE="${CI_DIFF_BASE:-}"
 HEAD_SHA="${CI_DIFF_HEAD:-HEAD}"
 [[ "$BASE" =~ ^[0-9a-f]{40}$ ]] || { echo 'prettier-check-diff: explicit full diff base is required' >&2; exit 1; }
 git cat-file -e "$BASE"

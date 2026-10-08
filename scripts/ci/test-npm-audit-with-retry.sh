@@ -13,19 +13,6 @@ fail() {
 
 [[ -f "$SCRIPT_UNDER_TEST" ]] || fail "missing $SCRIPT_UNDER_TEST"
 
-build_job="$(awk '
-    /^build-admin-mcp:/ { capture = 1 }
-    capture && /^build-frontend:/ { exit }
-    capture { print }
-' "$ROOT_DIR/.gitlab-ci.yml")"
-[[ "$build_job" == *'apk add --no-cache bash'* ]] ||
-    fail "build-admin-mcp does not install Bash for the audit wrapper"
-[[ "$build_job" == *'NODE_OPTIONS: "--no-network-family-autoselection"'* ]] ||
-    fail "build-admin-mcp does not disable broken network family auto-selection"
-[[ "$build_job" == *'bash ../../scripts/ci/npm-audit-with-retry.sh --audit-level=moderate'* ]] ||
-    fail "build-admin-mcp does not invoke the audit wrapper"
-[[ "$(grep -cF 'scripts/ci/npm-audit-with-retry.sh' <<<"$build_job")" -ge 2 ]] ||
-    fail "audit wrapper changes do not trigger build-admin-mcp"
 github_job="$(awk '/^  admin:/ { capture = 1 } capture && /^  frontend:/ { exit } capture { print }' "$ROOT_DIR/.github/workflows/ci.yml")"
 [[ "$github_job" == *'bash ../../scripts/ci/npm-audit-with-retry.sh --audit-level=moderate'* ]] ||
     fail "GitHub admin check does not invoke the audit wrapper"

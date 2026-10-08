@@ -82,7 +82,7 @@ backend/{TrainerService}/
    - `docker-compose.yml` + `docker-compose.prod.yml` — service entry +
      migration sidecar (copy from a neighbour like CommentService).
    - `nginx.conf` + `nginx.prod.conf` — `location /api/{path}/ { ... }` upstream.
-   - `.gitlab-ci.yml` — `build-{trainerservice}` job (copy from neighbour).
+   - `scripts/ci/github-ci-paths.json` — register the service image and build context.
    - `docker/postgres/init-databases.sql` — add `CREATE SCHEMA {schema}`.
    - `.env.example` — connection string entry.
 5. Add the service row to root `CLAUDE.md` "Services" table.

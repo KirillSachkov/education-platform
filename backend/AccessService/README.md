@@ -40,13 +40,13 @@ wired correctly for the monorepo layout from day one.
   Scalar UI all wired by default.
 - **Tests** — `AccessServiceTestsBase`, `IntegrationTestsWebFactory`
   (Testcontainers PostgreSQL + Respawn), one sample test per use case.
-- **CI** — no changes needed; `.gitlab-ci.yml` template glob picks up the
-  new service automatically once you add a `build-{service}` job.
+- **CI** — register the image in `scripts/ci/github-ci-paths.json` and add the service
+  to the optional GitHub integration matrix. Backend selection covers service dependencies.
 
 ## After scaffolding
 
 1. Add to `backend/backend.slnx`.
-2. Add `build-ordersservice` job to `.gitlab-ci.yml` (copy neighbour).
+2. Register the image in `scripts/ci/github-ci-paths.json` and the service in `.github/workflows/integration.yml`.
 3. Add service entry + migration sidecar to `docker-compose.yml`.
 4. Add `location /api/orders/ { ... }` upstream to `nginx.conf`.
 5. Create initial EF migration: `dotnet ef migrations add Initial --project OrdersService/src/*.Infrastructure.Postgres --startup-project OrdersService/src/*.Web`.

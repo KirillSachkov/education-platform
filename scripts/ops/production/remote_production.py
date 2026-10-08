@@ -6,6 +6,7 @@ small receipt written only after the complete operation succeeds.
 """
 
 import base64
+import copy
 import datetime
 import fcntl
 import gzip
@@ -250,6 +251,40 @@ class HostOperation:
             return strict_json(stored.read_bytes())
         return {name: {"base64": base64.b64encode((self.root / name).read_bytes()).decode(), "sha256": expected}
                 for name, expected in self.roles["config_hashes"].items() if not name.startswith("scripts/")}
+
+    def normalize_legacy_configuration(self):
+        """Derive a GitLab-independent copy; retain approved source evidence."""
+        name = "docker-compose.prod.yml"
+        original = self.captured_configuration()[name]
+        raw = base64.b64decode(original["base64"], validate=True)
+        if original["sha256"] != self.roles["config_hashes"][name] or hashlib.sha256(raw).hexdigest() != original["sha256"]:
+            raise ValueError("approved original Compose checksum changed")
+        # This literal is an archived migration input, never a pull destination.
+        old = b"    image: gitlab-sachkov.ru:5050/miracle-generation/education-platform/postgres-pgvector:pg16\n"
+        replacement = ("    image: " + self.roles["postgres_image"] + "\n").encode()
+        if raw.count(old) != 1:
+            raise ValueError("one approved legacy PostgreSQL image required")
+        normalized = raw.replace(old, replacement)
+        files = copy.deepcopy(self.target["configuration_files"])
+        selected = base64.b64decode(files[name]["base64"], validate=True)
+        if selected not in {raw, normalized} or hashlib.sha256(selected).hexdigest() != files[name]["sha256"]:
+            raise ValueError("retained legacy Compose differs from approved configuration")
+        digest = hashlib.sha256(normalized).hexdigest()
+        files[name] = {"base64": base64.b64encode(normalized).decode(), "sha256": digest}
+        self.target["configuration_files"] = files
+        self.target["legacy_configuration_normalization"] = {"original_sha256": original["sha256"], "derived_sha256": digest}
+
+    def install_recovery_tool(self):
+        source = self.run / "restore-s3.sh"
+        target = self.root / "scripts/restore-s3.sh"
+        if not source.is_file() or source.is_symlink() or target.is_symlink():
+            raise ValueError("ordinary reviewed restore script required")
+        if target.exists():
+            write_private(self.run / "pre-recovery-tool/restore-s3.sh", target.read_bytes())
+        write_private(target, source.read_bytes())
+        target.chmod(0o700)
+        self.command(["bash", str(target), "--help"])
+        write_json(self.run / "recovery-tool-receipt.json", {"status": "PASS", "sha256": sha256(target), "mode": "0700"})
 
     def verify_target_configuration(self):
         files = self.target["configuration_files"]
@@ -496,6 +531,9 @@ class HostOperation:
     def prepare_configuration(self):
         if self.target["registry"] == PUBLIC_REGISTRY:
             self.runtime = self.normal_runtime()
+        else:
+            # Includes private recorded-previous targets and failed-deploy recovery.
+            self.normalize_legacy_configuration()
         configurations = self.target["configuration_files"]
         self.target["config_hashes"] = {name: item["sha256"] for name, item in configurations.items()
                                         if name in {"docker-compose.prod.yml", "nginx.prod.conf"} or name.startswith("docker/")}
@@ -690,6 +728,7 @@ class HostOperation:
         self.health(12 if self.inputs["operation"] == "rollback" else 36)
         self.smoke()
         self.verify_release()
+        self.install_recovery_tool()
         self.promote()
         return self.public_receipt()
 

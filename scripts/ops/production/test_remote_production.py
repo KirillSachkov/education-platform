@@ -59,6 +59,7 @@ class RemoteFixture(unittest.TestCase):
         self.root = Path(self.temporary.name) / "production"
         self.run = self.root / ".github-production/runs/test"
         self.run.mkdir(parents=True)
+        (self.run / "restore-s3.sh").write_text("#!/usr/bin/env bash\nset -Eeuo pipefail\n")
         (self.root / "releases").mkdir()
         self.compose = b"services: {}\n"
         (self.root / "docker-compose.prod.yml").write_bytes(self.compose)

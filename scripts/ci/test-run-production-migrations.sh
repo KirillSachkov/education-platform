@@ -13,24 +13,6 @@ fail() {
 
 [[ -f "$SCRIPT_UNDER_TEST" ]] || fail "missing $SCRIPT_UNDER_TEST"
 
-deploy_job="$(awk '
-    /^deploy-production:/ { capture = 1 }
-    capture && /^  rules:/ { exit }
-    capture { print }
-' "$ROOT_DIR/.gitlab-ci.yml")"
-[[ "$deploy_job" == *"./scripts/run-production-migrations.sh docker-compose.prod.yml \\\$RELEASES_DIR/current.env &&"* ]] ||
-    fail "deploy-production does not run the migration preflight"
-[[ "$deploy_job" != *'#347 guard'* ]] ||
-    fail "deploy-production still contains the fail-open recovery block"
-[[ "$deploy_job" == *'scripts/backup-s3.sh scripts/restore-s3.sh scripts/validate-production-env.sh'* ]] ||
-    fail "deploy archive does not include the migration preflight script"
-
-preflight_line="$(grep -nF "./scripts/run-production-migrations.sh docker-compose.prod.yml \\\$RELEASES_DIR/current.env &&" <<<"$deploy_job" | cut -d: -f1)"
-compose_up_line="$(grep -nF 'docker compose -f docker-compose.prod.yml up -d --force-recreate &&' <<<"$deploy_job" | cut -d: -f1)"
-promotion_line="$(grep -nF "mv \\\$RELEASES_DIR/pending.env \\\$RELEASES_DIR/current.env &&" <<<"$deploy_job" | cut -d: -f1)"
-((preflight_line < compose_up_line && compose_up_line < promotion_line)) ||
-    fail "migration preflight, compose startup, and metadata promotion are out of order"
-
 log_file="$(mktemp)"
 temp_dir="$(mktemp -d)"
 current_release="$temp_dir/current.env"

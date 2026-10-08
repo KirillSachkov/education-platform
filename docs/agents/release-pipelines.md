@@ -1,7 +1,6 @@
 ---
 paths:
   [
-    ".gitlab-ci.yml",
     ".github/workflows/**",
     "docker-compose*",
     "docker/**",
@@ -25,15 +24,11 @@ candidate is not production approval or proof of external GitHub acceptance.
 images → manual owner-authorized deploy`
 
 - Task branches start from current `origin/main`; resolve target drift before merge-ready.
-- Before activation, `.gitlab-ci.yml` remains usable: affected-only MR checks include
-  `mr-main-gate`; GitLab requires successful pipelines and rejects skipped pipelines. Main builds
-  and `prepare-release-images` produce release images. Manual `deploy-production` and
-  `rollback-production` remain the authorized legacy release path until operational cutover.
-- After activation, GitHub PRs run affected checks and an always-present `required-checks` aggregate.
+- GitHub PRs run affected checks and an always-present `required-checks` aggregate.
   Every selected job must succeed; a selected skipped/cancelled/failed job blocks the aggregate.
   Public main protection requires the exact aggregate check from GitHub Actions, strict checks,
   admin enforcement, and forbids force pushes/deletion. Settings and real passing/failing PR
-  evidence must be read back before activation.
+  evidence must be read back when changing protection.
 - PR checks, including forks, use read-only tokens on standard hosted runners. They receive no
   production secrets, package-write permission or access to private legacy images. PRs never
   deploy, roll back, build release images or publish tags.

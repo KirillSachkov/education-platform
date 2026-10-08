@@ -1,5 +1,5 @@
 ---
-paths: ["frontend/**", "backend/**", "scripts/ci/**", ".gitlab-ci.yml", ".github/workflows/**"]
+paths: ["frontend/**", "backend/**", "scripts/ci/**", ".github/workflows/**"]
 ---
 
 # Quality gates

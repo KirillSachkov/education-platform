@@ -1,5 +1,5 @@
 ---
-paths: ["**/Dockerfile*", "docker-compose*", ".gitlab-ci.yml", ".github/workflows/**", "nginx*.conf"]
+paths: ["**/Dockerfile*", "docker-compose*", ".github/workflows/**", "nginx*.conf"]
 ---
 
 # Docker & CI/CD Rules
@@ -8,13 +8,13 @@ paths: ["**/Dockerfile*", "docker-compose*", ".gitlab-ci.yml", ".github/workflow
 - `NEXT_PUBLIC_*` vars are **build-time ARGs**, not runtime env. Must be passed as `--build-arg` in `docker build`
 - Backend healthchecks: `dotnet healthcheck/healthcheck.dll <port>` (not curl)
 - Frontend healthcheck: `wget -qO-` (busybox wget on node:22-alpine)
-- `docker image prune -f` must run **AFTER** health check succeeds — otherwise rollback images are destroyed on failed deploys
+- Retain immutable rollback images through deployment and recovery checks.
 
 ## CI/CD
-- `DOCKER_REGISTRY` and `IMAGE_TAG` must be exported in SSH deploy session
-- `mkdir -p` for ALL remote directories (including `backups/`) must be the first SSH step
-- SSH deploy: never expand secrets on CI runner side — use env-prefix or pre-stored credentials
-- After adding a build stage → deploy job must `docker compose pull` before `up -d`
+- Use the reviewed trusted-main production workflow with pinned SSH host identity.
+- Send its verified scripts and private inputs through the fixed stdin transport.
+- Verify the exact private backup and pull immutable digests before migrations or startup.
+- Use the same audited `RESTORE_POSTGRES_IMAGE` for PostgreSQL and isolated restore drills.
 - Migration services share `image:` with their main service (no separate `build:` section)
 - `docker-compose.prod.yml` has no `build:` sections — all images come from the selected release registry; after cutover use GHCR
 
