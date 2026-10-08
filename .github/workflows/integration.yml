@@ -25,6 +25,9 @@ jobs:
           submodules: recursive
           persist-credentials: false
       - uses: ./.github/actions/setup-dotnet
+      - name: Build local MinIO fixture from pinned public source
+        if: matrix.service == 'FileService'
+        run: docker build --platform linux/amd64 -f scripts/ci/minio-test.Dockerfile -t minio/minio:latest scripts/ci
       - name: Service integration suite
         env:
           SERVICE: ${{ matrix.service }}
