@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using ProgressService.Contracts.Requests;
 using ProgressService.Contracts.Responses;
@@ -7,17 +7,12 @@ using ProgressService.IntegrationTests.Infrastructure;
 
 namespace ProgressService.IntegrationTests.Features.QuizAttempts;
 
-/// <summary>
-///     Страница «Мои тесты» (#556): агрегат всех попыток текущего пользователя по
-///     квизам — лучший/последний балл, число попыток, итоговый pass; исключает
-///     LEVEL_TEST-квизы и квизы без ECS-summary; пусто без попыток.
-/// </summary>
+/// <summary>Сводка учебных квизов текущего пользователя.</summary>
 [Collection(nameof(IntegrationTestsFixture))]
 public sealed class GetMyQuizAttemptsSummaryTests : ProgressServiceTestsBase
 {
     private const string SINGLE_CHOICE = "SINGLE_CHOICE";
     private const string MATERIAL_CHECK = "MATERIAL_CHECK";
-    private const string LEVEL_TEST = "LEVEL_TEST";
     private const int PASSING_SCORE = 70;
     private const string SUMMARY_URL = "/progress/quizzes/attempts/my-summary";
 
@@ -104,28 +99,6 @@ public sealed class GetMyQuizAttemptsSummaryTests : ProgressServiceTestsBase
     }
 
     [Fact]
-    public async Task Summary_ExcludesLevelTestQuizzes()
-    {
-        Guid userId = Guid.NewGuid();
-        Guid materialQuizId = SeedSingleChoiceQuiz();
-        Guid levelTestQuizId = Guid.NewGuid();
-        EducationContentClient.AddQuizSummary(materialQuizId, "Обычный тест");
-        EducationContentClient.AddQuizSummary(levelTestQuizId, "Определи свой уровень", LEVEL_TEST);
-
-        // Обычный сабмит LEVEL_TEST-квиза запрещён (своя воронка) — попытку сеем напрямую.
-        await SeedAttemptAsync(userId, levelTestQuizId, scorePercent: 90, passed: true);
-
-        AuthenticateAs(userId, "platform-participant");
-        await SubmitAsync(materialQuizId, _q1Correct);
-
-        MyQuizAttemptsSummaryResponse summary = await GetSummaryAsync();
-
-        Assert.Equal(1, summary.TotalQuizzesTaken);
-        MyQuizAttemptsSummaryItem item = Assert.Single(summary.Items);
-        Assert.Equal(materialQuizId, item.QuizId);
-    }
-
-    [Fact]
     public async Task Summary_QuizWithoutEcsSummary_DroppedFromResult()
     {
         // Квиз hard-deleted в ECS → GetQuizSummaries не вернёт его, попытка отбрасывается.
@@ -189,8 +162,7 @@ public sealed class GetMyQuizAttemptsSummaryTests : ProgressServiceTestsBase
             purpose,
             PASSING_SCORE,
             [new EducationContentService.Contracts.Quizzes.QuizAnswerKeyQuestionDto(
-                _q1, SINGLE_CHOICE, "Вопрос 1", null, null, [_q1Correct], null)],
-            LevelTestConfig: null));
+                _q1, SINGLE_CHOICE, "Вопрос 1", null, null, [_q1Correct], null)]));
         return quizId;
     }
 

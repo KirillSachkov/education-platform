@@ -1,4 +1,4 @@
-using Core.Database;
+﻿using Core.Database;
 using ProgressService.Core.Abstractions;
 using ProgressService.Domain.Enrollments;
 using Shared.Messaging.IntegrationEvents.Education.Events;
@@ -7,7 +7,7 @@ namespace ProgressService.Core.Features.Lifecycle.IntegrationEvents;
 
 /// <summary>
 ///     Auto-enrolls the course author when a course is created, so the author sees their
-///     own course as enrolled (badge, leaderboard, navigation parity with students).
+///     own course as enrolled (badge, navigation parity with students).
 ///     Idempotent — re-delivery skips if an enrollment already exists.
 ///
 ///     <para>access-derive-model Phase 2: pre-seeds the author's progress anchor with

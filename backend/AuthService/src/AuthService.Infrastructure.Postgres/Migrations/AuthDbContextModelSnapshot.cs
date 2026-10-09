@@ -863,8 +863,6 @@ namespace AuthService.Infrastructure.Postgres.Migrations
 
                             b1.Property<bool>("GitHubIntegration");
 
-                            b1.Property<bool>("Leaderboard");
-
                             b1.Property<bool>("PrReviews");
 
                             b1.Property<bool>("Roadmaps");

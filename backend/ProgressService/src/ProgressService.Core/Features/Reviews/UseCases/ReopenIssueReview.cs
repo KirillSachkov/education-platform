@@ -1,4 +1,4 @@
-using Core.Abstractions;
+﻿using Core.Abstractions;
 using Core.Database;
 using Core.Validation;
 using FluentValidation;
@@ -18,7 +18,7 @@ namespace ProgressService.Core.Features.Reviews.UseCases;
 /// <summary>
 /// Возвращает уже проверенную попытку (APPROVED или CHANGES_REQUESTED) обратно в IN_REVIEW.
 /// Применяется ревьюером, когда нужно пересмотреть собственное решение (например, ошибочный
-/// Approve). Откат XP / project / module прогресса делается каскадом через домен-events.
+/// Approve). Откат project / module прогресса делается каскадом через домен-events.
 /// </summary>
 public sealed record ReopenIssueReviewCommand(
     Guid CourseId,

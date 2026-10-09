@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using ProgressService.Contracts.Requests;
@@ -258,8 +258,7 @@ public sealed class CourseCertificateEndpointsTests : ProgressServiceTestsBase
             [
                 new EducationContentService.Contracts.Quizzes.QuizAnswerKeyQuestionDto(
                     questionId, "SINGLE_CHOICE", "Вопрос", null, null, [correctOptionId], null),
-            ],
-            LevelTestConfig: null));
+            ]));
         AuthServiceClient.AddUser(studentId, "ivan@example.com", name: "Иван Иванов", username: "ivan");
 
         AuthenticateAs(studentId, "platform-participant");
@@ -501,8 +500,7 @@ public sealed class CourseCertificateEndpointsTests : ProgressServiceTestsBase
             [
                 new EducationContentService.Contracts.Quizzes.QuizAnswerKeyQuestionDto(
                     questionId, "SINGLE_CHOICE", "Вопрос", null, null, [correctOptionId], null),
-            ],
-            LevelTestConfig: null));
+            ]));
         AuthServiceClient.AddUser(studentId, "ivan@example.com", name: "Иван Иванов", username: "ivan");
 
         AuthenticateAs(studentId, "platform-participant");
@@ -573,8 +571,7 @@ public sealed class CourseCertificateEndpointsTests : ProgressServiceTestsBase
             [
                 new EducationContentService.Contracts.Quizzes.QuizAnswerKeyQuestionDto(
                     questionId, "SINGLE_CHOICE", "Вопрос", null, null, [correctOptionId], null),
-            ],
-            LevelTestConfig: null));
+            ]));
         AuthServiceClient.AddUser(studentId, "ivan@example.com", username: "ivan");
 
         AuthenticateAs(studentId, "platform-participant");

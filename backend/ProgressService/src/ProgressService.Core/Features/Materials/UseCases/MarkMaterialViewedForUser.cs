@@ -1,4 +1,4 @@
-using ContentAccess;
+﻿using ContentAccess;
 using Core.Abstractions;
 using Core.Database;
 using Core.Validation;
@@ -24,7 +24,7 @@ namespace ProgressService.Core.Features.Materials.UseCases;
 ///     Staff-override: отметить материал изученным ЗА студента (issue #398). Зеркало self-эндпоинта
 ///     <see cref="MarkMaterialViewedHandler"/>, но target — указанный <c>UserId</c> из тела, а не
 ///     <c>_user.UserId</c>. Поднимает <see cref="Domain.Materials.Events.MaterialViewedEvent"/> с
-///     target-юзером → каскад <c>module_item_progress</c> и XP начисляются ЦЕЛЕВОМУ юзеру.
+///     target-юзером → каскад <c>module_item_progress</c> начисляются ЦЕЛЕВОМУ юзеру.
 ///     Идемпотентно по паре (target UserId, MaterialId).
 ///     <para>
 ///         Авторизация (как у <c>ApproveIssue</c>): Tier-1 — <c>Progress.MANAGE</c> (admin/moderator),

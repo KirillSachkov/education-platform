@@ -1,4 +1,4 @@
-namespace ProgressService.Domain.Enrollments;
+﻿namespace ProgressService.Domain.Enrollments;
 
 /// <summary>
 ///     Источник зачисления — для аудита, поиска утечек доступа и групповых reverse-операций.
@@ -28,6 +28,6 @@ public enum EnrollmentSource
     /// <summary>Lazy progress-anchor created on first entitled engagement (Phase 2). No events.</summary>
     ENGAGEMENT = 6,
 
-    /// <summary>Author auto-enroll on course creation (sees own course in my-courses / leaderboard).</summary>
+    /// <summary>Author auto-enroll on course creation (sees own course in my-courses).</summary>
     AUTHOR_SELF = 7
 }

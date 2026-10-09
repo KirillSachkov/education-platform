@@ -1,9 +1,9 @@
-namespace ProgressService.Contracts.Requests;
+﻿namespace ProgressService.Contracts.Requests;
 
 /// <summary>
 ///     Запрос на ручную приёмку задачи студенту, который никогда не сдавал работу (#398).
 ///     Автор/админ/модератор отмечает задание выполненным — создаётся синтетический принятый
-///     submission и прогоняется обычный каскад XP/project/module.
+///     submission и прогоняется обычный каскад project/module.
 /// </summary>
 /// <param name="UserId">Студент, которому засчитывается выполнение задачи.</param>
 /// <param name="Feedback">Опциональный комментарий ревьюера.</param>

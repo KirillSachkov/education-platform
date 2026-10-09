@@ -1,4 +1,4 @@
-using System.Data.Common;
+﻿using System.Data.Common;
 using Core.Abstractions;
 using Core.Database;
 using Dapper;
@@ -29,16 +29,8 @@ public sealed class GetMyQuizAttemptsSummaryEndpoint : IEndpoint
     }
 }
 
-/// <summary>
-///     Сводка всех тестов, которые проходил текущий пользователь (страница «Мои тесты», #556).
-///     Один round-trip в Postgres агрегирует <c>quiz_attempts</c> юзера по <c>quiz_id</c>
-///     (число попыток, лучший балл, балл/результат последней попытки, прошёл ли хоть раз),
-///     затем enrichment через ECS <see cref="IEducationContentServiceClient.GetQuizSummariesAsync"/>
-///     (title + покрывающий курс). LEVEL_TEST-квизы отфильтровываются (у воронки своя
-///     страница), как и квизы без summary (hard-deleted). Own-data: Tier-3 entitlement
-///     не нужен — отдаются только собственные баллы пользователя, ключ ответов не утекает.
-///     Сортировка результата — по последней активности (новые сверху).
-/// </summary>
+/// <summary>Возвращает попытки текущего пользователя с последним и лучшим результатом.
+///     Отсутствующие в ECS квизы исключаются.</summary>
 public sealed class GetMyQuizAttemptsSummaryHandler
     : IQueryHandlerWithResult<MyQuizAttemptsSummaryResponse, GetMyQuizAttemptsSummaryQuery>
 {
@@ -109,8 +101,7 @@ public sealed class GetMyQuizAttemptsSummaryHandler
             .ToDictionary(g => g.Key, g => g.First());
 
         List<MyQuizAttemptsSummaryItem> items = aggregates
-            .Where(a => summaries.TryGetValue(a.QuizId, out QuizSummaryLookupDto? s)
-                && !string.Equals(s.Purpose, "LEVEL_TEST", StringComparison.Ordinal))
+            .Where(a => summaries.ContainsKey(a.QuizId))
             .Select(a =>
             {
                 QuizSummaryLookupDto summary = summaries[a.QuizId];

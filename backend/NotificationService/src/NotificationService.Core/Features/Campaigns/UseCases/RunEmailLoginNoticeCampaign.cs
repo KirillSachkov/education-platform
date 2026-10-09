@@ -1,4 +1,4 @@
-using CSharpFunctionalExtensions;
+﻿using CSharpFunctionalExtensions;
 using Framework.Endpoints;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Mvc;
@@ -14,7 +14,7 @@ namespace NotificationService.Core.Features.Campaigns.UseCases;
 /// «вход теперь по почте» (#704) пользователям с GitHub-привязкой. Идемпотентна per-user
 /// (фиксированный campaign GUID), повторный запуск пропускает уже-уведомлённых.
 ///
-/// Auth — та же идиома, что у level-test кампании: permission <c>Platform.ADMIN</c>.
+/// Доступ требует permission <c>Platform.ADMIN</c>.
 /// </summary>
 public sealed class RunEmailLoginNoticeCampaignEndpoint : IEndpoint
 {

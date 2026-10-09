@@ -288,103 +288,6 @@ namespace ProgressService.Infrastructure.Postgres.Migrations
                     b.ToTable("course_enrollments", "progress");
                 });
 
-            modelBuilder.Entity("ProgressService.Domain.Gamification.UserGamificationStats", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<int>("CurrentLevel")
-                        .HasColumnType("integer")
-                        .HasColumnName("current_level");
-
-                    b.Property<int>("TotalXp")
-                        .HasColumnType("integer")
-                        .HasColumnName("total_xp");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.Property<uint>("Version")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("xid")
-                        .HasColumnName("xmin");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId")
-                        .IsUnique()
-                        .HasDatabaseName("ux_user_gamification_stats_user_id");
-
-                    b.HasIndex("TotalXp", "UpdatedAt", "UserId")
-                        .IsDescending(true, false, false)
-                        .HasDatabaseName("ix_user_gamification_stats_leaderboard");
-
-                    b.ToTable("user_gamification_stats", "progress");
-                });
-
-            modelBuilder.Entity("ProgressService.Domain.Gamification.XpAward", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("AwardType")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("award_type");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("EnrollmentId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("enrollment_id");
-
-                    b.Property<Guid>("SourceId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("source_id");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.Property<uint>("Version")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("xid")
-                        .HasColumnName("xmin");
-
-                    b.Property<int>("XpAmount")
-                        .HasColumnType("integer")
-                        .HasColumnName("xp_amount");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("EnrollmentId")
-                        .HasDatabaseName("ix_xp_awards_enrollment_id");
-
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("ix_xp_awards_user_id");
-
-                    b.HasIndex("UserId", "AwardType", "SourceId")
-                        .IsUnique()
-                        .HasDatabaseName("ux_xp_awards_user_id_award_type_source_id");
-
-                    b.ToTable("xp_awards", "progress");
-                });
-
             modelBuilder.Entity("ProgressService.Domain.IssueSubmissions.IssueSubmission", b =>
                 {
                     b.Property<Guid>("Id")
@@ -541,89 +444,6 @@ namespace ProgressService.Infrastructure.Postgres.Migrations
                         .HasDatabaseName("ix_issue_progress_enrollment_id_project_id");
 
                     b.ToTable("issue_progress", "progress");
-                });
-
-            modelBuilder.Entity("ProgressService.Domain.LevelTests.LevelTestAttempt", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("AiGradingStatus")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("ai_grading_status");
-
-                    b.Property<Guid?>("AnonymousId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("anonymous_id");
-
-                    b.Property<string>("Answers")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("answers")
-                        .HasDefaultValueSql("'[]'::jsonb");
-
-                    b.Property<DateTime?>("ClaimedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("claimed_at");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("GradingConfig")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("grading_config")
-                        .HasDefaultValueSql("'{}'::jsonb");
-
-                    b.Property<string>("Level")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("level");
-
-                    b.Property<int>("OverallPercent")
-                        .HasColumnType("integer")
-                        .HasColumnName("overall_percent");
-
-                    b.Property<string>("QuestionResults")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("question_results")
-                        .HasDefaultValueSql("'[]'::jsonb");
-
-                    b.Property<Guid>("QuizId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("quiz_id");
-
-                    b.Property<Guid?>("RecommendedCourseId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("recommended_course_id");
-
-                    b.Property<string>("SectionScores")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("section_scores")
-                        .HasDefaultValueSql("'[]'::jsonb");
-
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AnonymousId")
-                        .HasDatabaseName("ix_level_test_attempts_anonymous_id_unclaimed")
-                        .HasFilter("user_id IS NULL");
-
-                    b.ToTable("level_test_attempts", "progress");
                 });
 
             modelBuilder.Entity("ProgressService.Domain.Materials.AnonymousMaterialView", b =>
@@ -952,30 +772,6 @@ namespace ProgressService.Infrastructure.Postgres.Migrations
                     b.ToTable("quiz_attempts", "progress");
                 });
 
-            modelBuilder.Entity("ProgressService.Domain.Users.ProgressUser", b =>
-                {
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.Property<string>("DisplayName")
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)")
-                        .HasColumnName("display_name");
-
-                    b.Property<string>("Username")
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)")
-                        .HasColumnName("username");
-
-                    b.HasKey("UserId");
-
-                    b.HasIndex("Username")
-                        .HasDatabaseName("ix_progress_users_username");
-
-                    b.ToTable("progress_users", "progress");
-                });
-
             modelBuilder.Entity("Wolverine.EntityFrameworkCore.Internals.IncomingMessage", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1095,15 +891,6 @@ namespace ProgressService.Infrastructure.Postgres.Migrations
 
                     b.Navigation("EntityReference")
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("ProgressService.Domain.Gamification.XpAward", b =>
-                {
-                    b.HasOne("ProgressService.Domain.Enrollments.CourseEnrollment", null)
-                        .WithMany()
-                        .HasForeignKey("EnrollmentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .HasConstraintName("fk_xp_awards_course_enrollments_enrollment_id");
                 });
 
             modelBuilder.Entity("ProgressService.Domain.IssueSubmissions.IssueSubmission", b =>

@@ -1,4 +1,4 @@
-using ContentAccess;
+﻿using ContentAccess;
 using Core.Abstractions;
 using Core.Database;
 using Core.Validation;
@@ -28,8 +28,7 @@ namespace ProgressService.Core.Features.Materials.UseCases;
 ///     нет ИЛИ она уже не completed — возвращает успех, ничего не меняет. Каскадно откатывает
 ///     <c>module_item_progress</c> во всех активных enrollment'ах пользователя, где материал
 ///     есть (через ECS course-context lookup), декрементируя <c>module_progress.items_completed</c>
-///     и возвращая модуль из COMPLETED в IN_PROGRESS при необходимости. XP за просмотр НЕ
-///     откатывается (психологически проще накопить).
+///     и возвращая модуль из COMPLETED в IN_PROGRESS при необходимости.
 /// </summary>
 public sealed record UnmarkMaterialViewedCommand(Guid MaterialId) : ICommand;
 

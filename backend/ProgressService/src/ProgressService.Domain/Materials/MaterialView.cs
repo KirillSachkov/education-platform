@@ -1,4 +1,4 @@
-using ProgressService.Domain.Materials.Events;
+﻿using ProgressService.Domain.Materials.Events;
 using SharedKernel.DomainEvents;
 
 namespace ProgressService.Domain.Materials;
@@ -10,17 +10,17 @@ namespace ProgressService.Domain.Materials;
 ///     <item>
 ///         <c>IsCompleted=false</c> — silent view: пользователь зашёл на страницу
 ///         материала. Питает публичный счётчик «N просмотров» (#234), но НЕ означает
-///         «изучено», не каскадит <c>module_item_progress</c>, не начисляет XP,
+///         «изучено», не каскадит <c>module_item_progress</c>,
 ///         не публикует <see cref="MaterialViewedEvent"/>.
 ///     </item>
 ///     <item>
 ///         <c>IsCompleted=true</c> — пользователь явно нажал «Отметить изученным».
 ///         Публикуется <see cref="MaterialViewedEvent"/>, который каскадит
-///         <c>module_item_progress</c> по активным enrollment'ам и начисляет XP.
+///         <c>module_item_progress</c> по активным enrollment'ам.
 ///     </item>
 /// </list>
 /// Переход <c>false → true</c> идемпотентен: повторное явное «изучено» не дублирует
-/// XP/каскад. Обратный переход <c>true → false</c> — через <c>UnmarkMaterialViewedHandler</c>,
+/// каскад. Обратный переход <c>true → false</c> — через <c>UnmarkMaterialViewedHandler</c>,
 /// строка сохраняется (счётчик «N просмотров» учитывает оба состояния).
 /// </summary>
 public sealed class MaterialView : AggregateRoot
@@ -63,7 +63,7 @@ public sealed class MaterialView : AggregateRoot
 
     /// <summary>
     /// Создаёт silent view track (изначально <c>IsCompleted=false</c>). Не публикует
-    /// <see cref="MaterialViewedEvent"/> — каскад/XP только на явное «Отметить изученным».
+    /// <see cref="MaterialViewedEvent"/> — каскад только на явное «Отметить изученным».
     /// </summary>
     public static Result<MaterialView, Error> CreateTrack(Guid userId, Guid materialId)
     {
@@ -78,7 +78,7 @@ public sealed class MaterialView : AggregateRoot
 
     /// <summary>
     /// Создаёт запись сразу как «изученную» (явный mark без предшествующего track-view'а).
-    /// Поднимает <see cref="MaterialViewedEvent"/> для cascade на module_item_progress и XP.
+    /// Поднимает <see cref="MaterialViewedEvent"/> для cascade на module_item_progress.
     /// </summary>
     public static Result<MaterialView, Error> CreateCompleted(Guid userId, Guid materialId)
     {
@@ -95,7 +95,7 @@ public sealed class MaterialView : AggregateRoot
 
     /// <summary>
     /// Помечает существующий silent view как «изученный». Идемпотентно: если уже completed,
-    /// возвращает <c>false</c> и не поднимает событие (XP/cascade выполнялись при первом mark'е).
+    /// возвращает <c>false</c> и не поднимает событие (cascade выполнялся при первом mark'е).
     /// </summary>
     /// <returns><c>true</c> если состояние изменилось (false → true), иначе <c>false</c>.</returns>
     public bool MarkAsCompleted()

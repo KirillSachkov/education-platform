@@ -1,11 +1,8 @@
-using ContentAccess.Redis;
+﻿using ContentAccess.Redis;
 using Framework.Endpoints;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using ProgressService.Core;
 using ProgressService.Infrastructure.Postgres;
-using Shared.AI;
-using Shared.AI.OpenAiCompatible;
-using Shared.AI.Skills;
 using Shared.Messaging;
 using StackExchange.Redis;
 using CoreRegistration = ProgressService.Core.DependencyInjectionExtensions;
@@ -32,15 +29,6 @@ public static class DependencyInjectionExtensions
             .AddContentAccessRedis(redis)
             .AddEndpoints(typeof(CoreRegistration).Assembly)
             .AddProgressRateLimiting();
-
-        // AI-грейдинг open_text ответов level-test'а (ST-5, #480). Зеркало ARS:
-        // multi-provider factory (issue #146) + default-провайдер как IAiClient +
-        // reusable AI Skills (handler потребляет IStructuredExtractor<T>).
-        // ApiKey в Infisical / .env: AI__PROVIDERS__AITUNNEL__APIKEY (тот же, что у ARS/MPS).
-        services.AddOpenAiCompatible(configuration.GetSection(AiProvidersOptions.SECTION_NAME));
-        services.AddSingleton<IAiClient>(sp =>
-            sp.GetRequiredService<IAiClientFactory>().Get(providerName: null));
-        services.AddAiSkills();
 
         // Phase E (#45): legacy course-tag reconciliation удалена. Теперь Redis user-grants
         // (plan-tags) — ответственность AccessService self-consume sync handler.

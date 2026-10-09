@@ -1,4 +1,4 @@
-using Core.Database;
+﻿using Core.Database;
 using ProgressService.Core.Abstractions;
 using ProgressService.Domain.Enrollments;
 
@@ -47,7 +47,7 @@ public sealed class EnrollmentAnchorService : IEnrollmentAnchorService
         await _enrollments.AddAsync(create.Value, cancellationToken);
 
         // Flush the anchor now so subsequent same-transaction lookups can see it by FK (e.g.
-        // the XP/cascade chain resolves the enrollment via DB GetByAsync, which does not see
+        // the progress cascade chain resolves the enrollment via DB GetByAsync, which does not see
         // unsaved Added entities). This runs inside the ambient transaction without committing it.
         // CreateAnchor raises no domain event, so this SaveChanges does not re-dispatch anything.
         UnitResult<Error> save = await _transactions.SaveChangesAsync(cancellationToken);

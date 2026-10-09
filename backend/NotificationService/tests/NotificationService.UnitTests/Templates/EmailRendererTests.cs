@@ -1,4 +1,4 @@
-using NotificationService.Core.Templates;
+﻿using NotificationService.Core.Templates;
 using NotificationService.Core.Templates.Catalog;
 using NotificationService.Core.Templates.Rendering;
 using NotificationService.Domain.Notifications;
@@ -94,33 +94,6 @@ public sealed class EmailRendererTests
 
         Assert.NotNull(rendered.PlainTextBody);
         Assert.Contains("John", rendered.PlainTextBody!, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void Render_LevelTestInvite_SubstitutesDisplayNameAndCtaHref()
-    {
-        // #554: invite-кампания на тест уровня — шаблон подставляет {displayName} в текст и
-        // {levelTestUrl} в CTA-кнопку (<a href>). Проверяем обе подстановки + наличие href.
-        NotificationTemplate template = NotificationTemplates.LevelTestInvite;
-        TemplateArgs args = TemplateArgs.Of(
-            ("displayName", "Привет!"),
-            ("levelTestUrl", "https://sachkov-learn.net/level-test"),
-            ("frontendUrl", "https://sachkov-learn.net"));
-
-        RenderedMessage rendered = _renderer.Render(template, args);
-
-        // {displayName} подставлен в тело.
-        Assert.Contains("Привет!", rendered.Body, StringComparison.Ordinal);
-        // CTA-кнопка ведёт на {levelTestUrl} — точный href.
-        Assert.Contains(
-            "href=\"https://sachkov-learn.net/level-test\"",
-            rendered.Body, StringComparison.Ordinal);
-        // Плейсхолдеры не утекли в render.
-        Assert.DoesNotContain("{levelTestUrl}", rendered.Body, StringComparison.Ordinal);
-        Assert.DoesNotContain("{displayName}", rendered.Body, StringComparison.Ordinal);
-        // Plain-text fallback тоже содержит подстановки.
-        Assert.Contains("Привет!", rendered.PlainTextBody!, StringComparison.Ordinal);
-        Assert.Contains("https://sachkov-learn.net/level-test", rendered.PlainTextBody!, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -1,4 +1,4 @@
-using ContentAccess;
+﻿using ContentAccess;
 using Core.Abstractions;
 using Core.Validation;
 using EducationContentService.Contracts.HttpCommunication;
@@ -77,20 +77,9 @@ public sealed class CheckQuizQuestionEndpoint : IEndpoint
     }
 }
 
-/// <summary>
-///     Проверка ОДНОГО вопроса COURSE-квиза «на лету» (#556) — немедленная обратная связь
-///     во время прохождения, БЕЗ сохранения попытки. Ключ ответов не уезжает студенту
-///     заранее: вопрос грейдится на сервере по уже зафиксированному им ответу, наружу идут
-///     только правильные варианты/эталон уже проверенного вопроса. Поток зеркалит
-///     <see cref="SubmitQuizAttemptHandler"/>: answer-key из ECS (любой статус квиза) →
-///     reject LEVEL_TEST (у воронки нет mid-test reveal — собственный флоу /level-test) →
-///     Tier-3 entitlement по САМОМУ квизу (ResourceTypes.QUIZ + answerKey.AccessType,
-///     PUBLIC short-circuit, admin bypass в checker'е) → грейдинг одного вопроса
-///     (<see cref="QuizAttemptGrader.GradeOne"/>). 404 если вопроса нет в answer-key.
-/// </summary>
+/// <summary>Проверяет доступ к квизу и вычисляет результат одного ответа без сохранения попытки.</summary>
 public sealed class CheckQuizQuestionHandler : ICommandHandler<CheckQuizQuestionResponse, CheckQuizQuestionCommand>
 {
-    private const string LEVEL_TEST_PURPOSE = "LEVEL_TEST";
     private const string PUBLIC_ACCESS_TYPE = "PUBLIC";
 
     private readonly IValidator<CheckQuizQuestionCommand> _validator;
@@ -134,15 +123,6 @@ public sealed class CheckQuizQuestionHandler : ICommandHandler<CheckQuizQuestion
 
         QuizAnswerKeyDto answerKey = answerKeyResult.Value;
 
-        // Level-test не раскрывает ответы по ходу — у воронки собственный флоу попыток
-        // (/level-test) без mid-test reveal'а.
-        if (string.Equals(answerKey.Purpose, LEVEL_TEST_PURPOSE, StringComparison.Ordinal))
-        {
-            return ProgressErrors.QuizCheckLevelTestForbidden();
-        }
-
-        // Tier-3 — по самому квизу (зеркало SubmitQuizAttempt). PUBLIC short-circuit:
-        // открытый квиз не требует Redis-чека.
         if (!string.Equals(answerKey.AccessType, PUBLIC_ACCESS_TYPE, StringComparison.Ordinal))
         {
             AccessDecision accessDecision = await _entitlementChecker.CheckAccessAsync(

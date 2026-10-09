@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Http.Metadata;
+﻿using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,9 +22,6 @@ public sealed class AnonymousRateLimitConventionTests : ProgressServiceTestsBase
         [
             "/progress/courses/{courseId:guid}/public-stats",
             "/progress/certificates/{certificateId:guid}",
-            "/progress/level-test/attempts/{attemptId:guid}/result",
-            "/progress/users/{userId:guid}/gamification",
-            "/progress/leaderboard",
         ];
 
         IReadOnlyList<RouteEndpoint> endpoints = Services

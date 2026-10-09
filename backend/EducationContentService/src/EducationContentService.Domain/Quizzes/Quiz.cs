@@ -1,4 +1,4 @@
-using EducationContentService.Domain.ValueObjects;
+﻿using EducationContentService.Domain.ValueObjects;
 
 namespace EducationContentService.Domain.Quizzes;
 
@@ -6,9 +6,7 @@ namespace EducationContentService.Domain.Quizzes;
 ///     Aggregate Root — квиз (тест) из упорядоченного набора вопросов.
 ///     Самостоятельная сущность уровня материала (#489): материал ссылается на квиз
 ///     через <c>materials.quiz_id</c> (блок «Проверь себя»), один квиз может
-///     переиспользоваться несколькими материалами. <see cref="Purpose"/> различает
-///     проверку материала (<see cref="QuizPurpose.MATERIAL_CHECK"/>) и входной тест уровня
-///     (<see cref="QuizPurpose.LEVEL_TEST"/> — опционально несёт <see cref="LevelTestConfig"/>).
+///     переиспользоваться несколькими материалами.
 ///     <see cref="AccessType"/> — собственный уровень доступа квиза (зеркало Material).
 ///     Вопросы хранятся JSONB-массивом (<see cref="QuizQuestion"/>), порядок массива — порядок показа.
 /// </summary>
@@ -27,7 +25,6 @@ public sealed class Quiz
         Title title,
         int passingScorePercent,
         QuizPurpose purpose,
-        LevelTestConfig? levelTestConfig,
         AccessType accessType,
         Guid? id)
     {
@@ -36,7 +33,6 @@ public sealed class Quiz
         Title = title;
         PassingScorePercent = passingScorePercent;
         Purpose = purpose;
-        LevelTestConfig = levelTestConfig;
         AccessType = accessType;
         Status = PublicationStatus.DRAFT;
         CreatedAt = DateTime.UtcNow;
@@ -72,12 +68,6 @@ public sealed class Quiz
     /// </summary>
     public AccessType AccessType { get; private set; }
 
-    /// <summary>
-    ///     Конфигурация level-test'а (пороги уровней, секции, рекомендации) — JSONB
-    ///     <c>level_test_config</c>. <c>null</c> — не задана (для MATERIAL_CHECK — всегда).
-    /// </summary>
-    public LevelTestConfig? LevelTestConfig { get; private set; }
-
     /// <summary>Упорядоченный набор вопросов (JSONB, см. QuizQuestionsJsonConverter).</summary>
     public IReadOnlyList<QuizQuestion> Questions { get; private set; } = [];
 
@@ -90,7 +80,6 @@ public sealed class Quiz
     ///     Привязка к материалу — на стороне материала (<c>materials.quiz_id</c>, UpdateMaterial).
     ///     Пустой набор вопросов допустим — гейт на публикации.
     ///     <paramref name="id"/> позволяет задать well-known идентификатор
-    ///     (используется seed-CLI level-test'а — идемпотентный upsert по фиксированному Id);
     ///     <c>null</c> — обычная генерация <see cref="Guid.CreateVersion7()"/>.
     /// </summary>
     public static Result<Quiz, Error> Create(
@@ -99,14 +88,13 @@ public sealed class Quiz
         IReadOnlyList<QuizQuestion> questions,
         int passingScorePercent = DEFAULT_PASSING_SCORE_PERCENT,
         QuizPurpose purpose = QuizPurpose.MATERIAL_CHECK,
-        LevelTestConfig? levelTestConfig = null,
         AccessType accessType = AccessType.PUBLIC,
         Guid? id = null)
     {
         if (passingScorePercent is < 0 or > 100)
             return EducationErrors.InvalidQuizPassingScore();
 
-        var quiz = new Quiz(authorId, title, passingScorePercent, purpose, levelTestConfig, accessType, id);
+        var quiz = new Quiz(authorId, title, passingScorePercent, purpose, accessType, id);
 
         UnitResult<Error> questionsResult = quiz.UpdateQuestions(questions);
         if (questionsResult.IsFailure)
@@ -116,13 +104,11 @@ public sealed class Quiz
     }
 
     /// <summary>
-    ///     Обновляет заголовок, проходной балл, уровень доступа и level-test конфигурацию
-    ///     (replace целиком, <c>null</c> — очищает; <see cref="Purpose"/> immutable).
+    ///     Обновляет заголовок, проходной балл и уровень доступа.
     /// </summary>
     public UnitResult<Error> Update(
         Title title,
         int passingScorePercent,
-        LevelTestConfig? levelTestConfig,
         AccessType accessType)
     {
         if (passingScorePercent is < 0 or > 100)
@@ -130,7 +116,6 @@ public sealed class Quiz
 
         Title = title;
         PassingScorePercent = passingScorePercent;
-        LevelTestConfig = levelTestConfig;
         AccessType = accessType;
         UpdatedAt = DateTime.UtcNow;
 

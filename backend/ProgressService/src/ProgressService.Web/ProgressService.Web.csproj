@@ -3,7 +3,6 @@
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Shared\AI\AI.OpenAiCompatible\AI.OpenAiCompatible.csproj"/>
     <ProjectReference Include="..\..\..\Shared\ContentAccess\ContentAccess.Redis\ContentAccess.Redis.csproj"/>
     <ProjectReference Include="..\ProgressService.Core\ProgressService.Core.csproj"/>
     <ProjectReference Include="..\ProgressService.Domain\ProgressService.Domain.csproj"/>

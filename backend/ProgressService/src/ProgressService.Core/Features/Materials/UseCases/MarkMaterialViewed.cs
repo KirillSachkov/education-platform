@@ -1,4 +1,4 @@
-using ContentAccess;
+﻿using ContentAccess;
 using Core.Abstractions;
 using Core.Database;
 using Core.Validation;
@@ -21,8 +21,7 @@ namespace ProgressService.Core.Features.Materials.UseCases;
 ///     User-scoped явная отметка «материал изучен» (нажатие кнопки «Отметить изученным»).
 ///     В отличие от silent track-view'а (<c>POST /track-view</c>, issue #285) — каскадит
 ///     <c>module_item_progress</c> во всех активных enrollment'ах через
-///     <c>CompleteModuleItemOnMaterialViewed</c> и начисляет XP через
-///     <c>AwardXpOnMaterialViewed</c>. Идемпотентно: повторный mark не дублирует XP/каскад,
+///     <c>CompleteModuleItemOnMaterialViewed</c>. Идемпотентно: повторный mark не дублирует каскад,
 ///     потому что событие <see cref="Domain.Materials.Events.MaterialViewedEvent"/>
 ///     поднимается только на переходе <c>is_completed: false → true</c>.
 /// </summary>

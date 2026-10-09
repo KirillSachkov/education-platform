@@ -1,4 +1,4 @@
-using Shared.Messaging;
+﻿using Shared.Messaging;
 using Shared.Messaging.IntegrationEvents.Access;
 using Shared.Messaging.IntegrationEvents.AssignmentReview;
 using Shared.Messaging.IntegrationEvents.Auth;
@@ -17,7 +17,6 @@ public static class RabbitMqConfiguration
 {
     private const string NOTIFICATIONS_AUTH_USER_EVENTS_QUEUE = "notifications.auth.user_events";
     private const string NOTIFICATIONS_PROGRESS_SUBMISSION_EVENTS_QUEUE = "notifications.progress.submission_events";
-    private const string NOTIFICATIONS_PROGRESS_GAMIFICATION_EVENTS_QUEUE = "notifications.progress.gamification_events";
     private const string NOTIFICATIONS_EDUCATION_CONTENT_EVENTS_QUEUE = "notifications.education.content_events";
     private const string NOTIFICATIONS_EDUCATION_COURSE_CREATED_QUEUE = "notifications.education.course_created";
     private const string NOTIFICATIONS_COMMENT_EVENTS_QUEUE = "notifications.comments.thread_events";
@@ -132,16 +131,6 @@ public static class RabbitMqConfiguration
             queue.BindExchange(
                 ProgressEventsRouting.EXCHANGE,
                 ProgressEventsRouting.RoutingKeys.IssueAuthorQuestionAsked());
-        });
-
-        // progress.events → user.leveled_up (#555): поздравление пользователя с повышением
-        // gamification-уровня. Отдельная очередь (не submission_events) — другой recipient
-        // (сам юзер) и независимый lifecycle.
-        opts.ListenToRabbitQueue(NOTIFICATIONS_PROGRESS_GAMIFICATION_EVENTS_QUEUE, queue =>
-        {
-            queue.BindExchange(
-                ProgressEventsRouting.EXCHANGE,
-                ProgressEventsRouting.RoutingKeys.UserLeveledUp());
         });
 
         // education.events → material.published, issue.published.

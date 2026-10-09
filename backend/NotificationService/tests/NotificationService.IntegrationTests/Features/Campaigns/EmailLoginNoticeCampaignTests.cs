@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using AuthService.Contracts;
 using CSharpFunctionalExtensions;
@@ -14,31 +14,13 @@ using SharedKernel;
 
 namespace NotificationService.IntegrationTests.Features.Campaigns;
 
-/// <summary>
-///     Кампания «вход теперь по почте» (#704, epic #696) — три admin-endpoint'а
-///     (<c>/notifications/admin/campaigns/email-login-notice/{run,test,recipient-count}</c>)
-///     поверх <c>EmailLoginNoticeCampaignRunner</c>. Модель та же, что у level-test кампании
-///     (<see cref="LevelTestInviteCampaignTests"/>), но аудитория — только пользователи
-///     С GitHub-привязкой (<c>githubLinked: true</c>), и Email ФОРСИРОВАН шаблоном.
-///     Проверяем:
-///     <list type="bullet">
-///         <item>run → каждый пользователь со всех githubLinked-страниц получает notice (type 25)
-///         с его login-почтой в теле</item>
-///         <item>форс Email: выключенный Email-канал юзера НЕ гасит письмо (transactional=true)</item>
-///         <item>форс типа: per-type opt-out НЕ гасит критичное уведомление</item>
-///         <item>идемпотентность: повторный run не плодит дубликаты (фиксированный campaign GUID)</item>
-///         <item>пользователь без резолвящегося email пропускается, остальные получают</item>
-///         <item>test → уведомление приходит ТОЛЬКО вызывающему админу</item>
-///         <item>recipient-count → сумма githubLinked-страниц из fake AuthService</item>
-///         <item>auth: не-админ → 403 на каждом endpoint'е</item>
-///     </list>
-/// </summary>
+/// <summary>Кампания входа по почте: доставка, идемпотентность и доступ администратора.</summary>
 [Collection(nameof(IntegrationTestsFixture))]
 public sealed class EmailLoginNoticeCampaignTests : NotificationServiceTestsBase
 {
-    private const string RunPath = "/notifications/admin/campaigns/email-login-notice/run/";
-    private const string TestPath = "/notifications/admin/campaigns/email-login-notice/test/";
-    private const string RecipientCountPath = "/notifications/admin/campaigns/email-login-notice/recipient-count/";
+    private const string RUN_PATH = "/notifications/admin/campaigns/email-login-notice/run/";
+    private const string TEST_PATH = "/notifications/admin/campaigns/email-login-notice/test/";
+    private const string RECIPIENT_COUNT_PATH = "/notifications/admin/campaigns/email-login-notice/recipient-count/";
 
     public EmailLoginNoticeCampaignTests(IntegrationTestsWebFactory factory) : base(factory)
     {
@@ -254,9 +236,9 @@ public sealed class EmailLoginNoticeCampaignTests : NotificationServiceTestsBase
     }
 
     [Theory]
-    [InlineData(RunPath, "POST")]
-    [InlineData(TestPath, "POST")]
-    [InlineData(RecipientCountPath, "GET")]
+    [InlineData(RUN_PATH, "POST")]
+    [InlineData(TEST_PATH, "POST")]
+    [InlineData(RECIPIENT_COUNT_PATH, "GET")]
     public async Task Endpoints_NonAdmin_Forbidden(string path, string method)
     {
         AuthenticateAs(Guid.NewGuid()); // обычный user без Platform.ADMIN permission
@@ -319,21 +301,21 @@ public sealed class EmailLoginNoticeCampaignTests : NotificationServiceTestsBase
 
     private async Task<RunCampaignResponse> PostRunAsync()
     {
-        HttpResponseMessage resp = await AppHttpClient.PostAsync(new Uri(RunPath, UriKind.Relative), content: null);
+        HttpResponseMessage resp = await AppHttpClient.PostAsync(new Uri(RUN_PATH, UriKind.Relative), content: null);
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
         return await ReadResultAsync<RunCampaignResponse>(resp);
     }
 
     private async Task<SendTestCampaignResponse> PostTestAsync()
     {
-        HttpResponseMessage resp = await AppHttpClient.PostAsync(new Uri(TestPath, UriKind.Relative), content: null);
+        HttpResponseMessage resp = await AppHttpClient.PostAsync(new Uri(TEST_PATH, UriKind.Relative), content: null);
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
         return await ReadResultAsync<SendTestCampaignResponse>(resp);
     }
 
     private async Task<CampaignRecipientCountResponse> GetRecipientCountAsync()
     {
-        HttpResponseMessage resp = await AppHttpClient.GetAsync(new Uri(RecipientCountPath, UriKind.Relative));
+        HttpResponseMessage resp = await AppHttpClient.GetAsync(new Uri(RECIPIENT_COUNT_PATH, UriKind.Relative));
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
         return await ReadResultAsync<CampaignRecipientCountResponse>(resp);
     }

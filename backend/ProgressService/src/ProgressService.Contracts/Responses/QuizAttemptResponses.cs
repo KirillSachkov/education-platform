@@ -1,4 +1,4 @@
-namespace ProgressService.Contracts.Responses;
+﻿namespace ProgressService.Contracts.Responses;
 
 /// <summary>
 ///     Результат попытки прохождения квиза — full-reveal после сабмита (квиз — учебный
@@ -62,10 +62,8 @@ public sealed record CheckQuizQuestionResponse(
     string? Explanation = null);
 
 /// <summary>
-///     Сводка тестов, которые проходил текущий пользователь (страница «Мои тесты», #556).
-///     Одна строка на квиз — агрегат по всем попыткам: лучший/последний балл, число
-///     попыток, итоговый pass (любая попытка прошла). LEVEL_TEST-квизы исключены (у
-///     воронки своя страница). Сортировка — по последней активности (новые сверху).
+///     Сводка квизов текущего пользователя: одна строка на квиз с лучшим и последним баллом,
+///     числом попыток и итоговым pass. Сортировка по последней активности, новые сверху.
 /// </summary>
 public sealed record MyQuizAttemptsSummaryResponse(
     IReadOnlyList<MyQuizAttemptsSummaryItem> Items,

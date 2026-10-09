@@ -1,4 +1,4 @@
-using EducationContentService.Domain.Quizzes;
+﻿using EducationContentService.Domain.Quizzes;
 using EducationContentService.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -46,10 +46,6 @@ public class QuizConfiguration : IEntityTypeConfiguration<Quiz>
             .HasColumnName("passing_score_percent")
             .IsRequired();
 
-        // Назначение квиза: 'MATERIAL_CHECK' / 'LEVEL_TEST'. Без HasDefaultValue —
-        // Domain-ctor задаёт значение (см. enum-gotcha в backend/CLAUDE.md). Default на
-        // БД-уровне выставлен в миграции (ExtendQuizForLevelTest) только для backfill'а
-        // существующих строк — паттерн Course.Kind, без CHECK-constraint.
         builder.Property(x => x.Purpose)
             .HasConversion<string>()
             .HasMaxLength(50)
@@ -65,13 +61,6 @@ public class QuizConfiguration : IEntityTypeConfiguration<Quiz>
             .HasMaxLength(50)
             .HasColumnName("access_type")
             .IsRequired();
-
-        // Конфигурация level-test'а — nullable JSONB через явный value converter
-        // (тот же паттерн, что questions, НЕ OwnsOne+ToJson).
-        builder.Property(x => x.LevelTestConfig)
-            .HasConversion(QuizLevelTestConfigJson.Converter, QuizLevelTestConfigJson.Comparer)
-            .HasColumnType("jsonb")
-            .HasColumnName("level_test_config");
 
         // JSONB-массив вопросов через явный value converter (НЕ OwnsMany+ToJson: у
         // JSON-owned сущностей Id становится ключом и не round-trip'ится — см.

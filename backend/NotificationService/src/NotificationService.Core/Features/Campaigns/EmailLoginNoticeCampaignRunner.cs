@@ -1,4 +1,4 @@
-using AuthService.Contracts;
+﻿using AuthService.Contracts;
 using AuthService.Contracts.HttpCommunication;
 using CSharpFunctionalExtensions;
 using Microsoft.Extensions.Logging;
@@ -21,7 +21,7 @@ namespace NotificationService.Core.Features.Campaigns;
 /// (<c>ForcedChannels</c>) — критичное уведомление об аккаунте идёт поверх выключенного
 /// Email-канала и per-type opt-out'а.
 ///
-/// Идемпотентность per-user: фиксированный <see cref="CAMPAIGN_ID"/> даёт детерминированный
+/// Идемпотентность per-user: фиксированный <see cref="_campaignId"/> даёт детерминированный
 /// correlation на пару (campaign × userId) — повторный запуск пропускает уже-уведомлённых.
 /// </summary>
 public interface IEmailLoginNoticeCampaignRunner
@@ -53,7 +53,7 @@ public sealed class EmailLoginNoticeCampaignRunner : IEmailLoginNoticeCampaignRu
     /// Фиксированный well-known id кампании (#704). Входит в per-user correlation, обеспечивая
     /// детерминированную идемпотентность: re-run не плодит дубликаты.
     /// </summary>
-    private static readonly Guid CAMPAIGN_ID = new("0197b000-0000-7000-8000-000000000704");
+    private static readonly Guid _campaignId = new("0197b000-0000-7000-8000-000000000704");
 
     /// <summary>
     /// Контакт поддержки в Telegram — тот же, что захардкожен в остальных email-шаблонах
@@ -62,7 +62,7 @@ public sealed class EmailLoginNoticeCampaignRunner : IEmailLoginNoticeCampaignRu
     private const string SUPPORT_TG_URL = "https://t.me/sachkov_blog";
 
     /// <summary>
-    /// Размер keyset-страницы id пользователей из AuthService (как у level-test кампании).
+    /// Размер keyset-страницы id пользователей из AuthService.
     /// Не больше 500 — лимит валидатора batch-endpoint'а <c>/internal/users/batch</c>,
     /// которым страница целиком резолвится в email'ы.
     /// </summary>
@@ -139,7 +139,7 @@ public sealed class EmailLoginNoticeCampaignRunner : IEmailLoginNoticeCampaignRu
                         continue;
                     }
 
-                    chunk.Add(BuildRequest(userId, CorrelationIds.Combine(CAMPAIGN_ID, userId), email));
+                    chunk.Add(BuildRequest(userId, CorrelationIds.Combine(_campaignId, userId), email));
                     queued++;
 
                     if (chunk.Count >= DISPATCH_BATCH_SIZE)

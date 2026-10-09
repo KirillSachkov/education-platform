@@ -34,8 +34,6 @@ OTel SDK в .NET-сервисах для traces+metrics, Alloy для shipping �
 
 - `EducationPlatform.Notifications` meter — `notification_dispatch_duration_seconds`, `notification_outbox_publish_lag_seconds` (consumer-side), `notification_delivery_outcomes_total`. Класс `NotificationService.Core.Diagnostics.NotificationMetrics`, singleton + `IMeterFactory`.
 - `EducationPlatform.Telegram` meter — `telegram_send_duration_seconds`, `telegram_throttle_wait_seconds`, `telegram_handler_lag_seconds`, `telegram_delivery_outcomes_total`. Класс `TelegramBotService.Core.Diagnostics.TelegramMetrics`.
-- `EducationPlatform.Education` meter (#482) — `level_test_fetched_total` (верх level-test воронки: успешный `GetActiveLevelTest`, proxy «начали тест»). Класс `EducationContentService.Core.Diagnostics.EducationContentMetrics`.
-- `EducationPlatform.Progress` meter (#482) — level-test воронка в ProgressService: `level_test_submitted_total` (label `subject`: anonymous/authenticated), `level_test_claimed_total` (lead-gate конверсия, += claimedCount), `level_test_ai_graded_total` (label `outcome`: ready/failed). Класс `ProgressService.Core.Diagnostics.ProgressMetrics`.
 - Wolverine 4.x экспонирует built-in OTel meter `"Wolverine"` — outbox/inbox depth, handler duration, retry/DLQ counters. Регистрируется в `ObservabilityExtensions.AddObservability` через `.AddMeter(WOLVERINE_SOURCE)`.
 
 **Правило для новых бизнес-метрик:** точечно через `IMeterFactory`, не разводи `*Diagnostics.cs` static-helpers. Имя meter'а — public const в `ObservabilityExtensions` + регистрация в `WithMetrics(...)`. Без регистрации Meter молча дропается OTel pipeline'ом.
@@ -43,8 +41,7 @@ OTel SDK в .NET-сервисах для traces+metrics, Alloy для shipping �
 Dashboard «Notification Pipeline» (`docker/grafana/dashboards/notification-pipeline.json`, тег `notification-pipeline`) собирает все четыре meter'а в одно место + RabbitMQ queue depths + DLQ. Ищется через Grafana MCP `search_dashboards("notification")`.
 
 Dashboard «Growth Funnel» (`docker/grafana/dashboards/growth-funnel.json`, тег
-`growth-funnel`) соединяет уже существующие серверные метрики level-test и billing:
-открытие теста → анонимная отправка → claim после входа → созданный заказ → PAID.
+`growth-funnel`) показывает серверные метрики billing: созданные заказы, оплата и ошибки.
 Проценты на dashboard — оконное приближение за 24 часа, а не cohort analysis.
 Браузерные acquisition/UTM-события намеренно остаются в Яндекс Метрике.
 

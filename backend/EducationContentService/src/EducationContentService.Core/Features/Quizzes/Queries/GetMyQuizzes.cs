@@ -1,4 +1,4 @@
-using System.Data.Common;
+﻿using System.Data.Common;
 using Core.Abstractions;
 using Core.Database;
 using Dapper;
@@ -13,13 +13,7 @@ namespace EducationContentService.Core.Features.Quizzes.Queries;
 
 public sealed record GetMyQuizzesQuery : IQuery;
 
-/// <summary>
-///     Карточка квиза в авторской библиотеке (ST-12 #492). DTO живёт в slice'е
-///     (не в Contracts) — потребитель один, фронт ST-15. <c>Purpose</c> отдаётся как есть:
-///     библиотека на фронте сама отфильтровывает LEVEL_TEST (у него своя страница).
-///     Counts — usage-метрики для карточки: сколько материалов ссылаются на квиз
-///     (<c>materials.quiz_id</c>) и в скольких курсах он размещён (<c>course_quizzes</c>).
-/// </summary>
+/// <summary>Карточка авторской библиотеки: число вопросов, материалов и курсов с этим квизом.</summary>
 public sealed record MyQuizSummaryDto(
     Guid Id,
     string Title,
@@ -45,14 +39,8 @@ public sealed class GetMyQuizzesEndpoint : IEndpoint
     }
 }
 
-/// <summary>
-///     Общая авторская библиотека квизов: ВСЕ квизы caller'а любого статуса и любого
-///     purpose, новые сверху. Область видимости зеркалит Tier-2 ownership-семантику
-///     <c>OwnershipExtensions.CheckOwnership</c> (как <see cref="GetMyLevelTestsHandler"/>):
-///     автор видит только свои, admin / content-moderator — все. Ответы вопросов наружу
-///     не идут — только агрегаты (questionsCount + counts), поэтому полная авторская
-///     проекция не нужна.
-/// </summary>
+/// <summary>Автор видит свои квизы; ADMIN и content-moderator видят все.
+///     Возвращает агрегаты без ответов вопросов, новые квизы сверху.</summary>
 public sealed class GetMyQuizzesHandler
     : IQueryHandlerWithResult<IReadOnlyList<MyQuizSummaryDto>, GetMyQuizzesQuery>
 {

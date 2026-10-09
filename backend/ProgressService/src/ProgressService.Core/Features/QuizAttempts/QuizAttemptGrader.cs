@@ -1,6 +1,5 @@
-using EducationContentService.Contracts.Quizzes;
+﻿using EducationContentService.Contracts.Quizzes;
 using ProgressService.Contracts.Responses;
-using ProgressService.Domain.LevelTests;
 using ProgressService.Domain.Quizzes;
 
 namespace ProgressService.Core.Features.QuizAttempts;
@@ -31,6 +30,9 @@ public sealed record QuizAttemptGrading(
 /// </summary>
 public static class QuizAttemptGrader
 {
+    private static string NormalizeExactAnswer(string value) =>
+        string.Concat(value.Where(char.IsLetterOrDigit)).ToLowerInvariant();
+
     /// <summary>Балл квиза из одних OPEN_TEXT-вопросов: грейдить нечего, прохождение засчитывается.</summary>
     public const int SELF_CHECK_ONLY_SCORE_PERCENT = 100;
 
@@ -70,8 +72,8 @@ public static class QuizAttemptGrader
                 correct = answer?.TextAnswer is not null
                     && question.ReferenceAnswer is not null
                     && string.Equals(
-                        LevelTestScoring.NormalizeExactAnswer(answer.TextAnswer),
-                        LevelTestScoring.NormalizeExactAnswer(question.ReferenceAnswer),
+                        NormalizeExactAnswer(answer.TextAnswer),
+                        NormalizeExactAnswer(question.ReferenceAnswer),
                         StringComparison.Ordinal);
                 if (correct.Value)
                 {
@@ -147,8 +149,8 @@ public static class QuizAttemptGrader
             return textAnswer is not null
                 && question.ReferenceAnswer is not null
                 && string.Equals(
-                    LevelTestScoring.NormalizeExactAnswer(textAnswer),
-                    LevelTestScoring.NormalizeExactAnswer(question.ReferenceAnswer),
+                    NormalizeExactAnswer(textAnswer),
+                    NormalizeExactAnswer(question.ReferenceAnswer),
                     StringComparison.Ordinal);
         }
 

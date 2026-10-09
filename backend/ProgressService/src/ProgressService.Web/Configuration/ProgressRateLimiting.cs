@@ -1,6 +1,5 @@
-using System.Threading.RateLimiting;
+﻿using System.Threading.RateLimiting;
 using ProgressService.Core.Features.Courses.Queries;
-using ProgressService.Core.Features.LevelTests.UseCases;
 using ProgressService.Core.Features.Materials.Queries;
 using ProgressService.Core.Features.Materials.UseCases;
 using ProgressService.Core.Features.QuizAttempts.UseCases;
@@ -50,27 +49,6 @@ public static class ProgressRateLimiting
                     });
             });
 
-            // Анонимный сабмит level-test попытки (issue #479) — 10 запросов в минуту:
-            // сабмит дорогой (поход за answer-key + грейдинг + insert), а воронка
-            // публичная. Залогиненные партиционируются по sub-claim (не делят bucket
-            // за CGNAT/VPN-IP); анонимы — по IP (anonymousId из body на этапе
-            // rate-limit недоступен).
-            options.AddPolicy(SubmitLevelTestAttemptEndpoint.RATE_LIMIT_POLICY, httpContext =>
-            {
-                string partitionKey = httpContext.User.FindFirst("sub")?.Value
-                    ?? httpContext.Connection.RemoteIpAddress?.ToString()
-                    ?? "anonymous";
-
-                return RateLimitPartition.GetSlidingWindowLimiter(
-                    partitionKey,
-                    _ => new SlidingWindowRateLimiterOptions
-                    {
-                        PermitLimit = 10,
-                        Window = TimeSpan.FromMinutes(1),
-                        SegmentsPerWindow = 6,
-                        QueueLimit = 0,
-                    });
-            });
 
             // Batch-чтение счётчиков просмотров (issue #234) — публичный read-эндпоинт,
             // 256 id'ов на запрос. Чуть щедрее на запись, чтобы карусели/фиды на странице

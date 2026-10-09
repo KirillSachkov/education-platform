@@ -58,12 +58,6 @@ public static class ObservabilityExtensions
     /// <summary>Payments meter — order lifecycle counters, provider Init/webhook outcomes, latency histograms.</summary>
     public const string PAYMENTS_METER = "EducationPlatform.Payments";
 
-    /// <summary>ProgressService meter — level-test funnel counters (submitted/claimed/ai_graded). См. ProgressService.Core.Diagnostics.ProgressMetrics.</summary>
-    public const string PROGRESS_METER = "EducationPlatform.Progress";
-
-    /// <summary>EducationContentService meter — level-test funnel top (fetched). См. EducationContentService.Core.Diagnostics.EducationContentMetrics.</summary>
-    public const string EDUCATION_METER = "EducationPlatform.Education";
-
     /// <summary>
     ///     AssignmentReviewService meter — iteration durations, verdict distribution,
     ///     diff-size histogram, RAG context-chunk count, GitHub API latency, AI cost.
@@ -359,8 +353,6 @@ public static class ObservabilityExtensions
             .AddMeter(ONBOARDING_METER)
             .AddMeter(AI_METER)
             .AddMeter(PAYMENTS_METER)
-            .AddMeter(PROGRESS_METER)
-            .AddMeter(EDUCATION_METER)
             .AddMeter(ASSIGNMENT_REVIEW_SOURCE)
             // SLO-friendly bucket boundaries (секунды) — чтобы p50/p95/p99 ловили
             // как быстрые операции (5-100ms), так и медленные (1-10s) без перекоса.

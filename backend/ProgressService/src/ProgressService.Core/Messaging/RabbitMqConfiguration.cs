@@ -1,7 +1,6 @@
-using Shared.Messaging;
+﻿using Shared.Messaging;
 using Shared.Messaging.IntegrationEvents.AssignmentReview;
 using Shared.Messaging.IntegrationEvents.Education;
-using Shared.Messaging.IntegrationEvents.Auth;
 using Shared.Messaging.IntegrationEvents.Progress;
 using Shared.Messaging.IntegrationEvents.Progress.Events;
 using Wolverine;
@@ -12,7 +11,6 @@ namespace ProgressService.Core.Messaging;
 public static class RabbitMqConfiguration
 {
     private const string PROGRESS_EDUCATION_LIFECYCLE_EVENTS_QUEUE = "progress.education.lifecycle_events";
-    private const string PROGRESS_AUTH_USER_SYNC_EVENTS_QUEUE = "progress.auth.user_sync_events";
     private const string PROGRESS_ASSIGNMENT_REVIEW_DENORM_QUEUE = "progress.assignment_review.denorm";
 
     public static void ConfigureRabbitMq(this WolverineOptions opts, string connectionString)
@@ -23,11 +21,6 @@ public static class RabbitMqConfiguration
             .EnableWolverineControlQueues()
             .UseQuorumQueues()
             .DeclareExchange(EducationEventsRouting.EXCHANGE, exchange =>
-            {
-                exchange.ExchangeType = ExchangeType.Topic;
-                exchange.IsDurable = true;
-            })
-            .DeclareExchange(AuthEventsRouting.EXCHANGE, exchange =>
             {
                 exchange.ExchangeType = ExchangeType.Topic;
                 exchange.IsDurable = true;
@@ -44,7 +37,6 @@ public static class RabbitMqConfiguration
             });
 
         opts.ConfigureEducationEventsListeners();
-        opts.ConfigureAuthEventsListeners();
         opts.ConfigureAssignmentReviewListeners();
         opts.ConfigureProgressEventsPublishing();
     }
@@ -71,19 +63,6 @@ public static class RabbitMqConfiguration
             queue.BindExchange(EducationEventsRouting.EXCHANGE, EducationEventsRouting.RoutingKeys.CourseHardDeleted());
             queue.BindExchange(EducationEventsRouting.EXCHANGE, EducationEventsRouting.RoutingKeys.QuizHardDeleted());
             queue.BindExchange(EducationEventsRouting.EXCHANGE, EducationEventsRouting.RoutingKeys.IssuePublished());
-        });
-
-    private static void ConfigureAuthEventsListeners(this WolverineOptions opts) =>
-        // Phase E (#69, 2026-05-06): GitHub auto-enroll moved to AccessService.
-        // UserGithubLogin is NOT consumed here — its handler lives in
-        // `AccessService.UserGithubLoginAccessHandler` on the `access.auth.github_events` queue.
-        // Leaving the binding here would route every GitHub login through ProgressService's
-        // queue with no handler match → log noise / DLQ.
-        opts.ListenToRabbitQueue(PROGRESS_AUTH_USER_SYNC_EVENTS_QUEUE, queue =>
-        {
-            queue.BindExchange(AuthEventsRouting.EXCHANGE, AuthEventsRouting.RoutingKeys.UserCreated());
-            queue.BindExchange(AuthEventsRouting.EXCHANGE, AuthEventsRouting.RoutingKeys.UserUsernameUpdated());
-            queue.BindExchange(AuthEventsRouting.EXCHANGE, AuthEventsRouting.RoutingKeys.UserDisplayNameUpdated());
         });
 
     private static void ConfigureProgressEventsPublishing(this WolverineOptions opts)

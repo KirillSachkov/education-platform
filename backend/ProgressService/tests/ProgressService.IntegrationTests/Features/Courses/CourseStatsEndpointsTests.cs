@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using EducationContentService.Contracts.Quizzes;
 using ProgressService.Contracts.Requests;
@@ -9,12 +9,7 @@ using SharedKernel;
 
 namespace ProgressService.IntegrationTests.Features.Courses;
 
-/// <summary>
-///     Author per-course аналитика (#634): тесты курса + прогресс курса, под ownership-гейтом.
-///     Овервью агрегирует только квизы ЭТОГО курса (blueprint.QuizIds), LEVEL_TEST/чужие
-///     квизы исключены; drill-in отвергает квиз вне курса (anti-IDOR 404); прогресс считает
-///     вовлечённость + три author-счётчика. Не-владелец курса → 403.
-/// </summary>
+/// <summary>Статистика учебного прогресса курса и проверка доступа.</summary>
 [Collection(nameof(IntegrationTestsFixture))]
 public sealed class CourseStatsEndpointsTests : ProgressServiceTestsBase
 {
@@ -231,8 +226,7 @@ public sealed class CourseStatsEndpointsTests : ProgressServiceTestsBase
             quizId,
             purpose,
             PASSING_SCORE,
-            [new QuizAnswerKeyQuestionDto(_q1, SINGLE_CHOICE, "Вопрос 1", null, null, [_q1Correct], null)],
-            LevelTestConfig: null));
+            [new QuizAnswerKeyQuestionDto(_q1, SINGLE_CHOICE, "Вопрос 1", null, null, [_q1Correct], null)]));
         return quizId;
     }
 

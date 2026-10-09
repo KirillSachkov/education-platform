@@ -37,7 +37,7 @@ Provisioned dashboards платформы. Grafana при старте скан�
 
 | Файл | UID | Назначение |
 |---|---|---|
-| `growth-funnel.json` | `growth-funnel` | Серверно подтверждённая воронка: открытие теста уровня → анонимная отправка → claim после входа → создание заказа → подтверждённая оплата. Конверсии считаются как приближение в окне 24h; acquisition/UTM остаются в Яндекс Метрике |
+| `growth-funnel.json` | `growth-funnel` | Серверные метрики заказов: создание, подтверждённая оплата и ошибки. Конверсии считаются как приближение в окне 24h; acquisition/UTM остаются в Яндекс Метрике |
 | `payments-pipeline.json` | `payments-pipeline` | T-Bank billing: создание заказа, Init API, webhook outcomes, PAID/FAILED и reconciliation |
 | `onboarding-pipeline.json` | `onboarding-pipeline` | ⚠️ **WIP — feature #68 не в main.** Plan Onboarding (GitHub App): invitation outcomes per minute, success rate, webhook signature verification, GitHub API duration, token cache hit ratio, install state store. Метрики `onboarding_*` начнут приходить только после merge `feature/plan-onboarding-68` в main + первого реального GitHub App install. До этого dashboard рендерит «no data» на проде. Пара panel'ов опираются на `pg_stat_user_tables_n_live_tup` (approximate, autovacuum-dependent) — точнее cделать через bus-based gauge при необходимости |
 

@@ -1,4 +1,4 @@
-namespace AuthService.Domain.AuthorSpaces;
+﻿namespace AuthService.Domain.AuthorSpaces;
 
 /// <summary>Feature flags пространства автора. Хранится как JSONB.</summary>
 public sealed record AuthorSpaceFeatureFlags
@@ -11,7 +11,6 @@ public sealed record AuthorSpaceFeatureFlags
 
     public bool Roadmaps { get; init; } = true;
 
-    public bool Leaderboard { get; init; } = true;
 
     public bool CustomLanding { get; init; }
 }

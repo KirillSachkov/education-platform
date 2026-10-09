@@ -29,10 +29,6 @@ public sealed class TransactionManager : ITransactionManager, IDisposable
         { IssueSubmissionConfiguration.ISSUE_PROGRESS_ATTEMPT_INDEX, "Отправка решения" },
         { IssueSubmissionConfiguration.ISSUE_PROGRESS_FOREIGN_KEY, "Прогресс задачи" },
         { MaterialBookmarkConfiguration.USER_COURSE_TARGET_INDEX, "Закладка" },
-        { UserGamificationStatsConfiguration.USER_INDEX, "Статистика геймификации" },
-        { ProgressUserConfiguration.USERNAME_INDEX, "Имя пользователя" },
-        { XpAwardConfiguration.USER_AWARD_SOURCE_INDEX, "Начисление опыта" },
-        { XpAwardConfiguration.ENROLLMENT_FOREIGN_KEY, "Зачисление на курс" }
     };
 
     private readonly ILogger<TransactionManager> _logger;

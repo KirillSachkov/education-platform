@@ -3,17 +3,14 @@ using ProgressService.Domain.Certificates;
 using ProgressService.Domain.ContentAccess;
 using ProgressService.Domain.CoursePositions;
 using ProgressService.Domain.Enrollments;
-using ProgressService.Domain.Gamification;
 using ProgressService.Domain.Bookmarks;
 using ProgressService.Domain.Issues;
 using ProgressService.Domain.IssueSubmissions;
-using ProgressService.Domain.LevelTests;
 using ProgressService.Domain.Materials;
 using ProgressService.Domain.Modules;
 using ProgressService.Domain.Notes;
 using ProgressService.Domain.Projects;
 using ProgressService.Domain.Quizzes;
-using ProgressService.Domain.Users;
 using Wolverine.EntityFrameworkCore;
 
 namespace ProgressService.Infrastructure.Postgres;
@@ -29,10 +26,6 @@ public class ProgressDbContext : DbContext
 
     public DbSet<CourseEnrollment> CourseEnrollments => Set<CourseEnrollment>();
 
-    public DbSet<UserGamificationStats> UserGamificationStats => Set<UserGamificationStats>();
-
-    public DbSet<XpAward> XpAwards => Set<XpAward>();
-
     public DbSet<ModuleProgress> ModuleProgresses => Set<ModuleProgress>();
 
     public DbSet<ModuleItemProgress> ModuleItemProgresses => Set<ModuleItemProgress>();
@@ -47,8 +40,6 @@ public class ProgressDbContext : DbContext
 
     public DbSet<IssueSubmission> IssueSubmissions => Set<IssueSubmission>();
 
-    public DbSet<ProgressUser> ProgressUsers => Set<ProgressUser>();
-
     public DbSet<MaterialBookmark> MaterialBookmarks => Set<MaterialBookmark>();
 
     public DbSet<MaterialNote> MaterialNotes => Set<MaterialNote>();
@@ -56,8 +47,6 @@ public class ProgressDbContext : DbContext
     public DbSet<IssueAuthorQuestion> IssueAuthorQuestions => Set<IssueAuthorQuestion>();
 
     public DbSet<QuizAttempt> QuizAttempts => Set<QuizAttempt>();
-
-    public DbSet<LevelTestAttempt> LevelTestAttempts => Set<LevelTestAttempt>();
 
     public DbSet<CourseCertificate> CourseCertificates => Set<CourseCertificate>();
 

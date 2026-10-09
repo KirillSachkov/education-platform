@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using EducationContentService.Contracts.Quizzes;
 using ProgressService.Contracts.Responses;
@@ -8,17 +8,12 @@ using SharedKernel;
 
 namespace ProgressService.IntegrationTests.Features.QuizAttempts;
 
-/// <summary>
-///     Админ-аналитика по всем тестам (#556, AC5): overview агрегирует попытки по квизам,
-///     исключает LEVEL_TEST, требует Users.VIEW (403 для участника); drill-in считает
-///     per-вопрос долю верных + распределение баллов из сохранённых ответов.
-/// </summary>
+/// <summary>Аналитика квизов: попытки, общая сводка и доступ администратора.</summary>
 [Collection(nameof(IntegrationTestsFixture))]
 public sealed class QuizAdminAnalyticsTests : ProgressServiceTestsBase
 {
     private const string SINGLE_CHOICE = "SINGLE_CHOICE";
     private const string MATERIAL_CHECK = "MATERIAL_CHECK";
-    private const string LEVEL_TEST = "LEVEL_TEST";
     private const int PASSING_SCORE = 70;
     private const string OVERVIEW_URL = "/progress/quizzes/admin/overview";
 
@@ -42,16 +37,15 @@ public sealed class QuizAdminAnalyticsTests : ProgressServiceTestsBase
     }
 
     [Fact]
-    public async Task Overview_AggregatesAcrossQuizzes_ExcludesLevelTest()
+    public async Task Overview_AggregatesAcrossQuizzes_ExcludesDeletedQuiz()
     {
         Guid courseId = Guid.NewGuid();
         Guid quizA = SeedSingleChoiceQuiz();
         Guid quizB = SeedSingleChoiceQuiz();
-        Guid levelTest = SeedSingleChoiceQuiz(LEVEL_TEST);
+        Guid deletedQuiz = SeedSingleChoiceQuiz();
 
         EducationContentClient.AddQuizSummary(quizA, "Тест A", MATERIAL_CHECK, courseId);
         EducationContentClient.AddQuizSummary(quizB, "Тест B");
-        EducationContentClient.AddQuizSummary(levelTest, "Определи уровень", LEVEL_TEST);
         EducationContentClient.AddCourseTitle(courseId, "Курс .NET");
 
         // quizA: 2 пользователя — один прошёл (100), один нет (40).
@@ -61,8 +55,7 @@ public sealed class QuizAdminAnalyticsTests : ProgressServiceTestsBase
         await SeedAttemptAsync(userA2, quizA, scorePercent: 40, passed: false);
         // quizB: один пользователь, провал.
         await SeedAttemptAsync(Guid.NewGuid(), quizB, scorePercent: 50, passed: false);
-        // level-test: попытка есть, но в overview не попадает.
-        await SeedAttemptAsync(Guid.NewGuid(), levelTest, scorePercent: 90, passed: true);
+        await SeedAttemptAsync(Guid.NewGuid(), deletedQuiz, scorePercent: 90, passed: true);
 
         AuthenticateAs(Guid.NewGuid(), "platform-admin");
         Envelope<QuizAdminOverviewResponse>? envelope = await AppHttpClient
@@ -77,8 +70,7 @@ public sealed class QuizAdminAnalyticsTests : ProgressServiceTestsBase
         // (100 + 40 + 50) / 3 = 63.3.
         Assert.Equal(63.3, overview.OverallAvgScorePercent);
 
-        // LEVEL_TEST не должен фигурировать.
-        Assert.DoesNotContain(overview.Quizzes, q => q.QuizId == levelTest);
+        Assert.DoesNotContain(overview.Quizzes, q => q.QuizId == deletedQuiz);
 
         // Самый «попыточный» квиз — первым (quizA: 2 попытки).
         QuizAdminOverviewRow rowA = overview.Quizzes[0];
@@ -181,8 +173,7 @@ public sealed class QuizAdminAnalyticsTests : ProgressServiceTestsBase
             purpose,
             PASSING_SCORE,
             [new QuizAnswerKeyQuestionDto(
-                _q1, SINGLE_CHOICE, "Вопрос 1", null, null, [_q1Correct], null)],
-            LevelTestConfig: null));
+                _q1, SINGLE_CHOICE, "Вопрос 1", null, null, [_q1Correct], null)]));
         return quizId;
     }
 

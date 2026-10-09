@@ -1,4 +1,4 @@
-using ContentAccess;
+﻿using ContentAccess;
 using EducationContentService.Contracts.HttpCommunication;
 using EducationContentService.Contracts.ProgressLookup;
 using PlatformAuth;
@@ -29,7 +29,7 @@ namespace ProgressService.Core.Features.Modules.EventHandlers;
 ///     Handler идемпотентен: событие поднимается на каждой passed-попытке, но
 ///     <c>CompleteQuizModuleItemAsync</c> no-op'ит уже закрытые пункты. Запускается в той же
 ///     транзакции, что и <c>SubmitQuizAttempt</c> — добавленный anchor сохранится её
-///     <c>SaveChangesAsync</c>. Без XP в этой итерации.
+///     <c>SaveChangesAsync</c>.
 /// </remarks>
 public sealed class CompleteQuizModuleItemOnAttemptPassed : IDomainEventHandler<QuizAttemptPassedEvent>
 {

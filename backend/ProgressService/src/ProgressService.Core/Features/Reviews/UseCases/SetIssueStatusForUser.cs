@@ -1,4 +1,4 @@
-using Core.Abstractions;
+﻿using Core.Abstractions;
 using Core.Database;
 using Core.Validation;
 using EducationContentService.Contracts.HttpCommunication;
@@ -31,17 +31,17 @@ namespace ProgressService.Core.Features.Reviews.UseCases;
 ///     <list type="bullet">
 ///       <item><b>COMPLETED</b> → переиспользует synthetic-approved путь
 ///       (<see cref="IStaffIssueCompletionService"/>): синтетический принятый submission + каскад
-///       XP/project/module + integration event <c>issue_submission.approved</c>. Reviewer ОБЯЗАТЕЛЕН
+///       project/module + integration event <c>issue_submission.approved</c>. Reviewer ОБЯЗАТЕЛЕН
 ///       (fail-closed если пуст).</item>
 ///       <item><b>NOT_STARTED / IN_PROGRESS / UNDER_REVIEW / REQUESTED_CHANGES</b> → строит/обеспечивает
 ///       progress-цепочку (enrollment anchor → ProjectProgress → ModuleProgress/ModuleItemProgress если
 ///       в модуле → IssueProgress), затем применяет staff-переход на IssueProgress
 ///       (<see cref="IssueProgress.Reset"/> для NOT_STARTED; <see cref="IssueProgress.SetStatusByStaff"/>
 ///       для остальных). При уходе из COMPLETED поднимается <c>IssueProgressReopenedEvent</c> — откат
-///       XP/project/module. Reviewer НЕ требуется.</item>
+///       project/module. Reviewer НЕ требуется.</item>
 ///     </list>
 ///     </para>
-///     <para>Идемпотентно: target == current → no-op без дублирования событий/XP.</para>
+///     <para>Идемпотентно: target == current → no-op без дублирования событий.</para>
 /// </summary>
 public sealed record SetIssueStatusForUserCommand(
     Guid CourseId,
@@ -203,7 +203,7 @@ public sealed class SetIssueStatusForUserHandler : ICommandHandler<SetIssueStatu
     ///     NOT_STARTED / IN_PROGRESS / UNDER_REVIEW / REQUESTED_CHANGES — без submission'а и approve.
     ///     Строит/обеспечивает progress-цепочку (как при первом engagement'е студента), затем применяет
     ///     staff-переход на IssueProgress. При уходе из COMPLETED поднимается IssueProgressReopenedEvent —
-    ///     откат XP/project/module. Двухфазный flush: цепочку коммитим до перехода, чтобы reopen-каскад
+    ///     откат project/module. Двухфазный flush: цепочку коммитим до перехода, чтобы reopen-каскад
     ///     (резолвит строки через DB GetByAsync) видел закоммиченные Added-сущности.
     /// </summary>
     private async Task<UnitResult<Error>> ApplyNonCompletedStatusAsync(
@@ -322,7 +322,7 @@ public sealed class SetIssueStatusForUserHandler : ICommandHandler<SetIssueStatu
 
         // Двухфазный flush: коммитим всю progress-цепочку (enrollment-anchor + Project/Module/Issue
         // progress) ДО применения перехода. При уходе из COMPLETED IssueProgress поднимает
-        // IssueProgressReopenedEvent, чьи handler'ы (Revoke XP / Revert project / Uncomplete module)
+        // IssueProgressReopenedEvent, чьи handler'ы (Revert project / Uncomplete module)
         // резолвят строки через DB GetByAsync — без предварительного flush'а они не увидели бы свежие
         // Added-сущности (тот же паттерн, что в MarkIssueCompleteForUser). При не-reopen-кейсе это просто
         // лишний no-op flush.

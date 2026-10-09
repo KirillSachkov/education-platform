@@ -8,13 +8,7 @@ initial snapshot. Deleting a file from this branch does not sanitize its history
 
 ## Demonstration data
 
-The embedded EducationContentService JSON resource contains small original examples
-for the level test, including section scoring and thresholds. These examples support
-local development rather than professional assessment.
-
-The explicit `seed-level-test` CLI command loads this resource. Application startup
-does not replace persisted questions. The seeder preserves an existing quiz unless
-an operator supplies `--force`. Private content stays in the database and authoring APIs.
+Private content is maintained through the authoring APIs and database.
 The landing page uses clearly marked fictional testimonials with no personal handles.
 
 The FileService video fixture is generated from a solid color and silence:

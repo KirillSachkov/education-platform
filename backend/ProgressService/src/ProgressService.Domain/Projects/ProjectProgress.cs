@@ -1,4 +1,4 @@
-using ProgressService.Domain.Projects.Events;
+﻿using ProgressService.Domain.Projects.Events;
 using SharedKernel.DomainEvents;
 
 namespace ProgressService.Domain.Projects;
@@ -68,7 +68,6 @@ public sealed class ProjectProgress : AggregateRoot
     /// <summary>
     /// Реакция на добавление новой задачи в проект (issue.published в ECS).
     /// Бампит TotalIssuesCount и откатывает COMPLETED → IN_PROGRESS, если проект уже был завершён.
-    /// XP за повторное завершение не начисляется повторно — XpAwardService идемпотентен по SourceId.
     /// </summary>
     public void RegisterIssueAdded()
     {

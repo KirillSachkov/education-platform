@@ -362,43 +362,6 @@ public static class NotificationTemplates
             "Что нового за неделю: {digestSummary}.\n\n{digestItems}\n\nОткрыть платформу: {openUrl}"));
 
     /// <summary>
-    /// Повышение уровня (#555): пользователь набрал XP и вышел на новый уровень → ему же.
-    /// Мотивирующее поздравление; на сайте поверх этого фронт показывает модалку с конфетти.
-    /// Аргументы: newLevel (номер достигнутого уровня), levelLine (мотивирующая строка с XP).
-    /// Каналы: InApp + Telegram (без Email — частое мягкое событие, не почтовый спам).
-    /// </summary>
-    public static readonly NotificationTemplate UserLeveledUp = new(
-        id: "gamification.level_up",
-        type: NotificationType.UserLeveledUp,
-        defaultChannels: NotificationChannel.InApp | NotificationChannel.Telegram,
-        inApp: new(
-            Title: "Новый уровень — {newLevel}!",
-            Body: "Поздравляем! {levelLine} Так держать — продолжай учиться."),
-        telegram: new(
-            Body: "🎉 *Новый уровень — {newLevel}!*\n\n{levelLine} Так держать — продолжай в том же духе!\n\n[Продолжить учиться]({openUrl})"));
-
-    /// <summary>
-    /// Приглашение пройти публичный тест уровня (#554) — сервисная кампания ВСЕМ пользователям,
-    /// запускается админом. Дружелюбное продуктовое письмо (не агрессивная реклама).
-    /// Аргументы: displayName, levelTestUrl (абсолютная ссылка на воронку теста уровня).
-    /// Каналы: InApp + Email (без Telegram — не мессенджер-шум; сервисное письмо разовое).
-    /// </summary>
-    public static readonly NotificationTemplate LevelTestInvite = new(
-        id: "level_test.invite",
-        type: NotificationType.LevelTestInvite,
-        defaultChannels: NotificationChannel.InApp | NotificationChannel.Email,
-        inApp: new(
-            Title: "Тест на определение уровня",
-            Body: "Пройдите бесплатный тест и узнайте свой уровень .NET-разработчика."),
-        email: new(
-            Subject: "Узнайте свой уровень .NET-разработчика — бесплатный тест",
-            HtmlBodyResource: "level-test-invite.html",
-            PlainText:
-            "{displayName}, узнайте свой уровень .NET-разработчика.\n\n" +
-            "Бесплатный тест на ~25 минут: по результату — уровень по шкале Новичок..Senior " +
-            "и разбор по темам.\n\nПройти тест: {levelTestUrl}"));
-
-    /// <summary>
     /// Месячный доступ скоро истекает (#580) → самому пользователю. CTA — оформить полный
     /// доступ навсегда (уплаченное за месяц в зачёте). Клик ведёт на каталог планов
     /// (/pricing), где оформляется апгрейд.

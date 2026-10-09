@@ -1,4 +1,4 @@
-using Core.Abstractions;
+﻿using Core.Abstractions;
 using FluentValidation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -68,13 +68,7 @@ public static class Registration
         // Фоновое расписание — WeeklyDigestService в Infrastructure.Postgres.
         services.AddScoped<Features.Digest.IWeeklyDigestRunner, Features.Digest.WeeklyDigestRunner>();
 
-        // Кампания «приглашение на тест уровня» (#554): admin-triggered рассылка всем
-        // пользователям. Endpoints авто-discover'ятся, runner — DI как и дайджест.
-        services.AddScoped<Features.Campaigns.ILevelTestInviteCampaignRunner, Features.Campaigns.LevelTestInviteCampaignRunner>();
-
-        // Кампании email-only-login (#704, epic #696): «вход теперь по почте» (юзерам
-        // с GitHub-привязкой, InApp + форсированный Email) и «привяжите аккаунты»
-        // (юзерам без привязки, только InApp). Та же модель, что и level-test кампания.
+        // Кампании уведомлений об аккаунте: endpoints обнаруживаются автоматически.
         services.AddScoped<Features.Campaigns.IEmailLoginNoticeCampaignRunner, Features.Campaigns.EmailLoginNoticeCampaignRunner>();
         services.AddScoped<Features.Campaigns.ILinkAccountsNudgeCampaignRunner, Features.Campaigns.LinkAccountsNudgeCampaignRunner>();
 

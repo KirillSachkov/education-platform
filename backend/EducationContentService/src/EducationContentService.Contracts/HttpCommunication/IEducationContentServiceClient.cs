@@ -1,4 +1,4 @@
-using EducationContentService.Contracts.Courses;
+﻿using EducationContentService.Contracts.Courses;
 using EducationContentService.Contracts.Digest;
 using EducationContentService.Contracts.Issues;
 using EducationContentService.Contracts.Materials;
@@ -221,14 +221,8 @@ public interface IEducationContentServiceClient
         IReadOnlyCollection<Guid> ids,
         CancellationToken cancellationToken);
 
-    /// <summary>
-    ///     Ключ ответов квиза (правильные варианты per-вопрос + проходной балл) для
-    ///     S2S-грейдинга попыток в ProgressService (ST-I, #472). Отдаёт квиз любого
-    ///     статуса — грейдинг должен работать и после снятия квиза с публикации.
-    ///     Несёт также Purpose + per-question Section/Difficulty + LevelTestConfig —
-    ///     для секционного скоринга и курс-рекомендаций level-test'а (ST-4, #477) —
-    ///     и AccessType квиза для Tier-3 гейта попытки (ST-13, #493).
-    /// </summary>
+    /// <summary>S2S-ключ ответов для ProgressService. Доступен только SERVICE/ADMIN.
+    ///     AccessType определяет проверку доступа к квизу.</summary>
     Task<Result<QuizAnswerKeyDto, Error>> GetQuizAnswerKeyAsync(
         Guid quizId,
         CancellationToken cancellationToken);

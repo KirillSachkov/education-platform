@@ -1,4 +1,4 @@
-using SharedKernel.DomainEvents;
+﻿using SharedKernel.DomainEvents;
 
 namespace ProgressService.Domain.Quizzes.Events;
 
@@ -8,6 +8,6 @@ namespace ProgressService.Domain.Quizzes.Events;
 ///     <c>module_item_progress</c>. Обрабатывает <c>CompleteQuizModuleItemOnAttemptPassed</c>
 ///     (cascade на module_item_progress во всех курсах, где квиз размещён в модуле и к которым
 ///     у пользователя есть доступ). Решение владельца (#493): завершение элемента модуля =
-///     ПРОХОДНОЙ БАЛЛ, не любая попытка. Без XP в этой итерации.
+///     ПРОХОДНОЙ БАЛЛ, не любая попытка.
 /// </summary>
 public sealed record QuizAttemptPassedEvent(Guid UserId, Guid QuizId) : IDomainEvent;
