@@ -14,10 +14,6 @@ vi.mock("@/entities/notification", () => ({
   CourseSubscribeButton: () => null,
 }));
 
-vi.mock("@/entities/tag", () => ({
-  SearchableTagsField: () => null,
-}));
-
 vi.mock("@/features/course-learning/model/use-resolved-course-access", () => ({
   useResolvedCourseAccess: () => ({
     accessLevel: "anonymous",

@@ -1,4 +1,4 @@
-using System.Data.Common;
+﻿using System.Data.Common;
 using System.Threading.RateLimiting;
 using Core.Database;
 using EducationContentService.Core.Database;
@@ -80,7 +80,6 @@ public class IntegrationTestsWebFactory : WebApplicationFactory<Program>, IAsync
         await dbContext.Database.EnsureCreatedAsync();
         await CreateCommentOwnershipContractViewAsync(dbContext);
         await WolverineSchemaHelper.CreateTablesAsync(dbContext);
-        await CreateTagsSchemaStubAsync(dbContext);
 
         _dbConnection = new NpgsqlConnection(ConnectionString);
         await _dbConnection.OpenAsync();
@@ -153,34 +152,6 @@ public class IntegrationTestsWebFactory : WebApplicationFactory<Program>, IAsync
             FROM ownership_candidates
             ORDER BY target_entity_type, target_entity_id, priority, course_id NULLS LAST;
             """);
-
-    // ECS handlers (e.g. GetAuthorMaterialsFeed, GetCourseMaterialsFeed) reference `tags.entity_tags`
-    // in Dapper SQL to support filtering by TagIds. TagService owns that schema in production, but the
-    // ECS test DB only has the `education` schema. We create a minimal compatible stub so queries that
-    // include the `tags.entity_tags` subquery don't 42P01. Shape mirrors TagService's
-    // `EntityTagConfiguration` + `20260412192249_Init` migration. Respawn is configured below to clear
-    // this table between tests alongside `education`.
-    private static async Task CreateTagsSchemaStubAsync(EducationDbContext dbContext)
-    {
-        const string sql = """
-                           CREATE SCHEMA IF NOT EXISTS tags;
-                           CREATE TABLE IF NOT EXISTS tags.tags (
-                               id uuid PRIMARY KEY,
-                               title varchar(100) NOT NULL,
-                               slug varchar(100) NOT NULL,
-                               kind varchar(20) NOT NULL
-                           );
-                           CREATE TABLE IF NOT EXISTS tags.entity_tags (
-                               id uuid PRIMARY KEY,
-                               entity_type varchar(16) NOT NULL,
-                               entity_id uuid NOT NULL,
-                               tag_id uuid NOT NULL
-                           );
-                           CREATE INDEX IF NOT EXISTS ix_entity_tags_tag_id ON tags.entity_tags (tag_id);
-                           CREATE INDEX IF NOT EXISTS ix_entity_tags_entity ON tags.entity_tags (entity_type, entity_id);
-                           """;
-        await dbContext.Database.ExecuteSqlRawAsync(sql);
-    }
 
     public new async Task DisposeAsync()
     {
@@ -369,7 +340,7 @@ public class IntegrationTestsWebFactory : WebApplicationFactory<Program>, IAsync
             services.Configure<RateLimiterOptions>(options =>
             {
                 options.RejectionStatusCode = 429;
-                string[] policies = ["anonymous-read", "short-link-create"];
+                string[] policies = ["anonymous-read"];
                 foreach (string policy in policies)
                 {
                     options.AddPolicy(policy, _ => RateLimitPartition.GetNoLimiter(string.Empty));
@@ -393,6 +364,6 @@ public class IntegrationTestsWebFactory : WebApplicationFactory<Program>, IAsync
     private async Task InitializeRespawner()
     {
         _respawner = await Respawner.CreateAsync(_dbConnection,
-            new RespawnerOptions { DbAdapter = DbAdapter.Postgres, SchemasToInclude = ["education", "tags"], });
+            new RespawnerOptions { DbAdapter = DbAdapter.Postgres, SchemasToInclude = ["education"], });
     }
 }

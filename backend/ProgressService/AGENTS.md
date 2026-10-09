@@ -1,8 +1,7 @@
 # ProgressService
 
 Owns learner progress: enrollments, material views, module/project/issue progress, issue
-submissions and review workflow, quiz attempts, bookmarks,
-notes, and certificates in PostgreSQL schema `progress` (port 8003).
+submissions and review workflow, quiz attempts and bookmarks in PostgreSQL schema `progress` (port 8003).
 
 ## Context routing
 

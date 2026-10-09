@@ -47,6 +47,7 @@ export function BookmarkToggleButton({
           <Button
             variant="outline"
             size="icon"
+            aria-label="Войти, чтобы добавить в закладки"
             className={cn("size-9 rounded-xl", className)}
             // Programmatic nav, NOT a <Link>: this button can render inside a
             // card-level <Link> (e.g. material RowCard), and a nested <a> is
@@ -68,6 +69,7 @@ export function BookmarkToggleButton({
           <Button
             variant="outline"
             size="icon"
+            aria-label="Загружаем закладку"
             className={cn("size-9 rounded-xl", className)}
             disabled
           >
@@ -85,6 +87,8 @@ export function BookmarkToggleButton({
         <Button
           variant={isBookmarked ? "secondary" : "outline"}
           size="icon"
+          aria-label={isBookmarked ? "Убрать из закладок" : "Добавить в закладки"}
+          aria-pressed={isBookmarked}
           className={cn(
             "size-9 rounded-xl border-border/70 transition-colors",
             isBookmarked && "bg-primary/10 text-primary hover:bg-primary/15",

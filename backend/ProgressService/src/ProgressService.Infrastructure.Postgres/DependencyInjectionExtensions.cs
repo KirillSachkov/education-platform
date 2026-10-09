@@ -56,10 +56,8 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IAnonymousMaterialViewRepository, AnonymousMaterialViewRepository>();
         services.AddScoped<ICoursePositionRepository, CoursePositionRepository>();
         services.AddScoped<IMaterialBookmarkRepository, MaterialBookmarkRepository>();
-        services.AddScoped<IMaterialNoteRepository, MaterialNoteRepository>();
         services.AddScoped<IIssueAuthorQuestionRepository, IssueAuthorQuestionRepository>();
         services.AddScoped<IQuizAttemptRepository, QuizAttemptRepository>();
-        services.AddScoped<ICourseCertificateRepository, CourseCertificateRepository>();
 
         services.AddDomainEvents(typeof(ConnectionStringNames).Assembly);
 

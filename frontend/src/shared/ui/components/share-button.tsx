@@ -18,13 +18,6 @@ interface ShareButtonProps {
   title: string;
   /** Optional descriptive text for the native share sheet. */
   text?: string;
-  /**
-   * Optional async resolver for a preferred share URL (e.g. a short link),
-   * called lazily on click. Returns a path or absolute URL; `null`, or any
-   * rejection, silently falls back to `url` / current location — sharing
-   * must never break because of the resolver.
-   */
-  resolveUrl?: () => Promise<string | null>;
   /** Render the "Поделиться" text label next to the icon (hidden on mobile). */
   withLabel?: boolean;
   variant?: ComponentProps<typeof Button>["variant"];
@@ -43,30 +36,18 @@ export function ShareButton({
   url,
   title,
   text,
-  resolveUrl,
   withLabel = true,
   variant = "outline",
   size = "sm",
   className,
 }: ShareButtonProps) {
   async function handleShare() {
-    let shareUrl =
+    const shareUrl =
       url !== undefined
         ? toAbsoluteUrl(url)
         : typeof window !== "undefined"
           ? window.location.href
           : "";
-
-    // Preferred URL (short link) — resolved lazily on click so anonymous /
-    // unconfigured callers never hit the API. Any failure keeps the fallback.
-    if (resolveUrl) {
-      try {
-        const resolved = await resolveUrl();
-        if (resolved) shareUrl = toAbsoluteUrl(resolved);
-      } catch {
-        // Short-link API unavailable (429/500/offline) — share the long URL.
-      }
-    }
 
     if (!shareUrl) return;
 

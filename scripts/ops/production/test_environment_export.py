@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 from remote_production import CRITICAL
+from release_model import LEGACY_REGISTRY
 from test_remote_production import RemoteFixture
 
 
@@ -8,7 +9,7 @@ class EnvironmentExport(RemoteFixture):
     def prepare(self):
         with patch("remote_production.shutil.which", return_value="/usr/bin/tool"):
             self.host.baseline()
-        self.host.target = {"postgres_image": self.host.roles["postgres_image"],
+        self.host.target = {"registry": LEGACY_REGISTRY, "postgres_image": self.host.roles["postgres_image"],
                             "metadata": self.host.roles["roles"]["current"]["metadata"]}
         self.host.packet["credentials"] = {"INFISICAL_CLIENT_ID": "fixture-client",
                                            "INFISICAL_CLIENT_SECRET": "fixture-secret",

@@ -192,8 +192,6 @@ public static class ObservabilityExtensions
                     // ContentAccess — кастомные spans вокруг entitlement-проверок.
                     .AddSource(CONTENT_ACCESS_SOURCE)
                     .AddSource(ASSIGNMENT_REVIEW_SOURCE)
-                    // SearchService — spans вокруг Typesense-запросов.
-                    .AddSource("SearchService")
                     .AddSource(WOLVERINE_SOURCE)
                     .AddSource(NPGSQL_SOURCE)
                     // RabbitMQ.Client (transitive через Wolverine.RabbitMQ) шлёт W3C
@@ -339,8 +337,6 @@ public static class ObservabilityExtensions
             .AddMeter("Wolverine:FileService.Core")
             .AddMeter("Wolverine:NotificationService.Core")
             .AddMeter("Wolverine:ProgressService.Core")
-            .AddMeter("Wolverine:SearchService.Core")
-            .AddMeter("Wolverine:TagService.Core")
             .AddMeter("Wolverine:TelegramBotService.Core")
             // Платформенные бизнес-метрики. Сами Meter'ы создаются через IMeterFactory
             // в Diagnostics-классах сервиса (см. NotificationMetrics, TelegramMetrics,

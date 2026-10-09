@@ -1,7 +1,6 @@
 "use client";
 
 import { useMarkdownFileUpload, useMarkdownImageUpload } from "@/entities/file";
-import { TagsField } from "@/entities/tag";
 import { Button } from "@/shared/ui/kit/button";
 import { Input } from "@/shared/ui/kit/input";
 import { Label } from "@/shared/ui/kit/label";
@@ -22,7 +21,7 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projectName: string;
-  onSubmit: (data: { title: string; content: string; draftId: string; tags: string[] }) => void;
+  onSubmit: (data: { title: string; content: string; draftId: string }) => void;
 };
 
 export function CreateIssueSheet({
@@ -31,8 +30,6 @@ export function CreateIssueSheet({
   projectName,
   onSubmit: onSubmitProp,
 }: Props) {
-  const [tags, setTags] = useState<string[]>([]);
-
   // Свежий draftId на каждое открытие. Сбрасываем в `handleClose` (когда лист
   // закрывается, готовимся к следующему открытию) — без useEffect на проп `open`.
   const [draftId, setDraftId] = useState(() => crypto.randomUUID());
@@ -54,7 +51,6 @@ export function CreateIssueSheet({
 
   const handleClose = () => {
     reset(issueDefaultValues);
-    setTags([]);
     setDraftId(crypto.randomUUID());
     onOpenChange(false);
   };
@@ -64,7 +60,6 @@ export function CreateIssueSheet({
       title: data.title,
       content: data.content ?? "",
       draftId,
-      tags,
     });
     handleClose();
   };
@@ -123,11 +118,6 @@ export function CreateIssueSheet({
               />
               {errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
             </div>
-          </div>
-
-          <div className="shrink-0 px-6 pt-3">
-            <Label className="text-sm font-medium mb-1.5 block">Теги</Label>
-            <TagsField value={tags} onChange={setTags} />
           </div>
 
           {/* Editor — fills remaining height */}

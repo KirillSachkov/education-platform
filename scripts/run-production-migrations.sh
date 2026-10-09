@@ -17,8 +17,6 @@ migration_services=(
     file-service-migrations
     progress-service-migrations
     comment-service-migrations
-    tag-service-migrations
-    search-service-migrations
     access-service-migrations
     material-processing-service-migrations
     notification-service-migrations
@@ -29,8 +27,6 @@ migration_services=(
 remaining_cutover_services=(
     progress-service-migrations
     comment-service-migrations
-    tag-service-migrations
-    search-service-migrations
     access-service-migrations
     material-processing-service-migrations
     notification-service-migrations
@@ -38,10 +34,16 @@ remaining_cutover_services=(
     assignment-review-service-migrations
 )
 
-# Original approved legacy roles still require their historical trainer migration.
+# Frozen legacy roles use their original migration inventory.
 if [[ "$topology" == legacy ]]; then
-    migration_services=("${migration_services[@]:0:11}" trainer-service-migrations assignment-review-service-migrations)
-    remaining_cutover_services=("${remaining_cutover_services[@]:0:8}" trainer-service-migrations assignment-review-service-migrations)
+    migration_services=(
+        auth-service-migrations education-service-migrations file-service-migrations
+        progress-service-migrations comment-service-migrations tag-service-migrations
+        search-service-migrations access-service-migrations material-processing-service-migrations
+        notification-service-migrations telegram-bot-service-migrations trainer-service-migrations
+        assignment-review-service-migrations
+    )
+    remaining_cutover_services=("${migration_services[@]:3}")
 fi
 
 run_migrations() {

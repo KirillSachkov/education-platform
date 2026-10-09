@@ -1,7 +1,4 @@
 "use client";
-
-import { TagsField } from "@/entities/tag";
-import { EntityTypes } from "@/shared/config/entity-types";
 import { Button } from "@/shared/ui/kit/button";
 import { Input } from "@/shared/ui/kit/input";
 import { Label } from "@/shared/ui/kit/label";
@@ -11,13 +8,7 @@ const MarkdownEditor = dynamic(
   () => import("@/shared/ui/kit/markdown-editor").then((m) => ({ default: m.MarkdownEditor })),
   { ssr: false, loading: () => <div className="h-64 animate-pulse bg-muted rounded-md" /> },
 );
-import {
-  Sheet,
-  SheetContent,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/shared/ui/kit/sheet";
+import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/shared/ui/kit/sheet";
 import { Textarea } from "@/shared/ui/kit/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
@@ -25,7 +16,6 @@ import { Controller, useForm } from "react-hook-form";
 import { moduleSchema, type ModuleFormData } from "../model/schemas";
 
 type Props = {
-  moduleId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: {
@@ -41,7 +31,6 @@ type Props = {
 };
 
 export function EditModuleDialog({
-  moduleId,
   open,
   onOpenChange,
   onSubmit: onSubmitProp,
@@ -95,9 +84,7 @@ export function EditModuleDialog({
               {...register("title")}
               placeholder="Введите название модуля"
             />
-            {errors.title && (
-              <p className="text-sm text-destructive">{errors.title.message}</p>
-            )}
+            {errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
           </div>
 
           <div className="space-y-2">
@@ -109,24 +96,13 @@ export function EditModuleDialog({
               rows={3}
             />
             {errors.description && (
-              <p className="text-sm text-destructive">
-                {errors.description.message}
-              </p>
+              <p className="text-sm text-destructive">{errors.description.message}</p>
             )}
           </div>
 
-          <TagsField
-            key={moduleId}
-            entityId={moduleId}
-            entityType={EntityTypes.MODULE}
-            className="pt-2"
-          />
-
           <div className="space-y-2">
             <Label>Подробное описание</Label>
-            <p className="text-xs text-muted-foreground">
-              Поддерживается Markdown
-            </p>
+            <p className="text-xs text-muted-foreground">Поддерживается Markdown</p>
             <Controller
               control={control}
               name="detailedDescription"
@@ -143,18 +119,12 @@ export function EditModuleDialog({
               )}
             />
             {errors.detailedDescription && (
-              <p className="text-sm text-destructive">
-                {errors.detailedDescription.message}
-              </p>
+              <p className="text-sm text-destructive">{errors.detailedDescription.message}</p>
             )}
           </div>
 
           <SheetFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Отмена
             </Button>
             <Button type="submit">Сохранить</Button>

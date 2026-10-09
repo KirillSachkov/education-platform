@@ -95,10 +95,7 @@ public sealed class Material
 
     /// <summary>
     ///     Денормализованный список заголовков глав видео — синхронизируется из Kinescope
-    ///     через <c>PUT /internal/videos/{id}/chapters/</c>. Используется для
-    ///     полнотекстового поиска (SearchService индексирует значения как отдельное поле
-    ///     <c>chapter_titles</c> в Typesense). Полная транскрипция в поиск не попадает —
-    ///     только конспект (<see cref="Content"/>) и эти заголовки.
+    ///     через <c>PUT /internal/videos/{id}/chapters/</c>.
     ///     Длина и порядок совпадают с <see cref="ChapterTimestamps"/>.
     /// </summary>
     public IReadOnlyList<string> ChapterTitles { get; private set; } = [];
@@ -106,8 +103,7 @@ public sealed class Material
     /// <summary>
     ///     Денормализованный список offset'ов глав видео в секундах — параллельный массив
     ///     к <see cref="ChapterTitles"/>: <c>ChapterTimestamps[i]</c> — offset для
-    ///     <c>ChapterTitles[i]</c>. Нужен фронту чтобы при клике по результату поиска
-    ///     по совпавшей главе перенести Kinescope-плеер на нужную секунду.
+    ///     <c>ChapterTitles[i]</c>. Используется для перехода к главе видео.
     /// </summary>
     public IReadOnlyList<int> ChapterTimestamps { get; private set; } = [];
 

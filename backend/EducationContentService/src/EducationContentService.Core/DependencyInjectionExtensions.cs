@@ -8,7 +8,6 @@ using EducationContentService.Core.Features.MaterialProcessing;
 using EducationContentService.Core.Features.ModuleItems;
 using EducationContentService.Core.Features.Plans;
 using EducationContentService.Core.Features.ProjectItems;
-using EducationContentService.Core.Features.Roadmaps;
 using EducationContentService.Domain.Courses;
 using EducationContentService.Domain.Modules;
 using EducationContentService.Domain.Projects;
@@ -31,7 +30,6 @@ public static class DependencyInjectionExtensions
         services.AddScoped<CourseItemService>();
         services.AddScoped<ModuleItemService>();
         services.AddScoped<ProjectItemService>();
-        services.AddScoped<RoadmapCleanupService>();
         services.AddScoped<CollectionAccessEnricher>();
 
         services.AddScoped<OrderingService<Course>>();

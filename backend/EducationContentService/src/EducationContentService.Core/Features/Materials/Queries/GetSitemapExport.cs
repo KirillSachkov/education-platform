@@ -1,4 +1,4 @@
-using System.Data.Common;
+﻿using System.Data.Common;
 using Core.Abstractions;
 using Core.Database;
 using Dapper;
@@ -11,25 +11,21 @@ using PlatformAuth.Authorization;
 namespace EducationContentService.Core.Features.Materials.Queries;
 
 /// <summary>
-///     Метаданные-only выгрузка всех PUBLISHED материалов/подборок/роадмапов для
+///     Метаданные-only выгрузка всех PUBLISHED материалов/подборок для
 ///     sitemap.xml (issue #469). Возвращается анонимно регардлесс access_type —
 ///     detail-страницы рендерятся для анонимов с замком, поэтому это легитимные
 ///     SEO-цели. Наружу идут только id/slug + updated_at: ни title, ни content
-///     не утекают. Роадмапы без slug не имеют публичного URL и не включаются.
+///     не утекают.
 /// </summary>
 public sealed record GetSitemapExportQuery : IQuery;
 
 /// <summary>Sitemap-запись контента. Frontend-only read-DTO.</summary>
 public sealed record SitemapEntryDto(Guid Id, DateTime UpdatedAt);
 
-/// <summary>Sitemap-запись роадмапа (адресуется slug'ом). Frontend-only read-DTO.</summary>
-public sealed record SitemapRoadmapEntryDto(string Slug, DateTime UpdatedAt);
-
 /// <summary>Полная выгрузка для app/sitemap.ts. Frontend-only read-DTO.</summary>
 public sealed record SitemapExportDto(
     IReadOnlyList<SitemapEntryDto> Materials,
-    IReadOnlyList<SitemapEntryDto> Collections,
-    IReadOnlyList<SitemapRoadmapEntryDto> Roadmaps);
+    IReadOnlyList<SitemapEntryDto> Collections);
 
 public sealed class GetSitemapExportEndpoint : IEndpoint
 {
@@ -68,11 +64,6 @@ public sealed class GetSitemapExportHandler : IQueryHandler<SitemapExportDto, Ge
                            FROM collections c
                            WHERE c.status = 'PUBLISHED'
                            ORDER BY c.id;
-
-                           SELECT r.slug, r.updated_at
-                           FROM roadmaps r
-                           WHERE r.status = 'PUBLISHED' AND r.slug IS NOT NULL
-                           ORDER BY r.id;
                            """;
 
         var command = new CommandDefinition(sql, cancellationToken: cancellationToken);
@@ -80,12 +71,10 @@ public sealed class GetSitemapExportHandler : IQueryHandler<SitemapExportDto, Ge
 
         var materialRows = (await multi.ReadAsync<EntryRow>()).ToList();
         var collectionRows = (await multi.ReadAsync<EntryRow>()).ToList();
-        var roadmapRows = (await multi.ReadAsync<RoadmapRow>()).ToList();
 
         return new SitemapExportDto(
             materialRows.Select(r => new SitemapEntryDto(r.Id, r.UpdatedAt)).ToList(),
-            collectionRows.Select(r => new SitemapEntryDto(r.Id, r.UpdatedAt)).ToList(),
-            roadmapRows.Select(r => new SitemapRoadmapEntryDto(r.Slug, r.UpdatedAt)).ToList());
+            collectionRows.Select(r => new SitemapEntryDto(r.Id, r.UpdatedAt)).ToList());
     }
 
     private sealed class EntryRow
@@ -94,9 +83,4 @@ public sealed class GetSitemapExportHandler : IQueryHandler<SitemapExportDto, Ge
         public DateTime UpdatedAt { get; init; }
     }
 
-    private sealed class RoadmapRow
-    {
-        public string Slug { get; init; } = null!;
-        public DateTime UpdatedAt { get; init; }
-    }
 }

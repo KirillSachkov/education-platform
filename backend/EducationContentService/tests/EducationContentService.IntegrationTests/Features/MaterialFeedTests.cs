@@ -1,4 +1,5 @@
-using ContentAccess;
+﻿using ContentAccess;
+using EducationContentService.Core.Features.Materials.Queries;
 using CSharpFunctionalExtensions;
 using EducationContentService.Contracts;
 using EducationContentService.Contracts.Materials;
@@ -181,42 +182,6 @@ public class MaterialFeedTests : EducationContentServiceTestsBase
         Assert.Equal(firstId, page.Items[1].Id);
     }
 
-    [Fact]
-    public async Task CourseMaterialTags_ReturnsOnlyTagsUsedByPublishedMaterialsInCourse()
-    {
-        CancellationToken ct = CancellationToken.None;
-        Guid authorId = Guid.CreateVersion7();
-
-        Guid courseId = await CreateCourseAsync(authorId, ct);
-        Guid otherCourseId = await CreateCourseAsync(authorId, ct);
-
-        Guid courseMaterialId = await CreateMaterialAsync("Kubernetes basics", authorId, AccessType.PUBLIC, ct);
-        Guid otherCourseMaterialId = await CreateMaterialAsync("React basics", authorId, AccessType.PUBLIC, ct);
-        Guid draftMaterialId = await CreateDraftAsync("Draft with tag", authorId, ct);
-
-        await AttachMaterialToCourseAsync(courseId, courseMaterialId, ct);
-        await AttachMaterialToCourseAsync(courseId, draftMaterialId, ct);
-        await AttachMaterialToCourseAsync(otherCourseId, otherCourseMaterialId, ct);
-
-        Guid k8sTagId = await CreateTagAsync("Kubernetes", ct);
-        Guid reactTagId = await CreateTagAsync("React", ct);
-        Guid draftTagId = await CreateTagAsync("Draft", ct);
-
-        await LinkTagAsync(k8sTagId, courseMaterialId, ct);
-        await LinkTagAsync(reactTagId, otherCourseMaterialId, ct);
-        await LinkTagAsync(draftTagId, draftMaterialId, ct);
-
-        RemoveAuthentication();
-
-        IReadOnlyList<TagListItem> tags = await GetCourseMaterialTagsAsync(courseId, ct);
-
-        TagListItem tag = Assert.Single(tags);
-        Assert.Equal(k8sTagId, tag.Id);
-        Assert.Equal("Kubernetes", tag.Title);
-        Assert.Equal("kubernetes", tag.Slug);
-        Assert.Equal("canon", tag.Kind);
-    }
-
     // ---------- Thumbnail priority ----------
 
     [Fact]
@@ -287,6 +252,137 @@ public class MaterialFeedTests : EducationContentServiceTestsBase
         Assert.Equal(60.0, item.DurationSeconds);
     }
 
+    [Fact]
+    public async Task CourseFeed_Search_IsolatesPublishedCourseMaterialsAndRedactsLockedPreview()
+    {
+        CancellationToken ct = CancellationToken.None;
+        Guid authorId = Guid.CreateVersion7();
+        Guid courseId = await CreateCourseAsync(authorId, ct);
+        Guid otherCourseId = await CreateCourseAsync(authorId, ct);
+        Guid publicId = await CreateMaterialAsync("PostgreSQL основы", authorId, AccessType.PUBLIC, ct);
+        Guid lockedId = await CreateMaterialAsync("PostgreSQL практика", authorId, AccessType.ENROLLED, ct);
+        Guid foreignId = await CreateMaterialAsync("PostgreSQL другой курс", authorId, AccessType.PUBLIC, ct);
+        Guid draftId = await CreateDraftAsync("PostgreSQL черновик", authorId, ct);
+        await AttachMaterialToCourseAsync(courseId, publicId, ct);
+        await AttachMaterialToCourseAsync(courseId, lockedId, ct);
+        await AttachMaterialToCourseAsync(courseId, draftId, ct);
+        await AttachMaterialToCourseAsync(otherCourseId, foreignId, ct);
+        EntitlementChecker.SetDecision(ResourceTypes.MATERIAL, lockedId, AccessDecision.Denied());
+        RemoveAuthentication();
+
+        CursorResponse<MaterialFeedItemDto> page = await GetFeedAsync(
+            $"/courses/{courseId}/materials/feed?search={Uri.EscapeDataString("  postgresql  ")}", ct);
+
+        Assert.Equal(2, page.Items.Count);
+        Assert.Contains(page.Items, item => item.Id == publicId && item.IsAccessible && item.Preview is not null);
+        MaterialFeedItemDto locked = Assert.Single(page.Items, item => item.Id == lockedId);
+        Assert.False(locked.IsAccessible);
+        Assert.Null(locked.Preview);
+        Assert.Equal(MaterialLockReasons.Anonymous, locked.LockReason);
+        Assert.DoesNotContain(page.Items, item => item.Id == foreignId || item.Id == draftId);
+    }
+
+    [Theory]
+    [InlineData("%")]
+    [InlineData("_")]
+    [InlineData("\\")]
+    public async Task CourseFeed_Search_TreatsPatternCharactersLiterally(string query)
+    {
+        CancellationToken ct = CancellationToken.None;
+        Guid authorId = Guid.CreateVersion7();
+        Guid courseId = await CreateCourseAsync(authorId, ct);
+        Guid matchId = await CreateMaterialAsync($"Literal {query} marker", authorId, AccessType.PUBLIC, ct);
+        Guid otherId = await CreateMaterialAsync("Other marker", authorId, AccessType.PUBLIC, ct);
+        await AttachMaterialToCourseAsync(courseId, matchId, ct);
+        await AttachMaterialToCourseAsync(courseId, otherId, ct);
+
+        CursorResponse<MaterialFeedItemDto> page = await GetFeedAsync(
+            $"/courses/{courseId}/materials/feed?search={Uri.EscapeDataString(query)}", ct);
+
+        Assert.Equal(matchId, Assert.Single(page.Items).Id);
+    }
+
+    [Fact]
+    public async Task CourseFeed_Search_NoMatchesAndUnknownCourseReturnEmpty()
+    {
+        CancellationToken ct = CancellationToken.None;
+        Guid authorId = Guid.CreateVersion7();
+        Guid courseId = await CreateCourseAsync(authorId, ct);
+        Guid materialId = await CreateMaterialAsync("Existing title", authorId, AccessType.PUBLIC, ct);
+        await AttachMaterialToCourseAsync(courseId, materialId, ct);
+
+        foreach (string url in new[]
+        {
+            $"/courses/{courseId}/materials/feed?search=missing",
+            $"/courses/{Guid.CreateVersion7()}/materials/feed?search=Existing"
+        })
+        {
+            CursorResponse<MaterialFeedItemDto> page = await GetFeedAsync(url, ct);
+            Assert.Empty(page.Items);
+            Assert.Null(page.NextCursor);
+        }
+
+        CursorResponse<MaterialFeedItemDto> blank = await GetFeedAsync(
+            $"/courses/{courseId}/materials/feed?search=%20%20", ct);
+        Assert.Equal(materialId, Assert.Single(blank.Items).Id);
+    }
+
+    [Fact]
+    public async Task CourseFeed_Search_PaginatesWithoutForeignOrDuplicateItems()
+    {
+        CancellationToken ct = CancellationToken.None;
+        Guid authorId = Guid.CreateVersion7();
+        Guid courseId = await CreateCourseAsync(authorId, ct);
+        List<Guid> expected = [];
+        for (int index = 0; index < 3; index++)
+        {
+            Guid id = await CreateMaterialAsync($"Page lesson {index}", authorId, AccessType.PUBLIC, ct);
+            await AttachMaterialToCourseAsync(courseId, id, ct);
+            expected.Add(id);
+        }
+
+        List<Guid> actual = [];
+        string? cursor = null;
+        do
+        {
+            string url = $"/courses/{courseId}/materials/feed?search=Page&limit=1";
+            if (cursor is not null)
+                url += $"&cursor={Uri.EscapeDataString(cursor)}";
+            CursorResponse<MaterialFeedItemDto> page = await GetFeedAsync(url, ct);
+            actual.Add(Assert.Single(page.Items).Id);
+            cursor = page.NextCursor;
+        }
+        while (cursor is not null && actual.Count <= expected.Count);
+
+        Assert.Null(cursor);
+        Assert.Equal(expected.Order(), actual.Order());
+    }
+
+    [Fact]
+    public async Task CourseFeed_MissingBatchAccessDecisionDoesNotExposePreview()
+    {
+        CancellationToken ct = CancellationToken.None;
+        Guid authorId = Guid.CreateVersion7();
+        Guid courseId = await CreateCourseAsync(authorId, ct);
+        Guid materialId = await CreateMaterialAsync("Protected lesson", authorId, AccessType.ENROLLED, ct);
+        await AttachMaterialToCourseAsync(courseId, materialId, ct);
+        var checker = Substitute.For<IEntitlementChecker>();
+        checker.CheckAccessBatchAsync(Arg.Any<AccessSubject>(), Arg.Any<string>(),
+            Arg.Any<IReadOnlyList<Guid>>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyDictionary<Guid, AccessDecision>>(new Dictionary<Guid, AccessDecision>()));
+        checker.GetUserEnrolledCourseIdsAsync(Arg.Any<Guid>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlySet<Guid>>(new HashSet<Guid>()));
+        using IServiceScope scope = Services.CreateScope();
+        var handler = ActivatorUtilities.CreateInstance<GetCourseMaterialsFeedHandler>(scope.ServiceProvider, checker);
+
+        CursorResponse<MaterialFeedItemDto> page = await handler.Handle(
+            new GetCourseMaterialsFeedQuery(courseId, null, 10, null, "Protected", null), ct);
+
+        MaterialFeedItemDto item = Assert.Single(page.Items);
+        Assert.False(item.IsAccessible);
+        Assert.Null(item.Preview);
+    }
+
     // ---------- Helpers ----------
 
     private async Task<CursorResponse<MaterialFeedItemDto>> GetFeedAsync(string url, CancellationToken ct)
@@ -294,13 +390,6 @@ public class MaterialFeedTests : EducationContentServiceTestsBase
         HttpResponseMessage response = await AppHttpClient.GetAsync(url, ct);
         response.EnsureSuccessStatusCode();
         return await ReadResultAsync<CursorResponse<MaterialFeedItemDto>>(response);
-    }
-
-    private async Task<IReadOnlyList<TagListItem>> GetCourseMaterialTagsAsync(Guid courseId, CancellationToken ct)
-    {
-        HttpResponseMessage response = await AppHttpClient.GetAsync($"/courses/{courseId}/materials/tags", ct);
-        response.EnsureSuccessStatusCode();
-        return await ReadResultAsync<IReadOnlyList<TagListItem>>(response);
     }
 
     private async Task<Guid> CreateMaterialAsync(
@@ -499,29 +588,4 @@ public class MaterialFeedTests : EducationContentServiceTestsBase
         });
     }
 
-    private async Task<Guid> CreateTagAsync(string title, CancellationToken ct)
-    {
-        Guid id = Guid.CreateVersion7();
-        await ExecuteInDb(async db =>
-        {
-            await db.Database.ExecuteSqlInterpolatedAsync($"""
-                INSERT INTO tags.tags (id, title, slug, kind)
-                VALUES ({id}, {title}, {title.ToLowerInvariant()}, 'CANON');
-                """, ct);
-        });
-        return id;
-    }
-
-    private async Task LinkTagAsync(Guid tagId, Guid materialId, CancellationToken ct)
-    {
-        await ExecuteInDb(async db =>
-        {
-            await db.Database.ExecuteSqlInterpolatedAsync($"""
-                INSERT INTO tags.entity_tags (id, entity_type, entity_id, tag_id)
-                VALUES ({Guid.CreateVersion7()}, 'Material', {materialId}, {tagId});
-                """, ct);
-        });
-    }
-
-    private sealed record TagListItem(Guid Id, string Title, string Slug, string Kind);
 }

@@ -9,8 +9,5 @@ public sealed record AuthorSpaceFeatureFlags
 
     public bool AiAssistant { get; init; }
 
-    public bool Roadmaps { get; init; } = true;
-
-
     public bool CustomLanding { get; init; }
 }

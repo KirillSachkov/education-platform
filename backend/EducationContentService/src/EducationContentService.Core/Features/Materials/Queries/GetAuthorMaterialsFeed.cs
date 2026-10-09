@@ -1,4 +1,4 @@
-using System.Data.Common;
+﻿using System.Data.Common;
 using ContentAccess;
 using Core.Abstractions;
 using Core.Database;
@@ -23,7 +23,6 @@ public sealed record GetAuthorMaterialsFeedQuery(
     string? Kind,
     string Scope,
     string? Search,
-    IReadOnlyList<Guid>? TagIds,
     string? AccessFilter) : IQuery;
 
 public sealed class GetAuthorMaterialsFeedEndpoint : IEndpoint
@@ -38,7 +37,6 @@ public sealed class GetAuthorMaterialsFeedEndpoint : IEndpoint
                     [FromQuery] string? kind,
                     [FromQuery] string? scope,
                     [FromQuery] string? search,
-                    [FromQuery(Name = "tagIds")] Guid[]? tagIds,
                     [FromQuery] string? accessFilter,
                     [FromServices] GetAuthorMaterialsFeedHandler handler,
                     CancellationToken cancellationToken) =>
@@ -50,7 +48,6 @@ public sealed class GetAuthorMaterialsFeedEndpoint : IEndpoint
                         kind,
                         string.IsNullOrWhiteSpace(scope) ? "all" : scope.ToLowerInvariant(),
                         search,
-                        tagIds is { Length: > 0 } ? tagIds : null,
                         accessFilter),
                     cancellationToken))
             .AllowAnonymousEndpoint()
@@ -123,7 +120,6 @@ public sealed class GetAuthorMaterialsFeedHandler
             KindFilter = string.IsNullOrWhiteSpace(query.Kind) ? null : query.Kind,
             EnrolledCourseIds = enrolledCourseIds,
             SearchPattern = searchPattern,
-            TagIds = query.TagIds?.ToArray(),
             AllowedAccessTypes = allowedAccessTypes,
         };
 
@@ -163,12 +159,6 @@ public sealed class GetAuthorMaterialsFeedHandler
                                          AND m.published_at IS NOT NULL
                                          AND (@KindFilter IS NULL OR m.kind = @KindFilter)
                                          AND (@SearchPattern IS NULL OR lower(m.title) LIKE @SearchPattern)
-                                         AND (@TagIds::uuid[] IS NULL OR EXISTS (
-                                           SELECT 1 FROM tags.entity_tags et
-                                           WHERE et.entity_type = 'Material'
-                                             AND et.entity_id = m.id
-                                             AND et.tag_id = ANY(@TagIds)
-                                         ))
                                          AND (@AllowedAccessTypes::text[] IS NULL OR m.access_type = ANY(@AllowedAccessTypes))
                                    )
                                    SELECT
@@ -231,12 +221,6 @@ public sealed class GetAuthorMaterialsFeedHandler
                                               AND m.published_at IS NOT NULL
                                               AND (@KindFilter IS NULL OR m.kind = @KindFilter)
                                          AND (@SearchPattern IS NULL OR lower(m.title) LIKE @SearchPattern)
-                                         AND (@TagIds::uuid[] IS NULL OR EXISTS (
-                                           SELECT 1 FROM tags.entity_tags et
-                                           WHERE et.entity_type = 'Material'
-                                             AND et.entity_id = m.id
-                                             AND et.tag_id = ANY(@TagIds)
-                                         ))
                                         )
                                         SELECT
                                             r.material_id AS id,

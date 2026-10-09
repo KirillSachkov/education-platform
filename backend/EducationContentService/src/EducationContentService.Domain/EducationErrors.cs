@@ -63,7 +63,7 @@ public static class EducationErrors
         Error.Failure("education.operation.cancelled", "Операция была отменена");
 
     /// <summary>
-    ///     Generic переход статуса для Course/Module/Roadmap.
+    ///     Generic переход статуса для Course/Module.
     ///     Код ошибки оставлен legacy `lesson.invalid.status.transition` для обратной совместимости с фронтом —
     ///     не менять, иначе сломаем i18n-override и логику ловли ошибок на клиенте.
     /// </summary>
@@ -86,12 +86,6 @@ public static class EducationErrors
 
     public static Error AuthorshipRequired() =>
         Error.Authorization("content.authorship.required", "Операция доступна только автору курса");
-
-    public static Error RoadmapAlreadyExistsForCourse(Guid courseId) =>
-        Error.Conflict("roadmap.course.duplicate", $"Роадмап для курса {courseId} уже существует");
-
-    public static Error SlugAlreadyExists(string slug) =>
-        Error.Conflict("roadmap.slug.duplicate", $"Роадмап со слагом \"{slug}\" уже существует");
 
     public static Error CourseSlugAlreadyExists(string slug) =>
         Error.Conflict("course.slug.duplicate", $"Курс со слагом \"{slug}\" уже существует");
@@ -195,7 +189,6 @@ public static class EducationErrors
         "Lesson" => "Урок",
         "Project" => "Проект",
         "Issue" => "Задача",
-        "Roadmap" => "Роадмап",
         "Article" => "Статья",
         "Material" => "Материал",
         "Quiz" => "Квиз",
@@ -212,7 +205,6 @@ public static class EducationErrors
         "Lesson" => "урока",
         "Project" => "проекта",
         "Issue" => "задачи",
-        "Roadmap" => "роадмапа",
         "Article" => "статьи",
         "Material" => "материала",
         "Quiz" => "квиза",

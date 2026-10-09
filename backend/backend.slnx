@@ -82,31 +82,8 @@
     <Folder Name="/AuthService/tests/">
         <Project Path="AuthService/tests/AuthService.IntegrationTests/AuthService.IntegrationTests.csproj" />
     </Folder>
-    <Folder Name="/TagService/" />
 
-    <Folder Name="/TagService/src/">
-        <Project Path="TagService/src/TagService.Contracts/TagService.Contracts.csproj" />
-        <Project Path="TagService/src/TagService.Core/TagService.Core.csproj" />
-        <Project Path="TagService/src/TagService.Domain/TagService.Domain.csproj" />
-        <Project Path="TagService/src/TagService.Infrastructure.Postgres/TagService.Infrastructure.Postgres.csproj" />
-        <Project Path="TagService/src/TagService.Web/TagService.Web.csproj" />
-    </Folder>
-    <Folder Name="/TagService/tests/">
-        <Project Path="TagService/tests/TagService.IntegrationTests/TagService.IntegrationTests.csproj" />
-    </Folder>
-    <Folder Name="/SearchService/" />
 
-    <Folder Name="/SearchService/src/">
-        <Project Path="SearchService/src/SearchService.Contracts/SearchService.Contracts.csproj" />
-        <Project Path="SearchService/src/SearchService.Core/SearchService.Core.csproj" />
-        <Project Path="SearchService/src/SearchService.Domain/SearchService.Domain.csproj" />
-        <Project Path="SearchService/src/SearchService.Infrastructure.Typesense/SearchService.Infrastructure.Typesense.csproj" />
-        <Project Path="SearchService/src/SearchService.Infrastructure.Postgres/SearchService.Infrastructure.Postgres.csproj" />
-        <Project Path="SearchService/src/SearchService.Web/SearchService.Web.csproj" />
-    </Folder>
-    <Folder Name="/SearchService/tests/">
-        <Project Path="SearchService/tests/SearchService.IntegrationTests/SearchService.IntegrationTests.csproj" />
-    </Folder>
     <Folder Name="/MaterialProcessingService/" />
     <Folder Name="/MaterialProcessingService/src/">
         <Project Path="MaterialProcessingService/src/MaterialProcessingService.Contracts/MaterialProcessingService.Contracts.csproj" />

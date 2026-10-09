@@ -29,7 +29,6 @@ export const teachingNav: NavItem[] = [
   { href: routes.authorKnowledgeBase, icon: Icons.document, label: "Материалы" },
   { href: routes.authorCollections, icon: Icons.grid, label: "Подборки" },
   { href: routes.authorQuizzes, icon: Icons.quiz, label: "Тесты" },
-  { href: routes.authorTags, icon: Icons.tag, label: "Управление тегами", minRole: ROLES.ADMIN },
   {
     href: routes.authorReview,
     icon: Icons.clipboardCheck,
@@ -71,7 +70,6 @@ export const adminNav: NavItem[] = [
   { href: routes.adminAuditLog, icon: Icons.clock, label: "Audit log" },
   { href: routes.adminPayments, icon: Icons.gift, label: "Платежи" },
   { href: routes.adminCampaigns, icon: Icons.send, label: "Рассылки" },
-  { href: routes.adminSearch, icon: Icons.search, label: "Поиск" },
   { href: routes.adminTests, icon: Icons.chart, label: "Статистика тестов" },
   { href: routes.adminAiUsage, icon: Icons.ai, label: "AI usage" },
   { href: routes.adminAiModels, icon: Icons.settings, label: "AI модели" },

@@ -140,9 +140,7 @@
     <PackageVersion Include="Testcontainers.Minio" Version="4.10.0" />
     <PackageVersion Include="Testcontainers.PostgreSql" Version="4.10.0" />
     <PackageVersion Include="Testcontainers.Redis" Version="4.10.0" />
-    <PackageVersion Include="Testcontainers.Typesense" Version="4.10.0" />
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
-    <PackageVersion Include="Typesense" Version="8.1.0" />
     <!-- 5.31.1 → 5.37.2: критичный фикс в 5.36.1/5.36.2 для нашего сценария
          (issue #67/#78): EF Core durable outbox flushil messages ДО transaction commit,
          поэтому DELETE FROM wolverine_outgoing_envelopes на success запускался на

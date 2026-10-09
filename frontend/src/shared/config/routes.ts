@@ -297,9 +297,7 @@ export const routes = {
       ? `/author/knowledge-base/edit/${materialId}?${qs}`
       : `/author/knowledge-base/edit/${materialId}`;
   },
-  authorTags: "/author/tags",
   authorCourseBuilder: (courseSlug: string) => `/author/courses/${courseSlug}` as const,
-  authorTag: (id: string) => `/author/tags/${id}` as const,
   authorReview: "/author/review",
   authorCatalogModeration: "/author/catalog-moderation" as const,
   authorComments: "/author/comments" as const,
@@ -315,7 +313,6 @@ export const routes = {
   adminUserDetail: (id: string) => `/admin/users/${id}` as const,
   adminNotifications: "/admin/notifications",
   adminCampaigns: "/admin/campaigns",
-  adminSearch: "/admin/search",
   adminAiUsage: "/admin/ai-usage",
   adminTests: "/admin/tests",
   adminAiModels: "/admin/ai-models",

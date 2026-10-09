@@ -30,14 +30,6 @@ public static class ProgressErrors
             "material.access.denied",
             "У вас нет доступа к этому материалу. Запишитесь на курс или выберите полный тариф");
 
-    public static Error MaterialNoteNotFound() =>
-        Error.NotFound("material.note.not.found", "Заметка не найдена");
-
-    public static Error MaterialNoteContentTooLong(int maxLength) =>
-        Error.Validation(
-            "material.note.content.too.long",
-            $"Текст заметки не может превышать {maxLength} символов");
-
     public static Error IssueAuthorQuestionMessageRequired() =>
         Error.Validation(
             "issue.author_question.message.required",
@@ -206,33 +198,5 @@ public static class ProgressErrors
         Error.Conflict(
             "quiz.changed.reload",
             "Тест был обновлён автором. Обновите страницу и пройдите заново.");
-
-    public static Error CertificateNotFound() =>
-        Error.NotFound("progress.certificate.not.found", "Сертификат не найден");
-
-    public static Error CertificateCourseAccessDenied() =>
-        Error.Authorization(
-            "progress.certificate.course.access.denied",
-            "У вас нет доступа к этому курсу — получить сертификат нельзя");
-
-    public static Error CertificateCourseEmpty() =>
-        Error.Validation(
-            "progress.certificate.course.empty",
-            "В курсе нет элементов программы — сертифицировать нечего");
-
-    public static Error CertificateCourseNotCompleted(string progressSummary) =>
-        Error.Validation(
-            "progress.certificate.course.not.completed",
-            $"Курс ещё не пройден полностью: {progressSummary}");
-
-    public static Error CertificateHolderNameUnavailable() =>
-        Error.Failure(
-            "progress.certificate.holder.name.unavailable",
-            "Не удалось определить имя получателя сертификата");
-
-    public static Error AuthServiceUnavailable() =>
-        Error.Failure(
-            "auth.service.unavailable",
-            "Сервис пользователей недоступен");
 
 }

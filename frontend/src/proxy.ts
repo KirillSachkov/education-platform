@@ -81,14 +81,6 @@ export const proxy = auth((req) => {
     if (!hasAuthorAccess) {
       return Response.redirect(new URL("/", req.nextUrl.origin));
     }
-
-    if (
-      (pathname === "/author/tags" || pathname.startsWith("/author/tags/")) &&
-      !roles.includes(ROLES.ADMIN) &&
-      !roles.includes(ROLES.OWNER)
-    ) {
-      return Response.redirect(new URL("/author/courses", req.nextUrl.origin));
-    }
   }
 });
 

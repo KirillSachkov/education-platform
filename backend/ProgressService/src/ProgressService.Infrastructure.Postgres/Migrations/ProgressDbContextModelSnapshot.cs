@@ -93,55 +93,6 @@ namespace ProgressService.Infrastructure.Postgres.Migrations
                     b.ToTable("material_bookmarks", "progress");
                 });
 
-            modelBuilder.Entity("ProgressService.Domain.Certificates.CourseCertificate", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("CourseId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("course_id");
-
-                    b.Property<string>("CourseTitle")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("course_title");
-
-                    b.Property<string>("HolderName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("holder_name");
-
-                    b.Property<DateTime>("IssuedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("issued_at");
-
-                    b.Property<string>("SerialNumber")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("serial_number");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SerialNumber")
-                        .IsUnique()
-                        .HasDatabaseName("ux_course_certificates_serial_number");
-
-                    b.HasIndex("UserId", "CourseId")
-                        .IsUnique()
-                        .HasDatabaseName("ux_course_certificates_user_id_course_id");
-
-                    b.ToTable("course_certificates", "progress");
-                });
-
             modelBuilder.Entity("ProgressService.Domain.ContentAccess.ContentGrant", b =>
                 {
                     b.Property<Guid>("Id")
@@ -634,43 +585,6 @@ namespace ProgressService.Infrastructure.Postgres.Migrations
                         .HasDatabaseName("ux_module_progress_enrollment_id_module_id");
 
                     b.ToTable("module_progress", "progress");
-                });
-
-            modelBuilder.Entity("ProgressService.Domain.Notes.MaterialNote", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasMaxLength(20000)
-                        .HasColumnType("character varying(20000)")
-                        .HasColumnName("content");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid>("MaterialId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("material_id");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId", "MaterialId")
-                        .IsUnique()
-                        .HasDatabaseName("ux_material_notes_user_id_material_id");
-
-                    b.ToTable("material_notes", "progress");
                 });
 
             modelBuilder.Entity("ProgressService.Domain.Projects.ProjectProgress", b =>

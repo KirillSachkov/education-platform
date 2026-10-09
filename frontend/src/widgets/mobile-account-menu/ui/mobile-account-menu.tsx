@@ -50,7 +50,6 @@ export function MobileAccountMenu() {
         { href: routes.authorCourses, icon: Icons.editAlt, label: "Курсы" },
         { href: routes.authorKnowledgeBase, icon: Icons.document, label: "Материалы" },
         { href: routes.authorCollections, icon: Icons.grid, label: "Подборки" },
-        { href: routes.authorTags, icon: Icons.tag, label: "Управление тегами" },
         { href: routes.authorComments, icon: Icons.message, label: "Комментарии" },
       ],
     });
@@ -69,7 +68,6 @@ export function MobileAccountMenu() {
       items: [
         { href: routes.adminPlans, icon: Icons.crown, label: "Планы доступа" },
         { href: routes.adminUsers, icon: Icons.userSettings, label: "Пользователи" },
-        { href: routes.adminSearch, icon: Icons.search, label: "Поиск" },
         { href: routes.adminAiUsage, icon: Icons.ai, label: "AI usage" },
         { href: routes.adminAiModels, icon: Icons.settings, label: "AI модели" },
       ],

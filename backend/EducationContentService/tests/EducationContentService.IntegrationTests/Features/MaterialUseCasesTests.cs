@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using EducationContentService.Contracts.Materials;
 using EducationContentService.Domain;
@@ -9,7 +9,6 @@ using EducationContentService.Domain.Modules;
 using EducationContentService.Domain.Projects;
 using EducationContentService.Domain.Projects.ValueObjects;
 using EducationContentService.Domain.Quizzes;
-using EducationContentService.Domain.Roadmaps;
 using EducationContentService.Domain.ValueObjects;
 using EducationContentService.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
@@ -374,11 +373,6 @@ public class MaterialUseCasesTests : EducationContentServiceTestsBase
         Guid issueId = Guid.Empty;
         Guid quizId = Guid.Empty;
         Guid otherQuizId = Guid.Empty;
-        Guid materialNodeId = Guid.Empty;
-        Guid otherNodeId = Guid.Empty;
-        Guid edgeFromMaterialId = Guid.Empty;
-        Guid edgeToMaterialId = Guid.Empty;
-        Guid unrelatedEdgeId = Guid.Empty;
 
         await ExecuteInDb(async db =>
         {
@@ -446,50 +440,6 @@ public class MaterialUseCasesTests : EducationContentServiceTestsBase
             db.Set<Issue>().Add(issue);
             issueId = issue.Id;
 
-            // Roadmap с EntityReference нодой на материал + посторонней нодой и edges.
-            var roadmap = new Roadmap(
-                authorId,
-                Title.Create("Roadmap").Value,
-                description: null,
-                courseId: null,
-                slug: $"r-{Guid.CreateVersion7():N}");
-            db.Set<Roadmap>().Add(roadmap);
-
-            string materialData =
-                $"{{\"entityType\":\"Material\",\"entityId\":\"{materialId}\"}}";
-            string textNoteData = "{\"text\":\"hi\"}";
-
-            materialNodeId = Guid.CreateVersion7();
-            otherNodeId = Guid.CreateVersion7();
-            db.Set<RoadmapNode>().Add(new RoadmapNode(
-                materialNodeId, roadmap.Id, RoadmapNodeType.EntityReference,
-                0, 0, null, null, null, materialData, sortOrder: 0));
-            db.Set<RoadmapNode>().Add(new RoadmapNode(
-                otherNodeId, roadmap.Id, RoadmapNodeType.TextNote,
-                100, 0, null, null, null, textNoteData, sortOrder: 1));
-
-            edgeFromMaterialId = Guid.CreateVersion7();
-            edgeToMaterialId = Guid.CreateVersion7();
-            unrelatedEdgeId = Guid.CreateVersion7();
-            db.Set<RoadmapEdge>().Add(new RoadmapEdge(
-                edgeFromMaterialId, roadmap.Id, materialNodeId, otherNodeId,
-                label: null, edgeType: "default", animated: false,
-                sourceHandle: null, targetHandle: null));
-            db.Set<RoadmapEdge>().Add(new RoadmapEdge(
-                edgeToMaterialId, roadmap.Id, otherNodeId, materialNodeId,
-                label: null, edgeType: "default", animated: false,
-                sourceHandle: null, targetHandle: null));
-            // Edge между двумя посторонними нодами — не должна быть удалена.
-            // Создаём вспомогательную ноду, чтобы было между чем рисовать.
-            Guid auxNodeId = Guid.CreateVersion7();
-            db.Set<RoadmapNode>().Add(new RoadmapNode(
-                auxNodeId, roadmap.Id, RoadmapNodeType.TextNote,
-                200, 0, null, null, null, textNoteData, sortOrder: 2));
-            db.Set<RoadmapEdge>().Add(new RoadmapEdge(
-                unrelatedEdgeId, roadmap.Id, otherNodeId, auxNodeId,
-                label: null, edgeType: "default", animated: false,
-                sourceHandle: null, targetHandle: null));
-
             await db.SaveChangesAsync(ct);
         });
 
@@ -522,12 +472,6 @@ public class MaterialUseCasesTests : EducationContentServiceTestsBase
             Assert.DoesNotContain(issue.InternalMaterials, m => m.ReferenceId == materialId);
             Assert.Contains(issue.InternalMaterials, m => m.ReferenceId == otherMaterialId);
 
-            // Roadmap: нода на материал и оба её edge'а удалены, посторонние сохранились.
-            Assert.False(await db.Set<RoadmapNode>().AnyAsync(n => n.Id == materialNodeId, ct));
-            Assert.True(await db.Set<RoadmapNode>().AnyAsync(n => n.Id == otherNodeId, ct));
-            Assert.False(await db.Set<RoadmapEdge>().AnyAsync(e => e.Id == edgeFromMaterialId, ct));
-            Assert.False(await db.Set<RoadmapEdge>().AnyAsync(e => e.Id == edgeToMaterialId, ct));
-            Assert.True(await db.Set<RoadmapEdge>().AnyAsync(e => e.Id == unrelatedEdgeId, ct));
         });
     }
 

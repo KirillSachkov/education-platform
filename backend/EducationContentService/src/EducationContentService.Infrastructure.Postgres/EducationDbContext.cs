@@ -1,11 +1,9 @@
-using EducationContentService.Domain.Collections;
+﻿using EducationContentService.Domain.Collections;
 using EducationContentService.Domain.Courses;
 using EducationContentService.Domain.Materials;
 using EducationContentService.Domain.Modules;
 using EducationContentService.Domain.Projects;
 using EducationContentService.Domain.Quizzes;
-using EducationContentService.Domain.Roadmaps;
-using EducationContentService.Domain.ShortLinks;
 using Wolverine.EntityFrameworkCore;
 
 namespace EducationContentService.Infrastructure.Postgres;
@@ -44,19 +42,11 @@ public class EducationDbContext : DbContext
 
     public DbSet<Quiz> Quizzes => Set<Quiz>();
 
-    public DbSet<Roadmap> Roadmaps => Set<Roadmap>();
-
-    public DbSet<RoadmapNode> RoadmapNodes => Set<RoadmapNode>();
-
-    public DbSet<RoadmapEdge> RoadmapEdges => Set<RoadmapEdge>();
-
     public DbSet<Collection> Collections => Set<Collection>();
 
     public DbSet<CollectionSection> CollectionSections => Set<CollectionSection>();
 
     public DbSet<CollectionItem> CollectionItems => Set<CollectionItem>();
-
-    public DbSet<ShortLink> ShortLinks => Set<ShortLink>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -3,11 +3,9 @@
 import type { ReactNode } from "react";
 import { courseCurriculumQueryOptions, type CourseCurriculumDto } from "@/entities/course";
 import { courseLearningStateQueryOptions } from "@/entities/course-progress";
-import { SearchableTagsField } from "@/entities/tag";
 import { CourseSubscribeButton } from "@/entities/notification";
 import { parseCourseViewTab } from "../lib/course-view-tabs";
 import { cn } from "@/shared/lib/css";
-import { EntityTypes } from "@/shared/config/entity-types";
 import { routes } from "@/shared/config/routes";
 import { useCourseSlug } from "@/shared/providers/course-id-provider";
 import { CourseBreadcrumb } from "@/shared/ui/components/course-breadcrumb";
@@ -311,12 +309,6 @@ export function CourseHome({
                       size="md"
                     />
                   </div>
-
-                  <SearchableTagsField
-                    entityId={courseId}
-                    entityType={EntityTypes.COURSE}
-                    readOnly
-                  />
                 </div>
 
                 {/* Right: stats + enroll */}

@@ -21,7 +21,6 @@ write_required() {
         printf 'POSTGRES_PASSWORD=valid-postgres-password\n'
         printf 'RABBITMQ_DEFAULT_USER=platform\n'
         printf 'RABBITMQ_DEFAULT_PASS=valid-rabbit-password\n'
-        printf 'TYPESENSE_API_KEY=valid-typesense-key\n'
         printf 'BOT__TOKEN=%s\n' "$bot_value"
         printf 'INFISICAL_AUTH_SECRET=valid-auth-secret\n'
         printf 'INFISICAL_ENCRYPTION_KEY=valid-encryption-key\n'

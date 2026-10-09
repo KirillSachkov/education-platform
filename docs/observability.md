@@ -47,7 +47,7 @@ Dashboard «Growth Funnel» (`docker/grafana/dashboards/growth-funnel.json`, т�
 
 ## Кастомные ActivitySource для traces
 
-Только две: `ContentAccess` (entitlement check spans, в `Shared/ContentAccess/ContentAccess/ContentAccessDiagnostics.cs`) и `SearchService` (Typesense query spans). Остальные сервисы трассируются через built-in instrumentation (AspNetCore, EFCore, Npgsql, Wolverine, RabbitMQ.Client).
+Два источника: `ContentAccess` (entitlement check spans, в `Shared/ContentAccess/ContentAccess/ContentAccessDiagnostics.cs`) и `EducationPlatform.AssignmentReview` (review flow spans, в `AssignmentReviewService/src/AssignmentReviewService.Core/Diagnostics/AssignmentReviewActivities.cs`). Остальные сервисы трассируются через built-in instrumentation (AspNetCore, EFCore, Npgsql, Wolverine, RabbitMQ.Client).
 
 ## Реализация
 

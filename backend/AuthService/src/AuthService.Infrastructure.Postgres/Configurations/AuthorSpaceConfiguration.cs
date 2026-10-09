@@ -48,7 +48,6 @@ public class AuthorSpaceConfiguration : IEntityTypeConfiguration<AuthorSpace>
             b.Property(f => f.GitHubIntegration);
             b.Property(f => f.PrReviews);
             b.Property(f => f.AiAssistant);
-            b.Property(f => f.Roadmaps);
             b.Property(f => f.CustomLanding);
         });
 

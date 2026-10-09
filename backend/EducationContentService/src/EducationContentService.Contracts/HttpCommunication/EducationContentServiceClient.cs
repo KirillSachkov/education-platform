@@ -1,4 +1,4 @@
-using Core.HttpCommunication;
+﻿using Core.HttpCommunication;
 using EducationContentService.Contracts.Courses;
 using EducationContentService.Contracts.Digest;
 using EducationContentService.Contracts.Issues;
@@ -8,7 +8,6 @@ using EducationContentService.Contracts.Ownership;
 using EducationContentService.Contracts.ProgressLookup;
 using EducationContentService.Contracts.Projects;
 using EducationContentService.Contracts.Quizzes;
-using EducationContentService.Contracts.SearchExport;
 using EducationContentService.Contracts.SearchLookup;
 using Microsoft.Extensions.Logging;
 
@@ -75,71 +74,6 @@ internal sealed class EducationContentServiceClient : BaseHttpClient, IEducation
         Guid collectionId,
         CancellationToken cancellationToken)
         => GetAsync<CollectionSearchLookupDto>($"/internal/search/collections/{collectionId}", cancellationToken);
-
-    public Task<Result<CourseMaterialIdsDto, Error>> GetCourseMaterialIdsAsync(
-        Guid courseId,
-        CancellationToken cancellationToken)
-        => GetAsync<CourseMaterialIdsDto>($"/internal/search/courses/{courseId}/material-ids", cancellationToken);
-
-    public Task<Result<CursorResponse<SearchExportEntityDto>, Error>> ExportAllSearchEntitiesAsync(
-        string? cursor,
-        int limit,
-        CancellationToken cancellationToken)
-        => GetAsync<CursorResponse<SearchExportEntityDto>>(
-            string.IsNullOrWhiteSpace(cursor)
-                ? $"/internal/search/export/entities?limit={limit}"
-                : $"/internal/search/export/entities?limit={limit}&cursor={Uri.EscapeDataString(cursor)}",
-            cancellationToken);
-
-    public Task<Result<CursorResponse<SearchExportEntityDto>, Error>> ExportCourseSearchEntitiesAsync(
-        string? cursor,
-        int limit,
-        CancellationToken cancellationToken)
-        => GetAsync<CursorResponse<SearchExportEntityDto>>(
-            string.IsNullOrWhiteSpace(cursor)
-                ? $"/internal/search/export/entities/course?limit={limit}"
-                : $"/internal/search/export/entities/course?limit={limit}&cursor={Uri.EscapeDataString(cursor)}",
-            cancellationToken);
-
-    public Task<Result<CursorResponse<SearchExportEntityDto>, Error>> ExportModuleSearchEntitiesAsync(
-        string? cursor,
-        int limit,
-        CancellationToken cancellationToken)
-        => GetAsync<CursorResponse<SearchExportEntityDto>>(
-            string.IsNullOrWhiteSpace(cursor)
-                ? $"/internal/search/export/entities/module?limit={limit}"
-                : $"/internal/search/export/entities/module?limit={limit}&cursor={Uri.EscapeDataString(cursor)}",
-            cancellationToken);
-
-    public Task<Result<CursorResponse<SearchExportEntityDto>, Error>> ExportProjectSearchEntitiesAsync(
-        string? cursor,
-        int limit,
-        CancellationToken cancellationToken)
-        => GetAsync<CursorResponse<SearchExportEntityDto>>(
-            string.IsNullOrWhiteSpace(cursor)
-                ? $"/internal/search/export/entities/project?limit={limit}"
-                : $"/internal/search/export/entities/project?limit={limit}&cursor={Uri.EscapeDataString(cursor)}",
-            cancellationToken);
-
-    public Task<Result<CursorResponse<SearchExportEntityDto>, Error>> ExportMaterialSearchEntitiesAsync(
-        string? cursor,
-        int limit,
-        CancellationToken cancellationToken)
-        => GetAsync<CursorResponse<SearchExportEntityDto>>(
-            string.IsNullOrWhiteSpace(cursor)
-                ? $"/internal/search/export/entities/material?limit={limit}"
-                : $"/internal/search/export/entities/material?limit={limit}&cursor={Uri.EscapeDataString(cursor)}",
-            cancellationToken);
-
-    public Task<Result<CursorResponse<SearchExportEntityDto>, Error>> ExportIssueSearchEntitiesAsync(
-        string? cursor,
-        int limit,
-        CancellationToken cancellationToken)
-        => GetAsync<CursorResponse<SearchExportEntityDto>>(
-            string.IsNullOrWhiteSpace(cursor)
-                ? $"/internal/search/export/entities/issue?limit={limit}"
-                : $"/internal/search/export/entities/issue?limit={limit}&cursor={Uri.EscapeDataString(cursor)}",
-            cancellationToken);
 
     // Progress lookup contracts (service-to-service)
     public Task<Result<CourseDto, Error>> GetCourseLookupAsync(

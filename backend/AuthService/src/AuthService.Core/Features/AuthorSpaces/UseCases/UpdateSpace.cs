@@ -79,7 +79,6 @@ public sealed class UpdateAuthorSpaceHandler : ICommandHandler<Guid, UpdateAutho
                 GitHubIntegration = dto.GitHubIntegration,
                 PrReviews = dto.PrReviews,
                 AiAssistant = dto.AiAssistant,
-                Roadmaps = dto.Roadmaps,
                 CustomLanding = dto.CustomLanding,
             }
             : null;

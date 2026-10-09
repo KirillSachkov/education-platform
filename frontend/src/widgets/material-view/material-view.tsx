@@ -6,7 +6,6 @@ import {
   getMaterialStatusBadge,
   materialBindingsQueryOptions,
   materialDetailQueryOptions,
-  MaterialShareButton,
   type MaterialDetailDto,
 } from "@/entities/material";
 import {
@@ -14,15 +13,13 @@ import {
   getAdjacentCollectionMaterials,
 } from "@/entities/collection";
 import { userProgressQueryOptions } from "@/entities/user-progress";
-import { SearchableTagsField } from "@/entities/tag";
 import { CommentSection } from "@/features/comments";
 import { useMarkMaterialViewed, useUnmarkMaterialViewed } from "@/features/course-learning";
-import { MaterialNotesBlock } from "@/features/material-notes";
 import { MaterialQuizBlock } from "@/features/quiz-runner";
 import { MaterialAuthorActions } from "@/features/materials-manage";
 import { useTrackMaterialView } from "@/features/track-material-view";
 import { useTrackFreeMaterialEngagement } from "@/shared/analytics";
-import { AuthorCredit, ViewsBadge } from "@/shared/ui/components";
+import { AuthorCredit, ShareButton, ViewsBadge } from "@/shared/ui/components";
 import { isContentAccessError, isForbiddenError } from "@/shared/api";
 import {
   resolveSecondaryUnlockHref,
@@ -321,11 +318,7 @@ export function MaterialView({
             <CourseBreadcrumb items={breadcrumbs} />
           </div>
           <div className="ml-auto flex items-center gap-2 shrink-0">
-            <MaterialShareButton
-              materialId={materialId}
-              url={routes.knowledgeBaseMaterial(materialId)}
-              title={material.title}
-            />
+            <ShareButton url={routes.knowledgeBaseMaterial(materialId)} title={material.title} />
             {isLearning && isAuthenticated && (
               <Button
                 variant={isViewed ? "secondary" : "default"}
@@ -464,12 +457,6 @@ export function MaterialView({
           )}
 
           {/* Компактные теги под видео (см. course-material-view: единый паттерн). */}
-          <SearchableTagsField
-            entityId={materialId}
-            entityType={EntityTypes.MATERIAL}
-            readOnly
-            className="mb-8 gap-1.5 [&>button]:px-2 [&>button]:py-0.5 [&>button]:text-[11px] [&>span]:px-2 [&>span]:py-0.5 [&>span]:text-[11px]"
-          />
 
           {headings.length > 0 && (
             <Card className="mb-8 gap-4 border-border/70 bg-card/80 p-5 xl:hidden">
@@ -562,13 +549,6 @@ export function MaterialView({
 
           {isLearning && isAuthenticated && (
             <MaterialQuizBlock
-              materialId={materialId}
-              className="mt-10 border-t border-border/60 pt-6"
-            />
-          )}
-
-          {isLearning && isAuthenticated && (
-            <MaterialNotesBlock
               materialId={materialId}
               className="mt-10 border-t border-border/60 pt-6"
             />

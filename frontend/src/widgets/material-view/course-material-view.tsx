@@ -5,7 +5,6 @@ import {
   getMaterialKindBadge,
   getMaterialStatusBadge,
   materialDetailQueryOptions,
-  MaterialShareButton,
 } from "@/entities/material";
 import {
   courseCurriculumQueryOptions,
@@ -17,7 +16,6 @@ import {
   getAdjacentCollectionMaterials,
 } from "@/entities/collection";
 import { courseLearningStateQueryOptions } from "@/entities/course-progress";
-import { SearchableTagsField } from "@/entities/tag";
 import {
   useMarkMaterialViewed,
   useUnmarkMaterialViewed,
@@ -31,7 +29,7 @@ import { CommentSection } from "@/features/comments";
 import { MaterialQuizBlock } from "@/features/quiz-runner";
 import { useTrackMaterialView } from "@/features/track-material-view";
 import { useTrackFreeMaterialEngagement } from "@/shared/analytics";
-import { SuccessCheck, ViewsBadge } from "@/shared/ui/components";
+import { ShareButton, SuccessCheck, ViewsBadge } from "@/shared/ui/components";
 import { isContentAccessError, isForbiddenError } from "@/shared/api";
 import {
   resolveSecondaryUnlockHref,
@@ -426,8 +424,7 @@ export function CourseMaterialView({
               {material.title}
             </h1>
             <div className="flex items-center gap-2 shrink-0">
-              <MaterialShareButton
-                materialId={materialId}
+              <ShareButton
                 url={routes.courseMaterial(courseSlug, materialId)}
                 title={material.title}
                 className="h-9"
@@ -511,12 +508,6 @@ export function CourseMaterialView({
 
         <div className="mx-auto max-w-6xl px-3 pb-4 sm:px-6 sm:pb-10">
           {/* Тэги — компактные, под видео; не конкурируют визуально с kind/access-бейджами над заголовком. */}
-          <SearchableTagsField
-            entityId={materialId}
-            entityType={EntityTypes.MATERIAL}
-            readOnly
-            className="mb-6 sm:mb-8 gap-1.5 [&>button]:px-2 [&>button]:py-0.5 [&>button]:text-[11px] [&>span]:px-2 [&>span]:py-0.5 [&>span]:text-[11px]"
-          />
 
           {headings.length > 0 && (
             <Card className="mb-8 gap-4 border-border/70 bg-card/80 p-5 xl:hidden">

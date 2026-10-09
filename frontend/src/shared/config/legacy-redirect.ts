@@ -4,9 +4,9 @@ const retiredSections = [
   /^\/(?:catalog|courses|knowledge-base|collections)\/?$/,
   /^\/(?:trainer|leaderboard|progress|level-test|roadmaps|certificates|users)(?:\/|$)/,
   /^\/courses\/[^/]+\/(?:roadmap|progress)(?:\/|$)/,
-  /^\/author\/(?:trainer|mock-interviews|level-test|roadmaps)(?:\/|$)/,
+  /^\/author\/(?:trainer|mock-interviews|level-test|roadmaps|tags)(?:\/|$)/,
   /^\/author\/courses\/[^/]+\/roadmap(?:\/|$)/,
-  /^\/admin\/(?:trainer|level-test)(?:\/|$)/,
+  /^\/admin\/(?:trainer|level-test|search)(?:\/|$)/,
 ];
 
 /** Retire product surfaces while keeping concrete purchased content links valid. */

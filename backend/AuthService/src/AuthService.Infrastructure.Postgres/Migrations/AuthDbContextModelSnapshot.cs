@@ -865,8 +865,6 @@ namespace AuthService.Infrastructure.Postgres.Migrations
 
                             b1.Property<bool>("PrReviews");
 
-                            b1.Property<bool>("Roadmaps");
-
                             b1.HasKey("AuthorSpaceId");
 
                             b1.ToTable("author_spaces", "auth");

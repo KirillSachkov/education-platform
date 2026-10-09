@@ -10,7 +10,6 @@ import {
   type MaterialKind,
   type UpdateMaterialRequest,
 } from "@/entities/material";
-import { TagsField } from "@/entities/tag";
 import { bindMarkdownAssets, useMarkdownFileUpload, useMarkdownImageUpload } from "@/entities/file";
 import { EntityTypes } from "@/shared/config/entity-types";
 import { cn } from "@/shared/lib/css";
@@ -237,7 +236,8 @@ export function MaterialForm({
       await onAutoSave({
         title: values.title,
         content: values.content.length > 0 ? values.content : null,
-        description: values.description && values.description.length > 0 ? values.description : null,
+        description:
+          values.description && values.description.length > 0 ? values.description : null,
         kind: values.kind,
         accessType: values.accessType,
         videoId: target.videoId,
@@ -313,7 +313,8 @@ export function MaterialForm({
       await onAutoSave({
         title: values.title,
         content: values.content.length > 0 ? values.content : null,
-        description: values.description && values.description.length > 0 ? values.description : null,
+        description:
+          values.description && values.description.length > 0 ? values.description : null,
         kind: values.kind,
         accessType: values.accessType,
         videoId: videoAssetIdRef.current,
@@ -539,13 +540,6 @@ export function MaterialForm({
           />
         </div>
       </div>
-
-      {mode === "edit" && material && (
-        <div className="space-y-2">
-          <Label>Теги</Label>
-          <TagsField key={material.id} entityId={material.id} entityType={EntityTypes.MATERIAL} />
-        </div>
-      )}
 
       {videoAssetId && (
         <VideoAiProcessingPanel

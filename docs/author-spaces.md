@@ -10,8 +10,7 @@ use it for new product UI or access decisions.
 
 ## Current Model
 
-- Public URLs are flat: `/courses`, `/knowledge-base`, `/collections`,
-  `/pricing`.
+- Public URLs are flat: `/courses`, `/pricing`.
 - Teaching URLs are also platform-level: `/author/courses`,
   `/author/plans`, `/author/materials`, etc.
 - Course rows still have `AuthorId`. It means "responsible author / owner of
@@ -32,6 +31,9 @@ longer creates a frontend-facing author space.
 target links. `authorSlug` in payload JSON is silently ignored as a legacy
 field so already-stored payloads keep parsing.
 
+Retired `Roadmaps` and `Leaderboard` flags are absent from the compatibility contract and stored
+JSON. Their separate corrective migrations preserve all remaining author values and identity data.
+
 ## Frontend Routing
 
 All routes live under `(platform)/`:
@@ -44,10 +46,10 @@ All routes live under `(platform)/`:
 | `/courses/[courseSlug]` | Course overview (enrolled→CourseHome / not→landing) | CourseSidebar |
 | `/courses/[courseSlug]/learn/[materialId]` | Material (Article/Video/Note/Stream) | CourseSidebar |
 | `/courses/[courseSlug]/program` | Curriculum | CourseSidebar |
-| `/knowledge-base` | Global KB (search + filters + collections) | AppSidebar |
-| `/knowledge-base/[materialId]` | Material detail | AppSidebar |
-| `/collections`, `/collections/[id]` | Collections | AppSidebar |
-| `/roadmaps`, `/roadmaps/[slug]` | Roadmaps | AppSidebar |
+| `/knowledge-base/[materialId]` | Legacy material detail with access checks | AppSidebar |
+| `/collections/[id]` | Legacy collection detail with access checks | AppSidebar |
+| `/courses/[courseSlug]/knowledge-base` | Course material title search and collections | CourseSidebar |
+| `/courses/[courseSlug]/collections/[id]` | Course collection detail | CourseSidebar |
 | `/pricing`, `/pricing/[planSlug]` | Platform plans | AppSidebar |
 | `/author/*` | Teaching mode | AppSidebar |
 | `/profile`, `/settings/*`, `/admin/*` | Platform pages | AppSidebar |
@@ -83,9 +85,8 @@ frontend/src/app/(app)/
         page.tsx       <- course overview
         assignments/, program/, learn/, issues/, ...
     knowledge-base/[materialId]/
-    collections/[collectionId]/
+    collections/[collectionId]/  <- legacy detail route
     pricing/[slug]/
-    roadmaps/[slug]/
     author/, admin/, settings/, profile/, notifications/
 ```
 

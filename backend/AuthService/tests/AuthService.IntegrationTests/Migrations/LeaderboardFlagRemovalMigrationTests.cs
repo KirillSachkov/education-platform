@@ -56,7 +56,6 @@ public class LeaderboardFlagRemovalMigrationTests : IAsyncLifetime
                     GitHubIntegration = true,
                     PrReviews = true,
                     AiAssistant = false,
-                    Roadmaps = false,
                     CustomLanding = true,
                 },
                 CreatedAt = createdAt,
@@ -89,7 +88,6 @@ public class LeaderboardFlagRemovalMigrationTests : IAsyncLifetime
         Assert.True(space.FeatureFlags.GitHubIntegration);
         Assert.True(space.FeatureFlags.PrReviews);
         Assert.False(space.FeatureFlags.AiAssistant);
-        Assert.False(space.FeatureFlags.Roadmaps);
         Assert.True(space.FeatureFlags.CustomLanding);
         Assert.Equal("Author", (await db.Users.SingleAsync()).DisplayName);
         Assert.Equal("platform-author", (await db.Roles.SingleAsync()).Name);

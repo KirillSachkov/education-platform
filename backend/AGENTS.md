@@ -45,8 +45,8 @@ cases; shared primitives live under `Shared/`.
 - [TelegramBotService](TelegramBotService/AGENTS.md)
 - [Shared AI](Shared/AI/AGENTS.md)
 
-`SearchService`, `TagService`, and `MaterialProcessingService` are scheduled for removal and have
-no instruction scope; inspect their code directly and do not extend them.
+`MaterialProcessingService` is scheduled for removal and has no instruction scope; inspect its
+code directly and do not extend it. Search/Tag directories retain immutable migration history only.
 
 ## Verification
 

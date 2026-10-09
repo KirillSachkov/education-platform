@@ -64,9 +64,7 @@ cd frontend && npm install && npm run dev
 | CommentService          | 8004 | comments      | Комментарии с курсор-пагинацией                           |
 | AuthService             | 8005 | auth          | OpenIddict OIDC, Identity, профили, автор-пространства    |
 | NotificationService     | 8006 | notifications | In-app inbox, SSE-стрим, pluggable delivery channels      |
-| TagService              | 8007 | tags          | Теги, алиасы, привязки к сущностям                        |
 | TelegramBotService      | 8008 | —             | Telegram-бот (DM-инвайты, chat-bindings, F1/F6 flows)     |
-| SearchService           | 8009 | search        | Полнотекстовый поиск через Typesense с lock-overlays      |
 
 Все сервисы используют одну БД `education_platform` с изоляцией по схемам.
 
@@ -109,9 +107,7 @@ education-platform/
 │   ├── ProgressService/             # Прогресс, записи на курс, ревью
 │   ├── CommentService/              # Комментарии
 │   ├── NotificationService/         # In-app inbox + SSE
-│   ├── TagService/                  # Теги
 │   ├── TelegramBotService/          # Telegram-бот
-│   ├── SearchService/               # Typesense full-text search
 │   └── Shared/                      # Общие пакеты (Auth, ContentAccess, Core)
 ├── frontend/                        # Next.js (Feature-Sliced Design)
 ├── docker/                          # Конфиги инфраструктуры

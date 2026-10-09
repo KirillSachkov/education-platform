@@ -1,9 +1,8 @@
-using CSharpFunctionalExtensions;
+﻿using CSharpFunctionalExtensions;
 using EducationContentService.Core.Features.Materials.Queries;
 using EducationContentService.Domain;
 using EducationContentService.Domain.Collections;
 using EducationContentService.Domain.Materials;
-using EducationContentService.Domain.Roadmaps;
 using EducationContentService.Domain.ValueObjects;
 using EducationContentService.IntegrationTests.Infrastructure;
 using SharedKernel;
@@ -20,9 +19,8 @@ public class SitemapExportTests : EducationContentServiceTestsBase
     [Fact]
     public async Task GetSitemapExport_Anonymous_ReturnsOnlyPublishedEntities()
     {
-        // Arrange: PUBLISHED-сущности всех трёх типов + DRAFT-двойники,
-        // ENROLLED-материал (access_type не влияет на попадание в sitemap),
-        // published-роадмап без slug (нет публичного URL — не включается).
+        // Arrange: PUBLISHED-сущности обоих типов + DRAFT-двойники,
+        // ENROLLED-материал (access_type не влияет на попадание в sitemap).
         CancellationToken ct = CancellationToken.None;
         Guid publicMaterialId = await SeedMaterialAsync(AccessType.PUBLIC, publish: true, ct);
         Guid enrolledMaterialId = await SeedMaterialAsync(AccessType.ENROLLED, publish: true, ct);
@@ -30,12 +28,6 @@ public class SitemapExportTests : EducationContentServiceTestsBase
 
         Guid publishedCollectionId = await SeedCollectionAsync(publish: true, ct);
         Guid draftCollectionId = await SeedCollectionAsync(publish: false, ct);
-
-        string publishedSlug = $"published-{Guid.NewGuid():N}"[..20];
-        string draftSlug = $"draft-{Guid.NewGuid():N}"[..20];
-        await SeedRoadmapAsync(publishedSlug, publish: true, ct);
-        await SeedRoadmapAsync(draftSlug, publish: false, ct);
-        await SeedRoadmapAsync(slug: null, publish: true, ct);
 
         RemoveAuthentication();
 
@@ -53,9 +45,6 @@ public class SitemapExportTests : EducationContentServiceTestsBase
         Assert.Contains(dto.Collections, c => c.Id == publishedCollectionId);
         Assert.DoesNotContain(dto.Collections, c => c.Id == draftCollectionId);
 
-        Assert.Contains(dto.Roadmaps, r => string.Equals(r.Slug, publishedSlug, StringComparison.Ordinal));
-        Assert.DoesNotContain(dto.Roadmaps, r => string.Equals(r.Slug, draftSlug, StringComparison.Ordinal));
-        Assert.All(dto.Roadmaps, r => Assert.False(string.IsNullOrEmpty(r.Slug)));
 
         Assert.All(dto.Materials, m => Assert.NotEqual(default, m.UpdatedAt));
     }
@@ -79,6 +68,7 @@ public class SitemapExportTests : EducationContentServiceTestsBase
         Assert.DoesNotContain("\"title\"", body, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"content\"", body, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain(SECRET_TITLE, body, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"roadmaps\"", body, StringComparison.OrdinalIgnoreCase);
     }
 
     private async Task<Guid> SeedMaterialAsync(
@@ -136,25 +126,5 @@ public class SitemapExportTests : EducationContentServiceTestsBase
         return collectionId;
     }
 
-    private async Task SeedRoadmapAsync(string? slug, bool publish, CancellationToken ct)
-    {
-        await ExecuteInDb(async db =>
-        {
-            var roadmap = new Roadmap(
-                authorId: Guid.NewGuid(),
-                title: Title.Create($"Road-{Guid.NewGuid():N}"[..20]).Value,
-                description: null,
-                courseId: null,
-                slug: slug);
 
-            if (publish)
-            {
-                UnitResult<Error> result = roadmap.Publish();
-                Assert.True(result.IsSuccess);
-            }
-
-            db.Roadmaps.Add(roadmap);
-            await db.SaveChangesAsync(ct);
-        });
-    }
 }

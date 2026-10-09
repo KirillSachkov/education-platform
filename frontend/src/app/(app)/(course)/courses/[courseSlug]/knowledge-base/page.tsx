@@ -8,18 +8,16 @@ import { courseCollectionsQueryOptions } from "@/entities/collection";
 import {
   MaterialCard,
   MATERIAL_KINDS_WITH_ALL,
-  courseMaterialTagsQueryOptions,
   courseMaterialsFeedQueryOptions,
   type MaterialKind,
 } from "@/entities/material";
 import { courseCurriculumQueryOptions, useCourseAccess } from "@/entities/course";
-import { tagsQueryOptions, type TagDto } from "@/entities/tag";
 import { CollectionGrid } from "@/entities/collection";
 import { userProgressQueryOptions } from "@/entities/user-progress";
 import { BookmarkStatusProvider, BookmarkToggleButton } from "@/entities/bookmark";
-import { SearchTagPicker } from "@/features/global-search";
 import { useCourseId, useCourseSlug } from "@/shared/providers/course-id-provider";
 import { routes } from "@/shared/config/routes";
+import { getErrorMessage } from "@/shared/api";
 import { useDebouncedValue } from "@/shared/hooks";
 import { cn } from "@/shared/lib/css";
 import {
@@ -33,45 +31,39 @@ import {
 import { Card, CardContent } from "@/shared/ui/kit/card";
 import { Icons } from "@/shared/ui/icons";
 import { Input } from "@/shared/ui/kit/input";
+import { Button } from "@/shared/ui/kit/button";
 import { Skeleton } from "@/shared/ui/kit/skeleton";
 export default function CourseKnowledgeBasePage() {
   const courseId = useCourseId();
   const courseSlug = useCourseSlug();
 
-  // Ctrl+K handoff: ?search=...&tagIds=a,b,c (см. buildKnowledgeBaseHref).
   const searchParams = useSearchParams();
   const initialSearch = searchParams.get("search") ?? "";
-  const initialTagIdsParam = searchParams.get("tagIds") ?? "";
-  const initialTagIds = initialTagIdsParam ? initialTagIdsParam.split(",").filter(Boolean) : [];
-
   const [kindFilter, setKindFilter] = useState<MaterialKind | "all">("all");
   const [searchInput, setSearchInput] = useState(initialSearch);
   const search = useDebouncedValue(searchInput, 300);
-  const [selectedTags, setSelectedTags] = useState<TagDto[]>([]);
-
-  useHydrateTagsFromIds(initialTagIds, setSelectedTags);
 
   const access = useCourseAccess(courseId);
   const { data: curriculum } = useQuery(courseCurriculumQueryOptions(courseId));
-  // Collections + список материалов курса доступны анониму (с lock-иконками для
-  // недоступных). Материалы курса читает курсовую программу напрямую из
-  // course_materials (`GET /courses/{id}/materials/feed/`) — это canonical-источник
-  // «что в курсе», не зависит от Typesense (sync lag, single-courseId-per-doc) и
-  // показывает все материалы программы, включая привязанные к нескольким курсам.
   const { data: collections } = useQuery(courseCollectionsQueryOptions(courseId));
-  const { data: courseTags = [], isLoading: isCourseTagsLoading } = useQuery(
-    courseMaterialTagsQueryOptions(courseId),
-  );
   const trimmedSearch = search.trim();
-  const { data, isLoading, isFetching, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useInfiniteQuery(
-      courseMaterialsFeedQueryOptions(courseId, {
-        limit: 20,
-        kind: kindFilter === "all" ? undefined : kindFilter,
-        tagIds: selectedTags.length > 0 ? selectedTags.map((t) => t.id) : undefined,
-        search: trimmedSearch.length > 0 ? trimmedSearch : undefined,
-      }),
-    );
+  const {
+    data,
+    error,
+    isLoading,
+    isError,
+    refetch,
+    isFetching,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery(
+    courseMaterialsFeedQueryOptions(courseId, {
+      limit: 20,
+      kind: kindFilter === "all" ? undefined : kindFilter,
+      search: trimmedSearch.length > 0 ? trimmedSearch : undefined,
+    }),
+  );
 
   const materials = data?.items ?? [];
   const isRefreshing = isFetching && !isFetchingNextPage && !isLoading;
@@ -97,7 +89,7 @@ export default function CourseKnowledgeBasePage() {
     return () => observer.disconnect();
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
-  const hasFilters = !!search.trim() || kindFilter !== "all" || selectedTags.length > 0;
+  const hasFilters = !!search.trim() || kindFilter !== "all";
 
   return (
     <div className="mx-auto max-w-6xl p-4 sm:p-6 space-y-6">
@@ -130,22 +122,33 @@ export default function CourseKnowledgeBasePage() {
 
       <div className="space-y-3 rounded-xl border border-border/60 bg-card/35 p-3">
         <div className="grid gap-3 lg:grid-cols-[minmax(16rem,1fr)_auto] lg:items-center">
-          <div className="relative min-w-0">
-            <Icons.search
-              size={14}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-            />
-            <Input
-              type="search"
-              inputMode="search"
-              enterKeyHint="search"
-              autoComplete="off"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Поиск по названию..."
-              className="pl-9"
-              aria-label="Поиск по базе знаний курса"
-            />
+          <div className="min-w-0 space-y-2">
+            <label htmlFor="course-material-search" className="text-sm font-medium">
+              Поиск по названию
+            </label>
+            <div className="relative">
+              <Icons.search
+                size={14}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+              />
+              <Input
+                type="search"
+                inputMode="search"
+                enterKeyHint="search"
+                autoComplete="off"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Введите название материала"
+                maxLength={200}
+                className="pl-9 min-h-11"
+                id="course-material-search"
+                name="search"
+                aria-describedby="course-search-help"
+              />
+            </div>
+            <p id="course-search-help" className="text-xs text-muted-foreground">
+              Поиск только среди опубликованных материалов этого курса.
+            </p>
           </div>
 
           <div className="flex min-w-0 gap-1.5 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
@@ -168,17 +171,6 @@ export default function CourseKnowledgeBasePage() {
             ))}
           </div>
         </div>
-
-        <SearchTagPicker
-          selectedTags={selectedTags}
-          suggestionTags={courseTags}
-          isSuggestionTagsLoading={isCourseTagsLoading}
-          className="space-y-2"
-          onAdd={(tag) =>
-            setSelectedTags((prev) => (prev.some((t) => t.id === tag.id) ? prev : [...prev, tag]))
-          }
-          onRemove={(tagId) => setSelectedTags((prev) => prev.filter((t) => t.id !== tagId))}
-        />
       </div>
 
       {isRefreshing && (
@@ -188,7 +180,16 @@ export default function CourseKnowledgeBasePage() {
         </div>
       )}
 
-      {isLoading ? (
+      {isError ? (
+        <Card role="alert">
+          <CardContent className="py-8 space-y-3">
+            <p>{getErrorMessage(error, "Не удалось загрузить материалы. Попробуйте ещё раз.")}</p>
+            <Button className="min-touch min-h-11" onClick={() => void refetch()}>
+              Повторить
+            </Button>
+          </CardContent>
+        </Card>
+      ) : isLoading ? (
         <div className="space-y-3">
           {[0, 1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-28 rounded-xl" />
@@ -256,12 +257,12 @@ export default function CourseKnowledgeBasePage() {
         <Card>
           <CardContent className="flex flex-col items-center py-10 text-center text-muted-foreground">
             <Icons.scroll className="mb-3 size-10 text-muted-foreground/40" />
-            <p className="font-medium">
+            <p role="status" className="font-medium">
               {hasFilters ? "По фильтрам ничего не нашлось" : "Нет прикреплённых материалов"}
             </p>
             <p className="mt-1 text-sm">
               {hasFilters
-                ? "Попробуйте изменить запрос или снять часть тегов"
+                ? "Попробуйте изменить запрос или тип материала"
                 : "Материалы появятся здесь после добавления автором"}
             </p>
           </CardContent>
@@ -269,18 +270,4 @@ export default function CourseKnowledgeBasePage() {
       )}
     </div>
   );
-}
-
-function useHydrateTagsFromIds(
-  tagIds: string[],
-  setSelectedTags: React.Dispatch<React.SetStateAction<TagDto[]>>,
-) {
-  // Один batch-запрос GET /tags/batch/ вместо N параллельных byId (#512).
-  // enabled внутри byIds — при пустом tagIds запрос не уходит вовсе.
-  const { data: resolvedTags } = useQuery(tagsQueryOptions.byIds(tagIds));
-
-  useEffect(() => {
-    if (!resolvedTags || resolvedTags.length === 0) return;
-    setSelectedTags((prev) => (prev.length === 0 ? resolvedTags : prev));
-  }, [resolvedTags, setSelectedTags]);
 }

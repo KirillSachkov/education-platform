@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using ContentAccess;
 using EducationContentService.Contracts.SearchLookup;
 using EducationContentService.Domain.Courses;
@@ -96,8 +96,7 @@ public sealed class SearchLookupTests : EducationContentServiceTestsBase
     [Fact]
     public async Task GetMaterialSearchLookup_ArchivedSoleCourse_MarksCourseOrphaned()
     {
-        // Issue #378: материал остаётся PUBLISHED, но его единственный курс архивирован →
-        // is_course_orphaned=true, чтобы SearchService спрятал документ из выдачи.
+        // Published material belongs only to an archived course; lookup consumers see it as orphaned.
         Guid courseId = await CreateArchivedCourseAsync("Archived course");
         Guid materialId = await CreatePublishedMaterialAsync("Orphaned material", "# body", DomainAccessType.REGISTERED);
 
@@ -162,30 +161,6 @@ public sealed class SearchLookupTests : EducationContentServiceTestsBase
         MaterialSearchLookupDto dto = await ReadResultAsync<MaterialSearchLookupDto>(response);
         Assert.False(dto.IsCourseOrphaned);
         Assert.Equal(publishedCourseId, dto.CourseId);
-    }
-
-    [Fact]
-    public async Task GetCourseMaterialIds_ReturnsUnionOfCourseMaterialsAndModuleItems()
-    {
-        // #378: каскад пере-индекса при archive/restore берёт полный список материалов курса —
-        // привязанных напрямую (course_materials) и через модули (module_items→course_items).
-        Guid courseId = await CreatePublishedCourseAsync("Cascade course");
-        Guid moduleId = await CreatePublishedModuleAsync("Module");
-        Guid directMaterialId = await CreatePublishedMaterialAsync("Direct material", "# body", DomainAccessType.REGISTERED);
-        Guid moduleMaterialId = await CreatePublishedMaterialAsync("Module material", "# body", DomainAccessType.REGISTERED);
-
-        await LinkMaterialToCourseAsync(courseId, directMaterialId);
-        await LinkModuleToCourseAsync(courseId, moduleId);
-        await LinkMaterialToModuleAsync(moduleId, moduleMaterialId);
-
-        HttpResponseMessage response = await AppHttpClient.GetAsync($"/internal/search/courses/{courseId}/material-ids");
-
-        response.EnsureSuccessStatusCode();
-
-        CourseMaterialIdsDto dto = await ReadResultAsync<CourseMaterialIdsDto>(response);
-        Assert.Equal(
-            new HashSet<Guid> { directMaterialId, moduleMaterialId },
-            new HashSet<Guid>(dto.MaterialIds));
     }
 
     [Fact]

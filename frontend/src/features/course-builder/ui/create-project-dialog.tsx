@@ -1,7 +1,6 @@
 "use client";
 
 import { useMarkdownFileUpload, useMarkdownImageUpload } from "@/entities/file";
-import { TagsField } from "@/entities/tag";
 import { Button } from "@/shared/ui/kit/button";
 import {
   Dialog,
@@ -32,7 +31,6 @@ export type CreateProjectSubmitData = {
   title: string;
   description: string;
   detailedDescription: string;
-  tags: string[];
   draftId: string;
   requiresGithubConnection: boolean;
   requiresReviewApp: boolean;
@@ -46,7 +44,6 @@ type Props = {
 };
 
 export function CreateProjectDialog({ open, onOpenChange, onSubmit: onSubmitProp }: Props) {
-  const [tags, setTags] = useState<string[]>([]);
   const [reviewSettings, setReviewSettings] = useState({
     requiresGithubConnection: true,
     requiresReviewApp: true,
@@ -71,7 +68,6 @@ export function CreateProjectDialog({ open, onOpenChange, onSubmit: onSubmitProp
 
   const handleClose = () => {
     reset(defaultValues);
-    setTags([]);
     setReviewSettings({
       requiresGithubConnection: true,
       requiresReviewApp: true,
@@ -101,7 +97,6 @@ export function CreateProjectDialog({ open, onOpenChange, onSubmit: onSubmitProp
       title: data.title,
       description: data.description ?? "",
       detailedDescription: data.detailedDescription ?? "",
-      tags,
       draftId,
       ...reviewSettings,
     });
@@ -170,11 +165,6 @@ export function CreateProjectDialog({ open, onOpenChange, onSubmit: onSubmitProp
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label>Теги</Label>
-              <TagsField value={tags} onChange={setTags} />
-            </div>
-
             <div className="space-y-3 rounded-lg border border-border/50 p-4">
               <div>
                 <Label className="text-sm font-medium">Проверка задач</Label>
@@ -214,9 +204,7 @@ export function CreateProjectDialog({ open, onOpenChange, onSubmit: onSubmitProp
                 <Switch
                   id="project-auto-review"
                   checked={reviewSettings.isAutoReviewEnabled}
-                  onCheckedChange={(value) =>
-                    updateReviewSettings({ isAutoReviewEnabled: value })
-                  }
+                  onCheckedChange={(value) => updateReviewSettings({ isAutoReviewEnabled: value })}
                 />
               </div>
             </div>

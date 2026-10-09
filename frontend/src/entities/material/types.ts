@@ -8,11 +8,6 @@ export type MaterialScope = "mine" | "public" | "private";
 
 export type MaterialId = string;
 
-/** Короткий share-код материала: `{origin}/s/{code}` → 302 → `/knowledge-base/{id}` (#507; цель исправлена с `/learn/{id}` в #586). */
-export interface MaterialShortLinkDto {
-  code: string;
-}
-
 export interface MaterialVideoDto {
   externalVideoId: string | null;
   thumbnailUrl: string | null;
@@ -96,17 +91,10 @@ export interface MaterialFeedItemDto {
    */
   durationSeconds?: number | null;
   /**
-   * Авторский кредit карточки (#569). Мёржится из card-meta для базы знаний.
+   * Авторский кредit карточки (#569). Возвращается фидом материалов.
    */
   authorDisplayName?: string | null;
   authorAvatarUrl?: string | null;
-}
-
-export interface CourseMaterialTagDto {
-  id: string;
-  title: string;
-  slug: string;
-  kind: "canon";
 }
 
 export type MaterialFeedScope = "all" | "enrolled";
@@ -138,19 +126,6 @@ export interface MaterialBindingsDto {
   courses: MaterialCourseBindingDto[];
   modules: MaterialModuleBindingDto[];
   collections: MaterialCollectionBindingDto[];
-}
-
-/**
- * Лёгкая мета карточки: просмотры + длительность видео. Батч-эндпоинт для поверхностей,
- * которые строят карточки не из ECS-фидов (база знаний — из search-документов). Issue #500.
- */
-export interface MaterialCardMetaDto {
-  materialId: MaterialId;
-  viewsCount: number;
-  durationSeconds: number | null;
-  /** Авторский кредit карточки (#569). null если AuthService недоступен / нет аватара. */
-  authorDisplayName: string | null;
-  authorAvatarUrl: string | null;
 }
 
 /**

@@ -2,15 +2,12 @@ export {
   authorMaterialsFeedQueryOptions,
   authorMaterialsQueryOptions,
   courseMaterialIdsQueryOptions,
-  courseMaterialTagsQueryOptions,
   courseMaterialsFeedQueryOptions,
   courseMaterialsInfiniteOptions,
   courseMaterialsQueryOptions,
   materialBindingsQueryOptions,
   materialDetailQueryOptions,
-  materialShortLinkQueryOptions,
   materialsApi,
-  materialsCardMetaQueryOptions,
   materialsQueryOptions,
 } from "./api";
 export {
@@ -25,7 +22,6 @@ export { mergeMaterialItems } from "./lib/merge-material-items";
 export { invalidateMaterials } from "./lib/invalidation";
 export { useChangeMaterialAccessType } from "./model/use-change-material-access-type";
 export { MaterialFeed } from "./ui/material-feed";
-export { MaterialShareButton } from "./ui/material-share-button";
 export { MaterialPickerDialog } from "./ui/material-picker-dialog";
 export {
   MaterialCard,
@@ -36,11 +32,9 @@ export {
 export type {
   CreateDraftMaterialRequest,
   CreateMaterialRequest,
-  CourseMaterialTagDto,
   GetMaterialsRequest,
   MaterialAccessType,
   MaterialBindingsDto,
-  MaterialCardMetaDto,
   MaterialChapterDto,
   MaterialCollectionBindingDto,
   MaterialCourseBindingDto,
@@ -52,7 +46,6 @@ export type {
   MaterialLockReason,
   MaterialModuleBindingDto,
   MaterialScope,
-  MaterialShortLinkDto,
   MaterialStatus,
   MaterialSummaryDto,
   MaterialVideoDto,

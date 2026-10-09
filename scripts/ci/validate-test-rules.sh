@@ -25,8 +25,6 @@ SERVICES = (
     "MaterialProcessingService",
     "NotificationService",
     "ProgressService",
-    "SearchService",
-    "TagService",
     "TelegramBotService",
 )
 
