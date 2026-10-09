@@ -5,7 +5,6 @@ import {
   getMaterialKindBadge,
   getMaterialStatusBadge,
   materialDetailQueryOptions,
-  MaterialShareButton,
 } from "@/entities/material";
 import {
   courseCurriculumQueryOptions,
@@ -30,7 +29,7 @@ import { CommentSection } from "@/features/comments";
 import { MaterialQuizBlock } from "@/features/quiz-runner";
 import { useTrackMaterialView } from "@/features/track-material-view";
 import { useTrackFreeMaterialEngagement } from "@/shared/analytics";
-import { SuccessCheck, ViewsBadge } from "@/shared/ui/components";
+import { ShareButton, SuccessCheck, ViewsBadge } from "@/shared/ui/components";
 import { isContentAccessError, isForbiddenError } from "@/shared/api";
 import {
   resolveSecondaryUnlockHref,
@@ -425,8 +424,7 @@ export function CourseMaterialView({
               {material.title}
             </h1>
             <div className="flex items-center gap-2 shrink-0">
-              <MaterialShareButton
-                materialId={materialId}
+              <ShareButton
                 url={routes.courseMaterial(courseSlug, materialId)}
                 title={material.title}
                 className="h-9"

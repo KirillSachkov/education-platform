@@ -6,7 +6,6 @@ import {
   getMaterialStatusBadge,
   materialBindingsQueryOptions,
   materialDetailQueryOptions,
-  MaterialShareButton,
   type MaterialDetailDto,
 } from "@/entities/material";
 import {
@@ -20,7 +19,7 @@ import { MaterialQuizBlock } from "@/features/quiz-runner";
 import { MaterialAuthorActions } from "@/features/materials-manage";
 import { useTrackMaterialView } from "@/features/track-material-view";
 import { useTrackFreeMaterialEngagement } from "@/shared/analytics";
-import { AuthorCredit, ViewsBadge } from "@/shared/ui/components";
+import { AuthorCredit, ShareButton, ViewsBadge } from "@/shared/ui/components";
 import { isContentAccessError, isForbiddenError } from "@/shared/api";
 import {
   resolveSecondaryUnlockHref,
@@ -319,11 +318,7 @@ export function MaterialView({
             <CourseBreadcrumb items={breadcrumbs} />
           </div>
           <div className="ml-auto flex items-center gap-2 shrink-0">
-            <MaterialShareButton
-              materialId={materialId}
-              url={routes.knowledgeBaseMaterial(materialId)}
-              title={material.title}
-            />
+            <ShareButton url={routes.knowledgeBaseMaterial(materialId)} title={material.title} />
             {isLearning && isAuthenticated && (
               <Button
                 variant={isViewed ? "secondary" : "default"}
