@@ -53,8 +53,9 @@ stays private; Actions reports fixed status, operation and service counts.
 ## Host operation
 
 The host adapter takes an exclusive operation lock. Probe checks configuration,
-binary identities, tools, Compose project, database volume and registry-specific (13 legacy, 12 source)-service
-health without registry login, pull, export, dump or application changes.
+binary identities, tools, Compose project, database volume and health for the selected
+registry (13 legacy services, 12 source services), without registry login, pull, export,
+dump or application changes.
 Telegram belongs to image and migration inventories but not the blocking
 health gate.
 

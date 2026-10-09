@@ -7,7 +7,7 @@ namespace AccessService.IntegrationTests.Features.PlanGrants;
 /// <summary>Entitlement projection preserves platform access while retiring trainer grants.</summary>
 public sealed class PlanGrantTagCalculatorTests
 {
-    private static readonly PlanDisplayName Name = PlanDisplayName.Of("Полный доступ").Value;
+    private static readonly PlanDisplayName _name = PlanDisplayName.Of("Полный доступ").Value;
 
     [Fact]
     public void Full_platform_grant_keeps_platform_capabilities_without_retired_tag()
@@ -16,7 +16,7 @@ public sealed class PlanGrantTagCalculatorTests
             Guid.NewGuid(),
             PlanTier.FULL_ALL,
             PlanSlug.Of("full-platform").Value,
-            Name,
+            _name,
             courseIds: [],
             requestedCapabilities: null).Value;
         PlanGrant grant = PlanGrant.Create(
@@ -40,7 +40,7 @@ public sealed class PlanGrantTagCalculatorTests
             Guid.NewGuid(),
             PlanTier.COURSE,
             PlanSlug.Of("one-course").Value,
-            Name,
+            _name,
             courseIds: [courseId],
             requestedCapabilities: ["VIEW_MATERIALS", "TRAINER_PRO"]).Value;
         PlanGrant grant = PlanGrant.Create(
@@ -59,7 +59,7 @@ public sealed class PlanGrantTagCalculatorTests
     {
         Plan plan = Plan.Create(
             Guid.NewGuid(), PlanTier.SUBSCRIPTION, PlanSlug.Of("legacy-trainer").Value,
-            Name, [], ["TRAINER_PRO", "VIEW_MATERIALS"], term: PlanTerm.Recurring(30)).Value;
+            _name, [], ["TRAINER_PRO", "VIEW_MATERIALS"], term: PlanTerm.Recurring(30)).Value;
         PlanGrant grant = PlanGrant.Create(Guid.NewGuid(), plan.Id, PlanGrantSource.ADMIN_GRANT, null);
 
         Assert.Empty(PlanGrantTagCalculator.CalculateForGrant(grant, plan));
@@ -73,7 +73,7 @@ public sealed class PlanGrantTagCalculatorTests
             Guid.NewGuid(),
             PlanTier.FULL_ALL,
             PlanSlug.Of("revoked-full").Value,
-            Name,
+            _name,
             courseIds: [],
             requestedCapabilities: null).Value;
         PlanGrant grant = PlanGrant.Create(
@@ -90,7 +90,7 @@ public sealed class PlanGrantTagCalculatorTests
             Guid.NewGuid(),
             PlanTier.FULL_ALL,
             PlanSlug.Of("archived-full").Value,
-            Name,
+            _name,
             courseIds: [],
             requestedCapabilities: null).Value;
         PlanGrant grant = PlanGrant.Create(

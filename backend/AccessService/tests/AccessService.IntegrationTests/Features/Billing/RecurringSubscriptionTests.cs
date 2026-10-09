@@ -22,7 +22,7 @@ namespace AccessService.IntegrationTests.Features.Billing;
 [Collection(nameof(IntegrationTestsFixture))]
 public sealed class RecurringSubscriptionTests : AccessServiceTestsBase
 {
-    private const int IntervalDays = 30;
+    private const int INTERVAL_DAYS = 30;
 
     public RecurringSubscriptionTests(IntegrationTestsWebFactory factory) : base(factory) { }
 
@@ -95,8 +95,8 @@ public sealed class RecurringSubscriptionTests : AccessServiceTestsBase
                 grant.NextChargeAt);
             Assert.InRange(
                 grant.ExpiresAt!.Value,
-                before.AddDays(IntervalDays).AddSeconds(-5),
-                after.AddDays(IntervalDays).AddSeconds(5));
+                before.AddDays(INTERVAL_DAYS).AddSeconds(-5),
+                after.AddDays(INTERVAL_DAYS).AddSeconds(5));
         });
     }
 
@@ -147,7 +147,7 @@ public sealed class RecurringSubscriptionTests : AccessServiceTestsBase
             requestedCapabilities: null,
             offerType: null,
             trialDurationDays: null,
-            term: PlanTerm.Recurring(IntervalDays)).Value;
+            term: PlanTerm.Recurring(INTERVAL_DAYS)).Value;
 
         await ExecuteInDbAsync(async db =>
         {
@@ -174,7 +174,7 @@ public sealed class RecurringSubscriptionTests : AccessServiceTestsBase
     {
         Plan plan = Plan.Create(CurrentUserId, PlanTier.SUBSCRIPTION, PlanSlug.Of(slug).Value,
             PlanDisplayName.Of("Legacy subscription").Value, [], null,
-            term: PlanTerm.Recurring(IntervalDays)).Value;
+            term: PlanTerm.Recurring(INTERVAL_DAYS)).Value;
         plan.UpdatePrice(priceCents, "RUB");
         plan.Publish();
         await ExecuteInDbAsync(async db =>

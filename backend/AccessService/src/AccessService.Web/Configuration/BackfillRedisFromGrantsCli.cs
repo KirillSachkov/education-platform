@@ -30,10 +30,10 @@ namespace AccessService.Web.Configuration;
 /// </summary>
 public sealed class BackfillRedisFromGrantsCli : IPlatformCli
 {
-    public const string CommandName = "backfill-redis-from-grants";
-    public const string DryRunFlag = "--dry-run";
+    public const string COMMAND_NAME = "backfill-redis-from-grants";
+    public const string DRY_RUN_FLAG = "--dry-run";
 
-    public string Name => CommandName;
+    public string Name => COMMAND_NAME;
 
     public async Task RunAsync(
         IConfiguration configuration,
@@ -42,7 +42,7 @@ public sealed class BackfillRedisFromGrantsCli : IPlatformCli
         CancellationToken cancellationToken = default)
     {
         _ = hostEnvironment;
-        bool dryRun = args.Any(x => string.Equals(x, DryRunFlag, StringComparison.OrdinalIgnoreCase));
+        bool dryRun = args.Any(x => string.Equals(x, DRY_RUN_FLAG, StringComparison.OrdinalIgnoreCase));
 
         string dbConnectionString = configuration.GetConnectionString("Database")
             ?? throw new InvalidOperationException("ConnectionStrings:Database is required");
