@@ -1,6 +1,5 @@
 import { apiClient, type Envelope } from "@/shared/api";
 import { queryOptions } from "@tanstack/react-query";
-import type { UserXpProgressDto } from "./types";
 
 export interface MaterialViewStatusDto {
   materialId: string;
@@ -20,22 +19,6 @@ export interface GetMaterialViewStatusResponse {
 }
 
 export const userProgressApi = {
-  getMyXpProgress: async ({ signal }: { signal?: AbortSignal } = {}) => {
-    const res = await apiClient.get<Envelope<UserXpProgressDto>>("/progress/me/gamification/", {
-      signal,
-    });
-
-    return res.data;
-  },
-
-  getUserXpProgress: async (userId: string, { signal }: { signal?: AbortSignal } = {}) => {
-    const res = await apiClient.get<Envelope<UserXpProgressDto>>(
-      `/progress/users/${userId}/gamification/`,
-      { signal },
-    );
-    return res.data;
-  },
-
   getMaterialViewStatus: async (
     materialIds: string[],
     { signal }: { signal?: AbortSignal } = {},
@@ -47,30 +30,10 @@ export const userProgressApi = {
     );
     return res.data.result!;
   },
-
 };
 
 export const userProgressQueryOptions = {
   baseKey: "user-progress",
-
-  getMyXpProgressKey: () => [userProgressQueryOptions.baseKey, "me"] as const,
-
-  getMyXpProgressOptions: () =>
-    queryOptions({
-      queryKey: userProgressQueryOptions.getMyXpProgressKey(),
-      queryFn: ({ signal }) => userProgressApi.getMyXpProgress({ signal }),
-      select: (data) => data.result,
-    }),
-
-  getUserXpProgressKey: (userId: string) =>
-    [userProgressQueryOptions.baseKey, "user", userId] as const,
-
-  getUserXpProgressOptions: (userId: string) =>
-    queryOptions({
-      queryKey: userProgressQueryOptions.getUserXpProgressKey(userId),
-      queryFn: ({ signal }) => userProgressApi.getUserXpProgress(userId, { signal }),
-      select: (data) => data.result,
-    }),
 
   materialViewStatusOptions: (materialIds: string[]) => {
     // Sort + dedupe so two callers passing same IDs in different order share a cache entry.

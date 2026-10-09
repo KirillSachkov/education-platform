@@ -17,7 +17,7 @@ export function CourseCollectionDetailClient({ collectionId }: Props) {
     <CollectionDetailView
       collectionId={collectionId}
       backHref={routes.courseKnowledgeBase(courseSlug)}
-      backLabel="К базе знаний курса"
+      backLabel="К материалам курса"
       getMaterialHref={(materialId) =>
         routes.courseMaterial(courseSlug, materialId, {
           from: {

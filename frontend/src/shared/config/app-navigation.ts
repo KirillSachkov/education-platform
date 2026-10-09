@@ -18,25 +18,9 @@ export type NavItem = {
   exact?: boolean;
 };
 
-/**
- * «Тренажёр» — отдельный раздел платформы (#623): свой сайдбар (`TrainerSidebar`) +
- * хедер-таб (`AppLayout`). В общем учебном сайдбаре его НЕ показываем (чтобы не
- * дублировать), но оставляем в мобильной шторке «Меню» как точку входа.
- */
-export const trainerNavItem: NavItem = {
-  href: routes.trainer,
-  icon: Icons.energy,
-  label: "Тренажёр",
-};
-
 export const learningNav: NavItem[] = [
-  { href: routes.home, icon: Icons.home, label: "Главная", exact: true },
-  { href: routes.courses, icon: Icons.course, label: "Каталог" },
-  { href: routes.knowledgeBase, icon: Icons.library, label: "База знаний" },
-  { href: routes.levelTest, icon: Icons.levelTest, label: "Тест уровня" },
+  { href: routes.home, icon: Icons.home, label: "Моё обучение", exact: true },
   { href: routes.saved, icon: Icons.bookmark, label: "Сохранённое" },
-  { href: routes.progress, icon: Icons.trending, label: "Мой прогресс" },
-  { href: routes.leaderboard, icon: Icons.trophy, label: "Рейтинг" },
   { href: routes.pricing, icon: Icons.crown, label: "Доступ" },
 ];
 
@@ -44,15 +28,7 @@ export const teachingNav: NavItem[] = [
   { href: routes.authorCourses, icon: Icons.editAlt, label: "Курсы" },
   { href: routes.authorKnowledgeBase, icon: Icons.document, label: "Материалы" },
   { href: routes.authorCollections, icon: Icons.grid, label: "Подборки" },
-  { href: routes.authorRoadmaps, icon: Icons.roadmap, label: "Роадмапы" },
   { href: routes.authorQuizzes, icon: Icons.quiz, label: "Тесты" },
-  { href: routes.authorLevelTest, icon: Icons.listChecks, label: "Тест уровня" },
-  {
-    href: `${routes.trainerAdmin}?tab=mock`,
-    icon: Icons.briefcase,
-    label: "Мок-собесы",
-    minRole: ROLES.ADMIN,
-  },
   { href: routes.authorTags, icon: Icons.tag, label: "Управление тегами", minRole: ROLES.ADMIN },
   {
     href: routes.authorReview,
@@ -96,10 +72,7 @@ export const adminNav: NavItem[] = [
   { href: routes.adminPayments, icon: Icons.gift, label: "Платежи" },
   { href: routes.adminCampaigns, icon: Icons.send, label: "Рассылки" },
   { href: routes.adminSearch, icon: Icons.search, label: "Поиск" },
-  { href: routes.adminLevelTest, icon: Icons.levelTest, label: "Тест уровня" },
   { href: routes.adminTests, icon: Icons.chart, label: "Статистика тестов" },
-  // «Тренажёр» переехал в собственное пространство (#623) — /trainer/admin,
-  // ссылка живёт в TrainerSidebar. Из платформенного admin-nav убрана.
   { href: routes.adminAiUsage, icon: Icons.ai, label: "AI usage" },
   { href: routes.adminAiModels, icon: Icons.settings, label: "AI модели" },
 ];

@@ -16,8 +16,8 @@ export const dotnetLandingContent: SeoLandingContent = {
   heroLead:
     "Понятный маршрут от первой строки на C# до уровня инженера: что учить, в каком порядке и зачем. " +
     "Без хаоса из случайных туториалов — один связный путь с практикой и обратной связью.",
-  heroCtaPrimary: { label: "Смотреть курсы", href: routes.courses },
-  heroCtaSecondary: { label: "Пройти тест уровня", href: routes.levelTest },
+  heroCtaPrimary: { label: "Смотреть курсы", href: routes.pricing },
+  heroCtaSecondary: { label: "Посмотреть программу", href: routes.pricing },
 
   sections: [
     {
@@ -108,9 +108,8 @@ export const dotnetLandingContent: SeoLandingContent = {
   ],
 
   finalCtaHeading: "Пройдите путь .NET-разработчика по понятному маршруту",
-  finalCtaSub:
-    "Выберите курс под свой уровень или начните с короткого теста, чтобы понять, с какой ступени стартовать.",
-  finalCtaPrimary: { label: "Смотреть курсы", href: routes.courses },
+  finalCtaSub: "Посмотрите программы курсов и выберите подходящую ступень обучения.",
+  finalCtaPrimary: { label: "Смотреть курсы", href: routes.pricing },
   finalCtaSecondary: { label: "Открыть полный курс .NET", href: FLAGSHIP },
 
   related: [

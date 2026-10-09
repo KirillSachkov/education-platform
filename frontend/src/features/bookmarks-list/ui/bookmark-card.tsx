@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  CalendarDays,
-  ChevronRight,
-  Lock,
-  Trash2,
-} from "lucide-react";
+import { CalendarDays, ChevronRight, Lock, Trash2 } from "lucide-react";
 import { resolveLockCopy } from "@/shared/lib/lock-copy";
 import { ENTITY_ICONS } from "@/shared/config/entity-icons";
 import { useRouter } from "next/navigation";
@@ -65,7 +60,7 @@ export function BookmarkCard({ item }: BookmarkCardProps) {
       role="link"
       tabIndex={0}
       onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
+        if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
           event.preventDefault();
           router.push(href);
         }
@@ -91,9 +86,7 @@ export function BookmarkCard({ item }: BookmarkCardProps) {
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground min-w-0 overflow-hidden">
             <span className="truncate">{item.courseTitle}</span>
             <span className="shrink-0">/</span>
-            <span className="truncate">
-              {item.sectionTitle ?? item.sectionType}
-            </span>
+            <span className="truncate">{item.sectionTitle ?? item.sectionType}</span>
             <span className="shrink-0">/</span>
             <span className="shrink-0">{getTargetLabel(item.target.type)}</span>
           </div>
@@ -130,14 +123,18 @@ export function BookmarkCard({ item }: BookmarkCardProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="size-8 rounded-lg text-muted-foreground hover:text-destructive"
+                className="size-11 rounded-lg text-muted-foreground hover:text-destructive"
+                aria-label="Удалить закладку"
                 disabled={isPending}
                 onClick={(event) => event.stopPropagation()}
               >
                 <Trash2 size={14} />
               </Button>
             </AlertDialogTrigger>
-            <AlertDialogContent>
+            <AlertDialogContent
+              onClick={(event) => event.stopPropagation()}
+              onKeyDown={(event) => event.stopPropagation()}
+            >
               <AlertDialogHeader>
                 <AlertDialogTitle>Удалить закладку?</AlertDialogTitle>
                 <AlertDialogDescription>
@@ -146,10 +143,7 @@ export function BookmarkCard({ item }: BookmarkCardProps) {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel disabled={isPending}>Отмена</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => toggleBookmark(true)}
-                  disabled={isPending}
-                >
+                <AlertDialogAction onClick={() => toggleBookmark(true)} disabled={isPending}>
                   Удалить
                 </AlertDialogAction>
               </AlertDialogFooter>
@@ -159,7 +153,8 @@ export function BookmarkCard({ item }: BookmarkCardProps) {
           <Button
             variant="ghost"
             size="icon"
-            className="size-8 rounded-lg text-muted-foreground hover:text-primary"
+            className="size-11 rounded-lg text-muted-foreground hover:text-primary"
+            aria-label="Открыть сохранённый материал"
             onClick={(event) => {
               event.stopPropagation();
               router.push(href);

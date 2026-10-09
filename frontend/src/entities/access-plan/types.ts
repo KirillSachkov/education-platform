@@ -478,19 +478,3 @@ export interface PlanStatsDto {
   timeseries: PlanStatsTimeseriesPointDto[];
   inviteLinks: PlanInviteLinkStatsDto[];
 }
-
-/**
- * Платформенный агрегат выручки по ВСЕМ планам с `offer_type=TRAINER_PRO` (#623) — для
- * админ-дашборда тренажёра. Кросс-плановый (не по одному плану). `mrrCentsEstimate` — оценка
- * MRR в копейках (сумма price_paid_cents активных). Зеркало `TrainerProRevenueDto`.
- */
-export interface TrainerProRevenue {
-  activeSubscriptions: number;
-  activePayingCount: number;
-  canceledSubscriptions: number;
-  totalGrants: number;
-  newInPeriod: PlanGrantPeriodCountersDto;
-  mrrCentsEstimate: number;
-  sourceBreakdown: PlanGrantSourceBreakdownDto[];
-  timeseries: PlanStatsTimeseriesPointDto[];
-}

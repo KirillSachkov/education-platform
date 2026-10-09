@@ -18,9 +18,7 @@ import { LockIconBadge } from "@/shared/ui/components/lock-icon-badge";
  * Недоступные строки показывают замок + ведут в тарифы. Ничего не рендерит,
  * если список пуст (у автора нет закрепов или пользователь без grant'ов).
  *
- * Монтируется в `AuthenticatedHome` сразу ПОД `LevelStatsCard` (прогресс) и НАД
- * курсами — это «с чего начать», поэтому стоит высоко (см. frontend/CLAUDE.md
- * home composition).
+ * Keeps direct links to purchased standalone materials on «Моё обучение».
  */
 export function HomePinsSection() {
   const { data: pins } = useQuery(myHomePinsQueryOptions);

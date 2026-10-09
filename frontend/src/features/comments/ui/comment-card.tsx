@@ -8,9 +8,7 @@ import type { EntityType } from "@/shared/config/entity-types";
 import { cn } from "@/shared/lib/css";
 import { UserAvatar } from "@/shared/ui/components";
 import { Button } from "@/shared/ui/kit/button";
-import { routes } from "@/shared/config/routes";
 import { formatRelativeDate } from "@/shared/lib/date";
-import Link from "next/link";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -247,12 +245,7 @@ export default function CommentCard({
               {isThreadItem && <ThreadReplyPreview comment={comment} threadRootId={threadRootId} />}
 
               <div className="mb-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
-                <Link
-                  href={routes.userProfile(comment.authorId)}
-                  className="truncate text-sm font-semibold leading-none hover:underline"
-                >
-                  {displayName}
-                </Link>
+                <span className="truncate text-sm font-semibold leading-none">{displayName}</span>
                 <span className="text-xs text-muted-foreground">
                   {formatRelativeDate(comment.createdAt)}
                 </span>

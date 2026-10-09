@@ -25,7 +25,6 @@ import { useState } from "react";
 
 import { AuthorProfileSection } from "./ui/author-profile-section";
 import { BaseProfileSection } from "./ui/base-profile-section";
-import { LevelProgressSection } from "./ui/level-progress-section";
 import { ProfileSkeleton } from "./ui/profile-skeleton";
 import { ReviewerProfileSection } from "./ui/reviewer-profile-section";
 
@@ -85,7 +84,7 @@ const ROLE_CONFIGS: Record<string, RoleConfig> = {
 /**
  * Public-facing profile card. Account-level settings (GitHub/Telegram link, sessions,
  * notification preferences, etc.) живут в /settings/* — здесь только то, что юзер
- * сам показывает другим: имя, аватар, био, уровень/XP, role-views.
+ * сам показывает другим: имя, аватар, био и role-views.
  */
 export function ProfileView() {
   const { profile, isPending, error } = useMyProfile();
@@ -141,8 +140,6 @@ function ProfileContent({
       <SectionCard>
         <BaseProfileSection profile={profile} />
       </SectionCard>
-
-      <LevelProgressSection />
 
       {roleTabs.length > 0 && (
         <SectionCard>

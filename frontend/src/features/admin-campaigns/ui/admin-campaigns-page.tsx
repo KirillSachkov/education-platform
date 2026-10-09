@@ -13,13 +13,7 @@ import {
   AlertDialogTitle,
 } from "@/shared/ui/kit/alert-dialog";
 import { Button } from "@/shared/ui/kit/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/shared/ui/kit/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/kit/card";
 import { Icons, type IconComponent } from "@/shared/ui/icons";
 import { useRecipientCount } from "../model/use-recipient-count";
 import { useRunCampaign } from "../model/use-run-campaign";
@@ -27,7 +21,7 @@ import { useSendTestCampaign } from "../model/use-send-test-campaign";
 
 /**
  * Admin-only page /admin/campaigns. Управление платформенными кампаниями-рассылками:
- * «приглашение на тест уровня» (#554), «вход теперь по почте» и «привяжите аккаунты»
+ * «вход теперь по почте» и «привяжите аккаунты»
  * (#704, epic #696). Для каждой: размер аудитории + тестовая отправка себе + запуск.
  *
  * Permission gate стоит на layout (RequireRole atLeast=admin) + backend endpoints
@@ -44,15 +38,6 @@ type CampaignConfig = {
 };
 
 const CAMPAIGNS: CampaignConfig[] = [
-  {
-    slug: "level-test-invite",
-    title: "Приглашение на тест уровня",
-    description:
-      "Письмо уйдёт всем пользователям с почтой и пригласит пройти публичный тест " +
-      "уровня. Отписка работает штатно — повторный запуск пропускает уже приглашённых.",
-    Icon: Icons.target,
-    testSuccessMessage: "Письмо отправлено на вашу почту — проверьте",
-  },
   {
     slug: "email-login-notice",
     title: "Вход теперь по почте",
@@ -87,9 +72,8 @@ export function AdminCampaignsPage() {
             Рассылки
           </CardTitle>
           <CardDescription className="pt-1">
-            Запуск платформенных кампаний уведомлений. Доставка идёт через стандартные
-            каналы; настройки и отписки пользователей учитываются, если карточка кампании
-            не говорит иного.
+            Запуск платформенных кампаний уведомлений. Доставка идёт через стандартные каналы;
+            настройки и отписки пользователей учитываются, если карточка кампании не говорит иного.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -168,16 +152,14 @@ function CampaignCard({ campaign }: { campaign: CampaignConfig }) {
           <AlertDialogHeader>
             <AlertDialogTitle>Запустить рассылку?</AlertDialogTitle>
             <AlertDialogDescription>
-              «{campaign.title}»: отправить уведомление всем {recipientCount} получателям?
-              Действие необратимо.
+              «{campaign.title}»: отправить уведомление всем {recipientCount} получателям? Действие
+              необратимо.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={runCampaign.isPending}>Отмена</AlertDialogCancel>
             <AlertDialogAction onClick={handleRun} disabled={runCampaign.isPending}>
-              {runCampaign.isPending && (
-                <Icons.loading size={16} className="mr-2 animate-spin" />
-              )}
+              {runCampaign.isPending && <Icons.loading size={16} className="mr-2 animate-spin" />}
               Запустить
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -5,12 +5,12 @@ import { describe, expect, it } from "vitest";
 const manifest = readFileSync(resolve(process.cwd(), "public/llms.txt"), "utf8");
 
 describe("llms.txt", () => {
-  it("publishes the canonical commercial, free-value, and identity URLs", () => {
+  it("publishes the canonical programme, pricing, and identity URLs", () => {
     expect(manifest).toContain("https://sachkov-learn.net/c-sharp");
     expect(manifest).toContain("https://sachkov-learn.net/dotnet");
     expect(manifest).toContain("https://sachkov-learn.net/asp-net-core");
-    expect(manifest).toContain("https://sachkov-learn.net/knowledge-base?free=1");
-    expect(manifest).toContain("https://sachkov-learn.net/level-test");
+    expect(manifest).not.toContain("https://sachkov-learn.net/knowledge-base");
+    expect(manifest).not.toContain("https://sachkov-learn.net/level-test");
     expect(manifest).toContain("https://github.com/KirillSachkov");
   });
 

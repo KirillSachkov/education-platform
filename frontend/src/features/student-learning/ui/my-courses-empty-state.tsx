@@ -4,6 +4,7 @@ import { EmptyState } from "@/shared/ui/kit/empty-state";
 import { Icons } from "@/shared/ui/icons";
 import { Button } from "@/shared/ui/kit/button";
 import Link from "next/link";
+import { routes } from "@/shared/config/routes";
 
 export function MyCoursesEmptyState() {
   return (
@@ -14,7 +15,7 @@ export function MyCoursesEmptyState() {
       description="Выберите курс, с которого хотите начать."
       action={
         <Button asChild>
-          <Link href="/">Перейти к пространствам</Link>
+          <Link href={routes.pricing}>Посмотреть доступ</Link>
         </Button>
       }
     />

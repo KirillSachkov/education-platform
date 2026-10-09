@@ -6,20 +6,13 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { cn } from "@/shared/lib/css";
 import { Icons, type IconComponent } from "@/shared/ui/icons";
-import { LogoMark } from "@/shared/ui/kit/logo";
-import {
-  BOTTOM_NAV_TABS,
-  type BottomNavTabId,
-  resolveActiveTabIndex,
-} from "../lib/active-tab";
+import { BOTTOM_NAV_TABS, type BottomNavTabId, resolveActiveTabIndex } from "../lib/active-tab";
 import { MobileMenuSheet } from "./mobile-menu-sheet";
 
 // «Главная» (центр) рендерится фирменным LogoMark в акцентном круге, поэтому
 // иконки заведены только для четырёх остальных вкладок. «Меню» — action-вкладка:
 // открывает шторку со всеми разделами (см. MobileMenuSheet), а не навигирует.
 const ICONS: Record<Exclude<BottomNavTabId, "home">, IconComponent> = {
-  courses: Icons.graduation,
-  "knowledge-base": Icons.library,
   saved: Icons.bookmark,
   menu: Icons.menu,
 };
@@ -51,32 +44,7 @@ export function MobileBottomNav() {
           {BOTTOM_NAV_TABS.map((tab, index) => {
             const active = index === activeIndex;
 
-            // Центральная «Главная» — акцентный круг с лого вместо icon+label.
-            if (tab.id === "home") {
-              return (
-                <li key={tab.id} className="relative flex-1">
-                  <Link
-                    href={tab.href!}
-                    aria-current={active ? "page" : undefined}
-                    className="relative flex h-14 min-h-[44px] items-center justify-center"
-                  >
-                    <span
-                      className={cn(
-                        "flex size-11 items-center justify-center rounded-full border transition-all",
-                        active
-                          ? "border-primary/60 bg-primary/15 ring-2 ring-primary/20"
-                          : "border-border/60 bg-secondary/70",
-                      )}
-                    >
-                      <LogoMark size={24} />
-                    </span>
-                    <span className="sr-only">{tab.label}</span>
-                  </Link>
-                </li>
-              );
-            }
-
-            const Icon = ICONS[tab.id as Exclude<BottomNavTabId, "home">];
+            const Icon = tab.id === "home" ? Icons.course : ICONS[tab.id];
             const isMenuTab = tab.id === "menu";
             // «Меню» подсвечивается и когда открыта шторка, и когда юзер на одном
             // из «шторочных» маршрутов (active по isMenuSection).

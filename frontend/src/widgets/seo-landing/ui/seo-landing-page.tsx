@@ -46,10 +46,7 @@ export function SeoLandingPage({ content }: { content: SeoLandingContent }) {
       {/* Hero — a `<section>`, not `<header>`: the page's real header is the
           LandingHeader rendered by the (seo) layout. */}
       <section className="mx-auto max-w-4xl px-5 pb-12 pt-20 sm:pt-28">
-        <p
-          className="text-xs font-semibold uppercase tracking-[0.18em]"
-          style={{ color: ACCENT }}
-        >
+        <p className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: ACCENT }}>
           {content.eyebrow}
         </p>
         <h1 className="mt-4 text-3xl font-extrabold leading-[1.1] tracking-tight sm:text-5xl">
@@ -153,17 +150,8 @@ export function SeoLandingPage({ content }: { content: SeoLandingContent }) {
           <Link href={routes.home} className="transition-colors hover:text-white/80">
             Платформа
           </Link>
-          <Link href={routes.courses} className="transition-colors hover:text-white/80">
-            Курсы
-          </Link>
           <Link href={routes.pricing} className="transition-colors hover:text-white/80">
             Тарифы
-          </Link>
-          <Link href={routes.levelTest} className="transition-colors hover:text-white/80">
-            Тест уровня
-          </Link>
-          <Link href={routes.knowledgeBase} className="transition-colors hover:text-white/80">
-            База знаний
           </Link>
         </nav>
         <p className="mt-6 text-center text-xs text-white/30">© SachkovLearn</p>

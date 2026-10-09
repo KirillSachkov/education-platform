@@ -16,8 +16,8 @@ export const csharpLandingContent: SeoLandingContent = {
   heroLead:
     "Пошаговое обучение программированию на C#: от первой строки кода до уверенного junior-разработчика. " +
     "Без потоков и дедлайнов — учитесь в своём темпе, с AI-ревью вашего кода и ответами автора.",
-  heroCtaPrimary: { label: "Пройти тест уровня", href: routes.levelTest },
-  heroCtaSecondary: { label: "Смотреть курсы", href: routes.courses },
+  heroCtaPrimary: { label: "Посмотреть программу", href: routes.pricing },
+  heroCtaSecondary: { label: "Смотреть курсы", href: routes.pricing },
 
   sections: [
     {
@@ -122,10 +122,8 @@ export const csharpLandingContent: SeoLandingContent = {
   ],
 
   finalCtaHeading: "Начните учить C# осознанно",
-  finalCtaSub:
-    "Пройдите короткий тест уровня, чтобы понять, с чего стартовать именно вам, или сразу загляните в " +
-    "каталог курсов по C# и .NET.",
-  finalCtaPrimary: { label: "Пройти тест уровня", href: routes.levelTest },
+  finalCtaSub: "Посмотрите программу C# и .NET и выберите подходящий доступ.",
+  finalCtaPrimary: { label: "Посмотреть программу", href: routes.pricing },
   finalCtaSecondary: { label: "Открыть полный курс .NET", href: FLAGSHIP },
 
   related: [

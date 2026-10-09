@@ -226,7 +226,7 @@ export function ProgramSection() {
         <ScrollReveal>
           <div className="mt-10 flex justify-center lg:mt-14">
             <a
-              href={routes.courses}
+              href={routes.pricing}
               data-growth-cta="program_courses"
               data-growth-placement="course"
               className="group inline-flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.02] px-6 py-3.5 text-sm font-medium text-white/70 transition-all hover:border-white/20 hover:bg-white/[0.04] hover:text-white"
@@ -433,7 +433,7 @@ export function FinalCtaSection() {
           </p>
           <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
             <a
-              href={routes.courses}
+              href={routes.pricing}
               data-growth-cta="final_courses"
               data-growth-placement="footer"
               className="group relative inline-flex items-center gap-2 rounded-lg bg-[#6BADA5] px-8 py-3.5 text-sm font-medium text-[#0A0A0B] transition-all hover:bg-[#5CEAC9] hover:shadow-[0_0_40px_rgba(107,173,165,0.45)]"

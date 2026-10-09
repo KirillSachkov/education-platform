@@ -72,10 +72,6 @@ const nextConfig: NextConfig = {
       // short-link'и (#507), дайджест-письма (WeeklyDigestRunner), home-pins.
       // In-course путь /courses/{slug}/learn/{id} не задевается (другой префикс).
       { source: "/learn/:materialId", destination: "/knowledge-base/:materialId", permanent: true },
-      // #623 — админка тренажёра переехала в его собственное пространство
-      // (фиолетовая тема + TrainerSidebar). Старый /admin/trainer (+ ?tab=)
-      // 308-редиректит на /trainer/admin; query-параметры сохраняются автоматически.
-      { source: "/admin/trainer", destination: "/trainer/admin", permanent: true },
     ];
   },
   async headers() {
@@ -129,7 +125,7 @@ const nextConfig: NextConfig = {
               "gyroscope=()",
               "idle-detection=()",
               "magnetometer=()",
-              "microphone=(self)", // тренажёр: голосовые ответы в мок-собесе (#585)
+              "microphone=()",
               "payment=()",
               "serial=()",
               "usb=()",

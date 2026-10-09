@@ -9,7 +9,6 @@ import {
 import { Button } from "@/shared/ui/kit/button";
 import { Loader2 } from "lucide-react";
 import type { ReactNode } from "react";
-import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { routes } from "@/shared/config/routes";
 import { publicProfileQueryOptions } from "@/entities/profile";
@@ -101,12 +100,9 @@ export function CourseBuilder({
                 userId={course.authorId}
                 className="size-4"
               />
-              <Link
-                href={routes.userProfile(course.authorId)}
-                className="truncate transition-colors hover:text-foreground hover:underline"
-              >
+              <span className="truncate">
                 {author?.displayName ?? author?.username ?? shortId(course.authorId)}
-              </Link>
+              </span>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">

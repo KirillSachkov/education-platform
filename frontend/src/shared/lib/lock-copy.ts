@@ -3,7 +3,7 @@ import { routes } from "@/shared/config/routes";
 /**
  * Unified lock-reason vocabulary for content access gating on the frontend.
  * Mirrors `ContentAccess.LockReasons` on the backend and is shared by
- * materials, collections, issues, global search and the trainer (#614 B2) —
+ * materials, collections, issues and course search —
  * all transport the same string literal from the API.
  */
 export type LockReason =
@@ -14,10 +14,7 @@ export type LockReason =
   | "trial_required"
   | "not_enrolled"
   | "standard_required"
-  | "plan_required"
-  // Тренажёр (#614 B2): тема/банк доступны только по подписке Trainer Pro.
-  // Бэкенд отдаёт это значение в `lockReason` тем/списков вопросов тренажёра.
-  | "pro_required";
+  | "plan_required";
 
 export interface LockCopy {
   /** Bold headline for the callout card. */
@@ -76,14 +73,6 @@ export function resolveLockCopy(
         cta: "Выбрать план",
         shortHint: "Нужен план доступа",
       };
-    case "pro_required":
-      return {
-        title: "Доступно по подписке Trainer Pro",
-        subtitle:
-          "Эта тема тренажёра открывается с подпиской Trainer Pro — голос, симуляции и платные банки вопросов.",
-        cta: "Оформить подписку",
-        shortHint: "Нужна подписка Trainer Pro",
-      };
     case "not_enrolled":
     default:
       return {
@@ -122,9 +111,6 @@ export function resolveUnlockHref({ lockReason, returnTo }: UnlockHrefContext): 
     }
     return "/login";
   }
-  // Тренажёр Pro продаётся отдельной страницей в пространстве тренажёра (#623),
-  // а не в платформенном каталоге планов.
-  if (lockReason === "pro_required") return routes.trainerPro;
   return routes.pricing;
 }
 

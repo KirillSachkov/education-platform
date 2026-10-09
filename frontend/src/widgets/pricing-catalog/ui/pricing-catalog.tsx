@@ -135,8 +135,7 @@ export function PricingCatalog({ initialPlans }: PricingCatalogProps = {}) {
       backendPlans && backendPlans.length > 0
         ? sortPublicPlans(backendPlans).map(mapPublicPlanToCard)
         : STATIC_PLANS;
-    // Тренажёр продаётся отдельной страницей /trainer/pro (#623) — в платформенный
-    // каталог планов подписку тренажёра не подмешиваем.
+    // Existing retired subscriptions remain readable in account history only.
     return source.filter((plan) => plan.offerType !== "TRAINER_PRO");
   })();
 

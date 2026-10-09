@@ -54,7 +54,7 @@ export default function CourseKnowledgeBasePage() {
   const access = useCourseAccess(courseId);
   const { data: curriculum } = useQuery(courseCurriculumQueryOptions(courseId));
   // Collections + список материалов курса доступны анониму (с lock-иконками для
-  // недоступных). База знаний курса читает курсовую программу напрямую из
+  // недоступных). Материалы курса читает курсовую программу напрямую из
   // course_materials (`GET /courses/{id}/materials/feed/`) — это canonical-источник
   // «что в курсе», не зависит от Typesense (sync lag, single-courseId-per-doc) и
   // показывает все материалы программы, включая привязанные к нескольким курсам.
@@ -110,13 +110,13 @@ export default function CourseKnowledgeBasePage() {
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>База знаний</BreadcrumbPage>
+            <BreadcrumbPage>Материалы</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <div className="flex items-baseline gap-3">
-        <h1 className="text-2xl font-bold">База знаний курса</h1>
+        <h1 className="text-2xl font-bold">Материалы курса</h1>
       </div>
 
       {collections && collections.length > 0 && (

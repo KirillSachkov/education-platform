@@ -12,7 +12,6 @@ import {
   canViewNavItem,
   learningNav,
   teachingNav,
-  trainerNavItem,
   type NavItem,
 } from "@/shared/config/app-navigation";
 import { routes } from "@/shared/config/routes";
@@ -20,13 +19,7 @@ import { cn } from "@/shared/lib/css";
 import { UserAvatar } from "@/shared/ui/components";
 import { Icons } from "@/shared/ui/icons";
 import { Button, buttonVariants } from "@/shared/ui/kit/button";
-import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/shared/ui/kit/sheet";
+import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle } from "@/shared/ui/kit/sheet";
 import { BOTTOM_NAV_TABS } from "../lib/active-tab";
 
 /**
@@ -52,19 +45,9 @@ export function MobileMenuSheet({ open, onOpenChange }: MobileMenuSheetProps) {
   const canTeach = isAtLeast(ROLES.AUTHOR);
   const canAdmin = isAtLeast(ROLES.ADMIN);
 
-  const learningItems = [
-    // «Тренажёр» вынесен из learningNav в свой раздел (#623), но в мобильной шторке
-    // остаётся точкой входа — на мобиле хедер-таба нет.
-    trainerNavItem,
-    ...learningNav.filter(
-      (item) =>
-        !TAB_LINK_HREFS.has(item.href) &&
-        // «Мой прогресс» бессмысленен для анонима — страница за SessionGuard.
-        (isAuth || item.href !== routes.progress),
-    ),
-  ];
-  const teachingItems = teachingNav.filter(
-    (item) => canViewNavItem(item, { isAtLeast, hasAnyRole }),
+  const learningItems = learningNav.filter((item) => !TAB_LINK_HREFS.has(item.href));
+  const teachingItems = teachingNav.filter((item) =>
+    canViewNavItem(item, { isAtLeast, hasAnyRole }),
   );
 
   return (
@@ -114,8 +97,7 @@ export function MobileMenuSheet({ open, onOpenChange }: MobileMenuSheetProps) {
 function MenuUserCard() {
   const { data: session } = useSession();
   const { profile } = useMyProfile();
-  const name =
-    profile?.displayName || profile?.username || session?.user?.name || "Пользователь";
+  const name = profile?.displayName || profile?.username || session?.user?.name || "Пользователь";
   const email = session?.user?.email;
 
   return (
@@ -127,12 +109,14 @@ function MenuUserCard() {
           "transition-colors active:bg-secondary/60",
         )}
       >
-        <UserAvatar name={name} avatarId={profile?.avatarId} className="size-11 ring-1 ring-primary/20" />
+        <UserAvatar
+          name={name}
+          avatarId={profile?.avatarId}
+          className="size-11 ring-1 ring-primary/20"
+        />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-semibold">{name}</span>
-          {email && (
-            <span className="block truncate text-xs text-muted-foreground">{email}</span>
-          )}
+          {email && <span className="block truncate text-xs text-muted-foreground">{email}</span>}
         </span>
         <Icons.chevronRight className="size-4 shrink-0 text-muted-foreground/60" />
       </Link>

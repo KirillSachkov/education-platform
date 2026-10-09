@@ -1,8 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { useRoles } from "@/shared/auth";
-import { activePromotionQueryOptions } from "@/entities/course";
 import { routes } from "@/shared/config/routes";
 import {
   accountNav,
@@ -20,7 +18,6 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
@@ -54,12 +51,6 @@ export function AppSidebar() {
   // Логотип = контекстный «шаг вверх»: из под-контекста (профиль/админка/преподавание)
   // ведём на учебную главную, из самой учебной зоны — на публичный лендинг.
   const logoHref = isLearningView ? routes.landing : routes.home;
-
-  // Индикатор активной акции у пункта «Каталог» — фетчим только в учебной зоне (где виден).
-  const { data: promo } = useQuery({
-    ...activePromotionQueryOptions(),
-    enabled: isLearningView,
-  });
 
   return (
     <Sidebar variant="floating" collapsible="icon">
@@ -195,9 +186,6 @@ export function AppSidebar() {
                   const isActive = item.exact
                     ? pathname === item.href
                     : pathname === item.href || pathname.startsWith(`${item.href}/`);
-                  const showPromo = item.href === routes.courses && promo?.active;
-                  // Тест уровня (#528) — мягкий акцент, чтобы вход замечали.
-                  const showLevelTestHint = item.href === routes.levelTest && !isActive;
                   return (
                     <SidebarMenuItem key={item.href}>
                       <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
@@ -207,20 +195,6 @@ export function AppSidebar() {
                           <NavLinkPending />
                         </Link>
                       </SidebarMenuButton>
-                      {showPromo && (
-                        <SidebarMenuBadge className="right-2 gap-0.5 bg-rose-500/15 text-rose-600 dark:text-rose-400">
-                          <Icons.percent className="size-3" />
-                          Акция
-                        </SidebarMenuBadge>
-                      )}
-                      {showLevelTestHint && (
-                        <SidebarMenuBadge className="right-2">
-                          <span
-                            aria-hidden
-                            className="size-1.5 rounded-full bg-primary motion-safe:animate-pulse"
-                          />
-                        </SidebarMenuBadge>
-                      )}
                     </SidebarMenuItem>
                   );
                 })}

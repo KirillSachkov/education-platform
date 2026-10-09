@@ -11,7 +11,6 @@ import {
   LayoutGrid,
   Layers,
   Loader2,
-  Map,
   Settings2,
   Users2,
 } from "lucide-react";
@@ -29,7 +28,6 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/shared/ui/kit/sidebar";
-import { Badge } from "@/shared/ui/kit/badge";
 import { routes } from "@/shared/config/routes";
 import { useCourseId, useCourseSlug } from "@/shared/providers/course-id-provider";
 import { courseBuilderQueryOptions } from "@/entities/course";
@@ -75,9 +73,7 @@ export function CourseBuilderSidebar() {
   }
 
   const basePath = routes.authorCourseBuilder(courseSlug);
-  const roadmapPath = routes.authorCourseRoadmap(courseSlug);
   const isOnBuilder = pathname === basePath;
-  const isOnRoadmap = pathname.startsWith(roadmapPath);
 
   const activeTab = (searchParams.get("tab") as TabId | null) ?? "modules";
 
@@ -103,11 +99,7 @@ export function CourseBuilderSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild tooltip="Назад к пространству" size="sm">
-              <Link
-                href={routes.authorCourses}
-                className="gap-2"
-                onClick={closeMobileSidebar}
-              >
+              <Link href={routes.authorCourses} className="gap-2" onClick={closeMobileSidebar}>
                 <Icons.back className="size-4 shrink-0" />
                 <span className="text-xs text-sidebar-foreground/60 group-data-[collapsible=icon]:hidden">
                   Назад к пространству
@@ -120,9 +112,7 @@ export function CourseBuilderSidebar() {
             <SidebarMenuItem>
               <SidebarMenuButton onClick={toggleSidebar} tooltip="Свернуть" size="sm">
                 <Icons.sidebarToggle className="size-4 shrink-0" />
-                <span className="text-xs group-data-[collapsible=icon]:hidden">
-                  Свернуть
-                </span>
+                <span className="text-xs group-data-[collapsible=icon]:hidden">Свернуть</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           )}
@@ -145,13 +135,11 @@ export function CourseBuilderSidebar() {
                       <Loader2 className="size-3 animate-spin" /> Загрузка…
                     </span>
                   ) : (
-                    course?.title ?? "Курс не найден"
+                    (course?.title ?? "Курс не найден")
                   )}
                 </h2>
                 {statusLabel && (
-                  <p className="mt-0.5 text-[11px] text-sidebar-foreground/50">
-                    {statusLabel}
-                  </p>
+                  <p className="mt-0.5 text-[11px] text-sidebar-foreground/50">{statusLabel}</p>
                 )}
               </div>
             </div>
@@ -170,11 +158,7 @@ export function CourseBuilderSidebar() {
                 const href = `${basePath}?tab=${tab.id}`;
                 return (
                   <SidebarMenuItem key={tab.id}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive}
-                      tooltip={tab.label}
-                    >
+                    <SidebarMenuButton asChild isActive={isActive} tooltip={tab.label}>
                       <Link href={href} onClick={closeMobileSidebar}>
                         <Icon />
                         <span>{tab.label}</span>
@@ -184,27 +168,6 @@ export function CourseBuilderSidebar() {
                   </SidebarMenuItem>
                 );
               })}
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={isOnRoadmap}
-                  tooltip="Роадмап"
-                >
-                  <Link href={roadmapPath} onClick={closeMobileSidebar}>
-                    <Map />
-                    <span>Роадмап</span>
-                    {course?.status === "DRAFT" && (
-                      <Badge
-                        variant="secondary"
-                        className="ml-auto text-[10px] px-1.5 py-0"
-                      >
-                        beta
-                      </Badge>
-                    )}
-                    <NavLinkPending />
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
