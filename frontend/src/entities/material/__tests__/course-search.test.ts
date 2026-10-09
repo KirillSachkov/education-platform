@@ -36,17 +36,29 @@ describe("course material search", () => {
     mocks.get.mockResolvedValueOnce(envelope("first", "cursor-two"));
     const firstOptions = courseMaterialsFeedQueryOptions("course-one", { search: "SQL" });
     const first = await client.fetchInfiniteQuery(firstOptions);
-    expect(first.pages[0].result?.items[0].id).toBe("first");
-    expect(firstOptions.getNextPageParam(first.pages[0], first.pages, undefined, [])).toBe(
-      "cursor-two",
+    expect(first.pages[0]?.result?.items[0]?.id).toBe("first");
+    const observer = new InfiniteQueryObserver(client, firstOptions);
+    mocks.get.mockResolvedValueOnce(envelope("second"));
+    await observer.fetchNextPage();
+    expect(mocks.get).toHaveBeenLastCalledWith(
+      "/courses/course-one/materials/feed/",
+      expect.objectContaining({
+        params: expect.objectContaining({ search: "SQL", cursor: "cursor-two" }),
+      }),
     );
+    expect(observer.getCurrentResult().data?.items.map((item) => item.id)).toEqual([
+      "first",
+      "second",
+    ]);
+    const firstCourseCache = client.getQueryData(firstOptions.queryKey);
 
     mocks.get.mockResolvedValueOnce(envelope("other-course"));
     const second = await client.fetchInfiniteQuery(
       courseMaterialsFeedQueryOptions("course-two", { search: "SQL" }),
     );
-    expect(second.pages[0].result?.items[0].id).toBe("other-course");
-    expect(client.getQueryData(firstOptions.queryKey)).toEqual(first);
+    expect(second.pages[0]?.result?.items[0]?.id).toBe("other-course");
+    expect(client.getQueryData(firstOptions.queryKey)).toEqual(firstCourseCache);
+    observer.destroy();
     client.clear();
   });
 
@@ -56,7 +68,7 @@ describe("course material search", () => {
     const firstOptions = courseMaterialsFeedQueryOptions("course-one");
     await client.fetchInfiniteQuery(firstOptions);
     const observer = new InfiniteQueryObserver(client, firstOptions);
-    expect(observer.getCurrentResult().data?.items[0].id).toBe("first");
+    expect(observer.getCurrentResult().data?.items[0]?.id).toBe("first");
     observer.setOptions(courseMaterialsFeedQueryOptions("course-two"));
     expect(observer.getCurrentResult().data).toBeUndefined();
     observer.destroy();
