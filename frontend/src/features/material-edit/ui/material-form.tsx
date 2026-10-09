@@ -30,6 +30,7 @@ import { MaterialPreviewUpload } from "./material-preview-upload";
 import { MATERIAL_KINDS, materialFormSchema, type MaterialFormValues } from "../model/schemas";
 import { useFormAutosave, type AutosaveStatus } from "../model/use-form-autosave";
 import { useMediaAutosave } from "../model/use-media-autosave";
+import { VideoChaptersEditor } from "./video-chapters-editor";
 
 const MarkdownEditor = dynamic(
   () =>
@@ -540,6 +541,8 @@ export function MaterialForm({
           />
         </div>
       </div>
+
+      {videoAssetId && <VideoChaptersEditor videoId={videoAssetId} />}
 
       {/* Авторское «Описание» отдельно от content: content используется как конспект. */}
       <div className="flex flex-col gap-2">
