@@ -2,7 +2,7 @@
 
 public sealed class KinescopeOptions
 {
-    public const string SectionName = "Kinescope";
+    public const string SECTION_NAME = "Kinescope";
 
     public string ApiToken { get; set; } = string.Empty;
 

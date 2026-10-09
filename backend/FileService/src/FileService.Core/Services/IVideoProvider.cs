@@ -1,4 +1,4 @@
-namespace FileService.Core.Services;
+﻿namespace FileService.Core.Services;
 
 public sealed record VideoUploadInitResult(
     string ExternalAssetId,

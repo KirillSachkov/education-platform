@@ -1,4 +1,4 @@
-using Core.Abstractions;
+﻿using Core.Abstractions;
 using Core.Database;
 using Core.Validation;
 using EducationContentService.Contracts.Materials;

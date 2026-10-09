@@ -1,4 +1,4 @@
-using CSharpFunctionalExtensions;
+﻿using CSharpFunctionalExtensions;
 using FileService.Core.Features.AssetRegistry.IntegrationEvents;
 using FileService.Domain;
 using FileService.IntegrationTests.Infrastructure;

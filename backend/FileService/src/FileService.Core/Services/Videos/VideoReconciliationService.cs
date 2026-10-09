@@ -1,4 +1,4 @@
-using Core.Database;
+﻿using Core.Database;
 using FileService.Core.Database;
 using FileService.Core.Repositories;
 using FileService.Core.Services.AssetRegistry;

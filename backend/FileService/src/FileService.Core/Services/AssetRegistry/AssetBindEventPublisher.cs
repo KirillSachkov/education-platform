@@ -1,4 +1,4 @@
-using FileService.Core.Database;
+﻿using FileService.Core.Database;
 using FileService.Core.Repositories;
 using FileService.Domain;
 using Shared.Messaging.IntegrationEvents.Files.Events;

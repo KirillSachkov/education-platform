@@ -1,4 +1,4 @@
-using System.Data.Common;
+﻿using System.Data.Common;
 using Core.Abstractions;
 using Core.Database;
 using Dapper;

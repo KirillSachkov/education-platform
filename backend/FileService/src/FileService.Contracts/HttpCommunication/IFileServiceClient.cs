@@ -1,4 +1,4 @@
-using FileService.Contracts.Assets;
+﻿using FileService.Contracts.Assets;
 
 namespace FileService.Contracts.HttpCommunication;
 

@@ -43,7 +43,7 @@ public sealed class KinescopeApiClient : IVideoProvider
     {
         var requestBody = new
         {
-            type = KinescopeConstants.VideoType,
+            type = KinescopeConstants.VIDEO_TYPE,
             title,
             filename = fileName,
             filesize = fileSize,

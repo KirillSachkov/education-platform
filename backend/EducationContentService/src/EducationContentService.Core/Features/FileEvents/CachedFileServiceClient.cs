@@ -1,4 +1,4 @@
-using FileService.Contracts.Assets;
+﻿using FileService.Contracts.Assets;
 using FileService.Contracts.HttpCommunication;
 using Microsoft.Extensions.Caching.Hybrid;
 

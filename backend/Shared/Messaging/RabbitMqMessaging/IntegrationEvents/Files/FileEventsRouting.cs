@@ -1,4 +1,4 @@
-namespace Shared.Messaging.IntegrationEvents.Files;
+﻿namespace Shared.Messaging.IntegrationEvents.Files;
 
 public static class FileEventsRouting
 {

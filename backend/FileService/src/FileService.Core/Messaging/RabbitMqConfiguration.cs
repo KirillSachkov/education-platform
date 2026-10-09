@@ -1,4 +1,4 @@
-using Shared.Messaging;
+﻿using Shared.Messaging;
 using Shared.Messaging.IntegrationEvents.Education;
 using Shared.Messaging.IntegrationEvents.Files;
 using Shared.Messaging.IntegrationEvents.Files.Events;
