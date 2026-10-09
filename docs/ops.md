@@ -13,7 +13,7 @@ Operational concerns не нужные на каждой задаче. Если 
 **What goes where:**
 - **Secrets** (passwords, API keys, signing keys) → `.env` (dev) / Infisical (prod)
 - **Non-secret config** (URLs, CORS, client IDs, feature flags) → `appsettings.{Environment}.json`
-- **Business constants** (gamification levels, retention TTLs) → `appsettings.json`
+- **Business constants** (retention TTLs) → `appsettings.json`
 
 **Environments:** `Development` (local `dotnet run`), `Docker` (dev compose), `Production` (prod server).
 

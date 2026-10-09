@@ -68,9 +68,7 @@ public static class Registration
         // Фоновое расписание — WeeklyDigestService в Infrastructure.Postgres.
         services.AddScoped<Features.Digest.IWeeklyDigestRunner, Features.Digest.WeeklyDigestRunner>();
 
-        // Кампания «приглашение на тест уровня» (#554): admin-triggered рассылка всем
-        // пользователям. Endpoints авто-discover'ятся, runner — DI как и дайджест.
-
+        // Кампании уведомлений об аккаунте: endpoints обнаруживаются автоматически.
         services.AddScoped<Features.Campaigns.IEmailLoginNoticeCampaignRunner, Features.Campaigns.EmailLoginNoticeCampaignRunner>();
         services.AddScoped<Features.Campaigns.ILinkAccountsNudgeCampaignRunner, Features.Campaigns.LinkAccountsNudgeCampaignRunner>();
 

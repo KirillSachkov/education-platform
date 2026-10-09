@@ -11,7 +11,7 @@ use it for new product UI or access decisions.
 ## Current Model
 
 - Public URLs are flat: `/courses`, `/knowledge-base`, `/collections`,
-  `/pricing`, `/leaderboard`.
+  `/pricing`.
 - Teaching URLs are also platform-level: `/author/courses`,
   `/author/plans`, `/author/materials`, etc.
 - Course rows still have `AuthorId`. It means "responsible author / owner of
@@ -49,7 +49,6 @@ All routes live under `(platform)/`:
 | `/collections`, `/collections/[id]` | Collections | AppSidebar |
 | `/roadmaps`, `/roadmaps/[slug]` | Roadmaps | AppSidebar |
 | `/pricing`, `/pricing/[planSlug]` | Platform plans | AppSidebar |
-| `/leaderboard` | Global leaderboard | AppSidebar |
 | `/author/*` | Teaching mode | AppSidebar |
 | `/profile`, `/settings/*`, `/admin/*` | Platform pages | AppSidebar |
 
@@ -87,7 +86,6 @@ frontend/src/app/(app)/
     collections/[collectionId]/
     pricing/[slug]/
     roadmaps/[slug]/
-    leaderboard/
     author/, admin/, settings/, profile/, notifications/
 ```
 

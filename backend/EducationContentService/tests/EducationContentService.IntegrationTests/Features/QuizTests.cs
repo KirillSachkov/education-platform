@@ -576,7 +576,7 @@ public class QuizTests : EducationContentServiceTestsBase
         });
     }
 
-    // ===== Level-test (#476) =====
+    // ===== Author quiz lookup by material =====
 
     [Fact]
     public async Task GetAuthorQuizByMaterial_DraftQuiz_AsOwner_Returns200WithAnswers()
