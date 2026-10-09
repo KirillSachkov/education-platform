@@ -13,7 +13,7 @@ describe("retained review settings in the mobile account menu", () => {
       data: { user: { roles: [role] }, expires: "2099-01-01" },
       status: "authenticated",
       update: vi.fn(),
-    } as ReturnType<typeof useSession>);
+    });
     render(<MobileAccountMenu />);
     expect(screen.getByRole("link", { name: "AI модели" })).toHaveAttribute(
       "href",
@@ -29,7 +29,7 @@ describe("retained review settings in the mobile account menu", () => {
         data: { user: { roles: [role] }, expires: "2099-01-01" },
         status: "authenticated",
         update: vi.fn(),
-      } as ReturnType<typeof useSession>);
+      });
       render(<MobileAccountMenu />);
       expect(screen.queryByRole("link", { name: "AI модели" })).not.toBeInTheDocument();
     },
