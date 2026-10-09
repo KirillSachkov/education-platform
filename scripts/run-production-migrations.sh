@@ -5,6 +5,11 @@ set -Eeuo pipefail
 compose_file="${1:-docker-compose.prod.yml}"
 current_release_file="${2:-/opt/education-platform/releases/current.env}"
 docker_bin="${DOCKER_BIN:-docker}"
+topology="${3:-source}"
+case "$topology" in
+    source|legacy) ;;
+    *) printf 'FATAL: unknown release topology.\n' >&2; exit 1 ;;
+esac
 
 migration_services=(
     auth-service-migrations
@@ -18,7 +23,6 @@ migration_services=(
     material-processing-service-migrations
     notification-service-migrations
     telegram-bot-service-migrations
-    trainer-service-migrations
     assignment-review-service-migrations
 )
 
@@ -31,9 +35,14 @@ remaining_cutover_services=(
     material-processing-service-migrations
     notification-service-migrations
     telegram-bot-service-migrations
-    trainer-service-migrations
     assignment-review-service-migrations
 )
+
+# Original approved legacy roles still require their historical trainer migration.
+if [[ "$topology" == legacy ]]; then
+    migration_services=("${migration_services[@]:0:11}" trainer-service-migrations assignment-review-service-migrations)
+    remaining_cutover_services=("${remaining_cutover_services[@]:0:8}" trainer-service-migrations assignment-review-service-migrations)
+fi
 
 run_migrations() {
     local service

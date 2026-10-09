@@ -1,11 +1,10 @@
-using AccessService.Domain;
+﻿using AccessService.Domain;
 
 namespace AccessService.IntegrationTests.Features.Plans;
 
 /// <summary>
-/// Pure domain tests for <see cref="PlanCapabilitiesMapper"/> round-trip, with focus on
-/// the TRAINER_PRO add-on capability (#614): it must round-trip through ToStrings/FromStrings
-/// (so the <c>cap:TRAINER_PRO</c> Redis tag is emitted) yet stay OUT of the FULL alias.
+/// Historical capability names and numeric flags remain protocol-compatible.
+/// New mutation boundaries reject the retired flag; projection never emits it.
 /// </summary>
 public class PlanCapabilitiesMapperTests
 {

@@ -27,7 +27,7 @@ Only secrets belong in Infisical/`.env`. Non-secret production config is in `app
 
 ## CI/CD Pipeline
 
-GitHub Actions runs affected PR checks and the required aggregate. Trusted main builds fourteen
+GitHub Actions runs affected PR checks and the required aggregate. Trusted main builds thirteen
 application images and an immutable digest manifest in GHCR. Standard hosted runners and bounded
 artifact retention are configured in `.github/workflows/ci.yml`.
 

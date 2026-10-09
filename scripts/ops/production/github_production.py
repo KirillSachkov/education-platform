@@ -18,7 +18,7 @@ import urllib.parse
 import zipfile
 
 from release_model import (
-    REPOSITORY, dispatch_inputs, image_manifest, private_roles, strict_json,
+    REPOSITORY, SERVICES, LEGACY_SERVICES, dispatch_inputs, image_manifest, private_roles, strict_json,
     trusted_build_run, trusted_dispatch,
 )
 
@@ -67,7 +67,7 @@ if result.returncode or not receipt.exists():
     sys.exit(1)
 data=json.loads(receipt.read_text())
 if set(data)-{"status","operation","applications","health_services","source_sha","version"}: raise RuntimeError("invalid public result")
-if type(data.get("applications")) is not int or data["applications"]!=14 or type(data.get("health_services")) is not int or data["health_services"]!=13: raise RuntimeError("invalid public counts")
+if type(data.get("applications")) is not int or type(data.get("health_services")) is not int or (data["applications"],data["health_services"]) not in {(13,12),(14,13)}: raise RuntimeError("invalid public counts")
 print(json.dumps(data))
 '''
 
@@ -195,7 +195,12 @@ def main():
         receipt = strict_json(result.stdout)
         if receipt.get("status") != "PASS" or receipt.get("operation") != inputs["operation"]:
             raise ValueError("production receipt mismatch")
-        if type(receipt.get("applications")) is not int or receipt["applications"] != 14 or type(receipt.get("health_services")) is not int or receipt["health_services"] != 13:
+        allowed_counts = {(len(SERVICES), len(SERVICES) - 1), (len(LEGACY_SERVICES), len(LEGACY_SERVICES) - 1)}
+        if inputs["release"] == "normal-public-build":
+            allowed_counts = {(len(SERVICES), len(SERVICES) - 1)}
+        elif inputs["release"] in {"current", "previous"} and inputs["operation"] != "probe":
+            allowed_counts = {(len(LEGACY_SERVICES), len(LEGACY_SERVICES) - 1)}
+        if type(receipt.get("applications")) is not int or type(receipt.get("health_services")) is not int or (receipt["applications"], receipt["health_services"]) not in allowed_counts:
             raise ValueError("production receipt counts mismatch")
         public = {"status": "PASS", "operation": inputs["operation"], "applications": receipt.get("applications"),
                   "health_services": receipt.get("health_services")}

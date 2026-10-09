@@ -12,7 +12,8 @@ import unittest
 from unittest.mock import patch
 import urllib.error
 
-from release_model import HEALTH_SERVICES, LEGACY_REGISTRY, SERVICES
+from release_model import PUBLIC_REGISTRY, services_for_registry
+from release_model import LEGACY_HEALTH_SERVICES as HEALTH_SERVICES, LEGACY_REGISTRY, LEGACY_SERVICES as SERVICES
 from remote_production import CRITICAL, HostOperation, dotenv, metadata_text, write_json, write_private
 from test_release_model import roles
 
@@ -158,6 +159,7 @@ class RemoteProduction(RemoteFixture):
         command = self.host.calls[-1][0]
         self.assertEqual(command[:7], ["docker", "compose", "--project-directory", str(self.root), "-p", self.host.project, "-f"])
         self.host.changed_config_consumers = []
+        self.host.target = {"registry": LEGACY_REGISTRY}
         self.host.migrate_and_start()
         wrapper = (self.run / "docker-with-project").read_text()
         self.assertIn("--project-directory " + str(self.root), wrapper)
@@ -165,6 +167,23 @@ class RemoteProduction(RemoteFixture):
         up = self.host.calls[-1][0]
         self.assertEqual(set(up[-14:]), set(SERVICES))
         self.assertNotIn("--force-recreate", up)
+
+    def test_source_startup_health_and_receipt_exclude_trainer(self):
+        self.host.target = {"registry": PUBLIC_REGISTRY}
+        self.host.services = services_for_registry(PUBLIC_REGISTRY)
+        self.host.changed_config_consumers = []
+        self.host.migrate_and_start()
+        migration = next(arguments for arguments, _ in self.host.calls if "run-production-migrations.sh" in " ".join(arguments))
+        self.assertEqual(migration[-1], "source")
+        up = self.host.calls[-1][0]
+        self.assertNotIn("trainer-service", up)
+        self.assertIn("assignment-review-service", up)
+        self.assertIn("access-service", up)
+        with patch.object(self.host, "inspect", wraps=self.host.inspect) as inspect:
+            self.host.health(1)
+        self.assertNotIn("trainer-service", [call.args[0] for call in inspect.call_args_list])
+        receipt = self.host.public_receipt()
+        self.assertEqual((receipt["applications"], receipt["health_services"]), (13, 12))
 
     def test_running_postgres_must_use_exact_ghcr_reference_and_digest(self):
         self.baseline(); self.host.choose_target()

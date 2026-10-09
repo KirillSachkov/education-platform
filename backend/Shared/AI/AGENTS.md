@@ -7,8 +7,7 @@ OpenAI-compatible endpoint, configured under the `AI` section.
 
 ## Context routing
 
-Consumers: AssignmentReviewService, MaterialProcessingService, ProgressService and
-TrainerService. A contract change affects all of them; inspect their registrations before
+Consumers: AssignmentReviewService, MaterialProcessingService and ProgressService. A contract change affects all of them; inspect their registrations before
 editing. Cross-service backend rules come from [`../../AGENTS.md`](../../AGENTS.md).
 
 ## Boundary

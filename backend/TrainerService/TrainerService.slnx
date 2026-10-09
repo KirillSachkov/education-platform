@@ -1,8 +1,0 @@
-<Solution>
-  <Project Path="src/TrainerService.Contracts/TrainerService.Contracts.csproj" />
-  <Project Path="src/TrainerService.Core/TrainerService.Core.csproj" />
-  <Project Path="src/TrainerService.Domain/TrainerService.Domain.csproj" />
-  <Project Path="src/TrainerService.Infrastructure.Postgres/TrainerService.Infrastructure.Postgres.csproj" />
-  <Project Path="src/TrainerService.Web/TrainerService.Web.csproj" />
-  <Project Path="tests/TrainerService.IntegrationTests/TrainerService.IntegrationTests.csproj" />
-</Solution>

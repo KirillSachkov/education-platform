@@ -1,6 +1,6 @@
 # AccessService
 
-Owns plans, plan grants, invite links, T-Bank orders and recurring charges, Trainer Pro offers,
+Owns plans, plan grants, invite links, T-Bank orders and recurring charges,
 plan onboarding, home pins, Telegram join reminders, and GitHub org invitations in PostgreSQL
 schema `access` (port 8010).
 
@@ -15,6 +15,10 @@ Cross-service backend rules come from [`../AGENTS.md`](../AGENTS.md).
 Plan grants are authoritative; the Redis `plan:*` entitlement tags are a projection recalculated
 from grants on every `PlanGrant*` event, never patched incrementally. T-Bank webhooks are verified
 by token before any mutation. GitHub org membership follows grant lifecycle via the GitHub App.
+
+Persisted `TRAINER_PRO`, `TRAINER`, and subscription enum values remain compatible with
+historical rows and billing events. New trainer offers and capability mutations are rejected;
+entitlement projection emits only platform access. Existing billing lifecycle is preserved.
 
 ## Entrypoint and verification
 

@@ -1,4 +1,4 @@
-using AccessService.Contracts.Plans.Requests;
+﻿using AccessService.Contracts.Plans.Requests;
 using AccessService.Core.Database;
 using AccessService.Domain;
 using AccessService.Domain.Onboarding;
@@ -41,6 +41,15 @@ public sealed class UpdatePlanValidator : AbstractValidator<UpdatePlanCommand>
             .Must(o => Enum.TryParse<PlanOfferType>(o, ignoreCase: true, out _))
             .When(x => x.Request.OfferType is not null)
             .WithError(Error.Validation("plan.offer_type.invalid", "Неизвестный формат оффера"));
+        RuleFor(x => x.Request.Capabilities)
+            .Must(names => names is null || !names.Any(name =>
+                string.Equals(name, nameof(PlanCapabilities.TRAINER_PRO), StringComparison.OrdinalIgnoreCase)))
+            .WithError(AccessErrors.RetiredOffer());
+        RuleFor(x => x.Request.OfferType)
+            .Must(value => !Enum.TryParse(value, ignoreCase: true, out PlanOfferType offer)
+                || offer != PlanOfferType.TRAINER_PRO)
+            .WithError(AccessErrors.RetiredOffer());
+
         RuleFor(x => x.Request.Currency)
             .Must(currency => string.IsNullOrWhiteSpace(currency)
                 || string.Equals(currency, "RUB", StringComparison.OrdinalIgnoreCase))

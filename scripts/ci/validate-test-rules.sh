@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Validate GitHub backend selection against every service's csproj dependency graph.
-# The optional integration matrix must name all thirteen services exactly once.
+# The optional integration matrix must name every active service exactly once.
 
 set -euo pipefail
 
@@ -28,7 +28,6 @@ SERVICES = (
     "SearchService",
     "TagService",
     "TelegramBotService",
-    "TrainerService",
 )
 
 
@@ -72,7 +71,7 @@ def main() -> int:
     declared_services = re.search(r"^        service: \[([^\]]+)\]$", integration, re.MULTILINE)
     matrix = declared_services.group(1).replace(" ", "").split(",") if declared_services else []
     if len(matrix) != len(SERVICES) or set(matrix) != set(SERVICES):
-        errors.append("GitHub on-demand integration matrix must contain all 13 services exactly")
+        errors.append(f"GitHub on-demand integration matrix must contain all {len(SERVICES)} services exactly")
     for required in ("global.json", ".gitmodules", "backend/Directory.Packages.props", "backend/Directory.Build.props", "backend/backend.slnx", "backend/nuget.config.ci"):
         if not any(selector.matches(required, glob) for glob in backend_paths):
             errors.append(f"GitHub backend checks do not select {required}")
@@ -96,7 +95,7 @@ def main() -> int:
         )
         return 1
 
-    print("OK: GitHub backend selection, all13 integration matrix match csproj deps.")
+    print("OK: GitHub backend selection, active integration matrix match csproj deps.")
     return 0
 
 

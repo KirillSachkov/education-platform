@@ -461,59 +461,6 @@ services:
     networks:
       - platform-network
 
-  # Trainer Service (interview-prep drill trainer — Ф1: no Wolverine/Redis)
-  trainer-service-migrations:
-    profiles: ["app"]
-    build:
-      context: ./backend
-      dockerfile: TrainerService/Dockerfile
-      secrets:
-        - nuget_config
-    entrypoint: ["/bin/sh", "-c", "./efbundle --connection \"$$CONNECTIONSTRINGS__DATABASE\""]
-    env_file:
-      - .env
-    environment:
-      CONNECTIONSTRINGS__DATABASE: ${TRAINER_DB_CONNECTION}
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: "no"
-    networks:
-      - platform-network
-
-  trainer-service:
-    profiles: ["app"]
-    build:
-      context: ./backend
-      dockerfile: TrainerService/Dockerfile
-      secrets:
-        - nuget_config
-    ports:
-      - "${TRAINER_HOST_PORT:-8013}:8013"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      trainer-service-migrations:
-        condition: service_completed_successfully
-    env_file:
-      - .env
-    environment:
-      ASPNETCORE_ENVIRONMENT: Docker
-      ASPNETCORE_URLS: http://+:8013
-      OTEL_SERVICE_NAME: TrainerService
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
-      CONNECTIONSTRINGS__DATABASE: ${TRAINER_DB_CONNECTION}
-      EDUCATIONSERVICEOPTIONS__URL: http://education-service:8001
-    healthcheck:
-      test: ["CMD", "dotnet", "healthcheck/healthcheck.dll", "8013"]
-      interval: 10s
-      timeout: 3s
-      retries: 3
-      start_period: 30s
-    restart: always
-    networks:
-      - platform-network
-
   # Education Content Service
   education-service-migrations:
     profiles: ["app"]

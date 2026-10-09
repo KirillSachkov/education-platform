@@ -1,4 +1,4 @@
-namespace AccessService.Contracts.Plans.Requests;
+﻿namespace AccessService.Contracts.Plans.Requests;
 
 /// <summary>
 /// Запрос на создание плана доступа.
@@ -28,7 +28,7 @@ namespace AccessService.Contracts.Plans.Requests;
 /// <param name="RecurringIntervalDays">
 /// Интервал автопродления подписки в днях (#614). Обязателен и должен быть &gt; 0 для
 /// <c>Tier=SUBSCRIPTION</c> (домен отвергает иначе); игнорируется для прочих тиров. Позволяет
-/// создать подписочный план «Trainer Pro».
+/// прочитать параметры исторического подписочного плана. Новые trainer-планы отклоняются.
 /// </param>
 public sealed record CreatePlanRequest(
     string Tier,

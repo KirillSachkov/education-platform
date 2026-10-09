@@ -27,7 +27,7 @@ import urllib.request
 import uuid
 
 from release_model import (
-    HEALTH_SERVICES, LEGACY_REGISTRY, MIGRATIONS, PUBLIC_REGISTRY, SERVICES,
+    LEGACY_REGISTRY, PUBLIC_REGISTRY, services_for_registry,
     dispatch_inputs, full_sha, image_manifest, private_roles, strict_json,
 )
 
@@ -119,6 +119,7 @@ class HostOperation:
             raise ValueError("approved Compose project and database volume required")
         self.env = dict(os.environ)
         self.target = None
+        self.services = services_for_registry(LEGACY_REGISTRY)
         self.effective = self.run / "compose.effective.json"
 
     def command(self, arguments, *, env=None, input=None, capture=True, timeout=180):
@@ -140,7 +141,9 @@ class HostOperation:
     def health(self, attempts):
         for attempt in range(attempts):
             healthy = True
-            for name in HEALTH_SERVICES:
+            for name in self.services:
+                if name == "telegram-bot-service":
+                    continue
                 container = self.inspect(name)
                 labels = container["Config"].get("Labels", {})
                 if (labels.get("com.docker.compose.project") != self.project
@@ -152,7 +155,7 @@ class HostOperation:
                 return
             if attempt + 1 < attempts:
                 time.sleep(10)
-        raise RuntimeError("exact thirteen-service health gate failed")
+        raise RuntimeError("exact release-service health gate failed")
 
     def verify_postgres(self):
         container = self.inspect("postgres")
@@ -191,8 +194,6 @@ class HostOperation:
                 raise ValueError("required host tool missing")
         self.command(["docker", "version", "--format", "{{.Server.Version}}"])
         self.command(["docker", "compose", "version", "--short"])
-        if self.inputs["operation"] != "rollback":
-            self.health(1)
         self.postgres_mount = self.verify_postgres()
         transition = self.state / "promotion.pending.json"
         self.pending_path = self.releases / "pending.env"
@@ -239,6 +240,9 @@ class HostOperation:
         self.env.update(self.baseline_env)
         baseline_release = self.current_record or {**self.roles["roles"]["current"], "registry": LEGACY_REGISTRY}
         references = image_manifest(baseline_release["image_manifest"], baseline_release["source_sha"], baseline_release["registry"])
+        self.services = services_for_registry(baseline_release["registry"])
+        if self.inputs["operation"] != "rollback":
+            self.health(1)
         for name, reference in references.items() if self.inputs["operation"] != "rollback" else []:
             container = self.inspect(name)
             image = strict_json(self.command(["docker", "image", "inspect", container["Image"]]))[0]
@@ -330,6 +334,7 @@ class HostOperation:
                                     "run_id": self.packet["run_id"], "run_attempt": self.packet["run_attempt"]}
         references = image_manifest(self.target["image_manifest"], self.target["source_sha"], self.target["registry"])
         self.references = references
+        self.services = services_for_registry(self.target["registry"])
         write_private(self.run / "target.env", metadata_text(self.target["metadata"]))
         self.command(["bash", str(self.run / "check-production-rollback.sh"), str(self.releases / "current.env"),
                       str(self.run / "target.env"), str(self.releases / "pending.env")])
@@ -540,7 +545,7 @@ class HostOperation:
         staged_base = self.run / "target-compose.yml"
         write_private(staged_base, base64.b64decode(configurations["docker-compose.prod.yml"]["base64"], validate=True))
         override = {"services": {name: {"image": reference} for name, reference in self.references.items()}}
-        for name in MIGRATIONS:
+        for name in (service + "-migrations" for service in self.services if service != "frontend"):
             override["services"][name] = {"image": self.references[name.removesuffix("-migrations")]}
         override["services"]["postgres"] = {"image": self.target["postgres_image"]}
         if self.target["registry"] == PUBLIC_REGISTRY:
@@ -574,7 +579,7 @@ class HostOperation:
         self.changed_definition_consumers = []
         self.changed_infrastructure_images = set()
         for name, service in config["services"].items():
-            if name in SERVICES or name in MIGRATIONS or name == "postgres":
+            if name in self.services or name.removesuffix("-migrations") in self.services or name == "postgres":
                 continue
             old = baseline["services"].get(name, {})
             if service != old:
@@ -599,7 +604,7 @@ class HostOperation:
                 path.chmod(0o644)
         consumers = set(self.changed_definition_consumers)
         for name, service in self.rendered_config["services"].items():
-            if name in SERVICES or name in MIGRATIONS:
+            if name in self.services or name.removesuffix("-migrations") in self.services:
                 continue
             for mount in service.get("volumes", []):
                 if mount.get("type") != "bind" or mount.get("target", "").startswith("/docker-entrypoint-initdb.d/"):
@@ -618,9 +623,10 @@ class HostOperation:
         body += " compose --project-directory " + shlex.quote(str(self.root)) + " -p " + shlex.quote(self.project) + ' "$@"\nfi\nexec ' + shlex.quote(docker) + ' "$@"\n'
         write_private(wrapper, body); wrapper.chmod(0o700)
         environment = {**self.env, "DOCKER_BIN": str(wrapper)}
-        self.command(["bash", str(self.run / "run-production-migrations.sh"), str(self.effective), str(self.releases / "current.env")],
+        self.command(["bash", str(self.run / "run-production-migrations.sh"), str(self.effective), str(self.releases / "current.env"),
+                      "legacy" if self.target["registry"] == LEGACY_REGISTRY else "source"],
                      env=environment, capture=False, timeout=1500)
-        self.compose("up", "-d", "--no-build", "--pull", "never", *SERVICES, capture=False, timeout=900)
+        self.compose("up", "-d", "--no-build", "--pull", "never", *self.services, capture=False, timeout=900)
         if self.changed_config_consumers:
             # A file bind keeps the old inode after atomic replacement. Recreate
             # exactly the selected configuration consumers after app readiness.
@@ -733,7 +739,7 @@ class HostOperation:
         return self.public_receipt()
 
     def public_receipt(self):
-        receipt = {"status": "PASS", "operation": self.inputs["operation"], "applications": 14, "health_services": 13}
+        receipt = {"status": "PASS", "operation": self.inputs["operation"], "applications": len(self.services), "health_services": len(self.services) - 1}
         if self.inputs["release"] == "normal-public-build":
             receipt.update(source_sha=self.target["source_sha"], version=self.packet["public_version"])
         return receipt

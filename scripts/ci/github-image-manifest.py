@@ -28,8 +28,8 @@ def collect(records, sha, names):
         if canonical != record or record["name"] in by_name:
             raise ValueError("stale, duplicate or inconsistent image record")
         by_name[record["name"]] = record
-    if set(by_name) != names or len(names) != 14:
-        raise ValueError("all 14 application images are required; no latest fallback")
+    if set(by_name) != names:
+        raise ValueError("all declared application images are required; no latest fallback")
     return {"schema_version": 1, "source_sha": sha, "images": [by_name[name] for name in sorted(names)]}
 
 

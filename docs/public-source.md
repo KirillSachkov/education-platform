@@ -8,16 +8,13 @@ initial snapshot. Deleting a file from this branch does not sanitize its history
 
 ## Demonstration data
 
-The embedded TrainerService and EducationContentService JSON resources contain
-small original examples. They demonstrate single choice, multiple choice, exact
-text and open text questions. The trainer includes FREE and PAID banks and a
-resolvable mock interview. The level test includes section scoring and thresholds.
-These examples are for local development, rather than professional assessment.
+The embedded EducationContentService JSON resource contains small original examples
+for the level test, including section scoring and thresholds. These examples support
+local development rather than professional assessment.
 
-The existing explicit `seed-trainer` and `seed-level-test` CLI commands load these
-resources. Application startup does not replace persisted questions. The level-test
-seeder preserves an existing quiz unless the operator explicitly supplies `--force`.
-Private content is maintained through the existing authoring APIs and database.
+The explicit `seed-level-test` CLI command loads this resource. Application startup
+does not replace persisted questions. The seeder preserves an existing quiz unless
+an operator supplies `--force`. Private content stays in the database and authoring APIs.
 The landing page uses clearly marked fictional testimonials with no personal handles.
 
 The FileService video fixture is generated from a solid color and silence:

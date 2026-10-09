@@ -181,16 +181,5 @@
     <Folder Name="/Shared/Navigation/">
         <Project Path="Shared/Navigation/Navigation.csproj" />
     </Folder>
-    <Folder Name="/TrainerService/" />
-    <Folder Name="/TrainerService/src/">
-        <Project Path="TrainerService/src/TrainerService.Contracts/TrainerService.Contracts.csproj" />
-        <Project Path="TrainerService/src/TrainerService.Core/TrainerService.Core.csproj" />
-        <Project Path="TrainerService/src/TrainerService.Domain/TrainerService.Domain.csproj" />
-        <Project Path="TrainerService/src/TrainerService.Infrastructure.Postgres/TrainerService.Infrastructure.Postgres.csproj" />
-        <Project Path="TrainerService/src/TrainerService.Web/TrainerService.Web.csproj" />
-    </Folder>
-    <Folder Name="/TrainerService/tests/">
-        <Project Path="TrainerService/tests/TrainerService.IntegrationTests/TrainerService.IntegrationTests.csproj" />
-    </Folder>
 
 </Solution>

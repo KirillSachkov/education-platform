@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using AccessService.Contracts.Plans.Requests;
 using AccessService.Domain;
@@ -215,7 +215,7 @@ public sealed class CreatePlanTests : AccessServiceTestsBase
     }
 
     [Fact]
-    public async Task Author_creates_subscription_plan_with_recurring_interval()
+    public async Task Retired_subscription_plan_is_rejected_even_with_valid_recurring_interval()
     {
         // #614: SUBSCRIPTION plan threads RecurringIntervalDays into PlanTerm.Recurring.
         CreatePlanRequest request = new(
@@ -234,15 +234,10 @@ public sealed class CreatePlanTests : AccessServiceTestsBase
 
         HttpResponseMessage response = await AppHttpClient.PostAsJsonAsync("/access/plans/", request);
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-        await ExecuteInDbAsync(async db =>
-        {
-            Plan plan = await db.Plans.SingleAsync();
-            Assert.Equal(PlanTier.SUBSCRIPTION, plan.Tier);
-            Assert.Equal(PlanTermKind.RECURRING, plan.Term.Kind);
-            Assert.Equal(30, plan.Term.RecurringIntervalDays);
-        });
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Envelope? envelope = await response.Content.ReadFromJsonAsync<Envelope>();
+        Assert.Contains(envelope!.Error!.Messages, m => m.Code == "plan.offer.retired");
+        await ExecuteInDbAsync(async db => Assert.Empty(await db.Plans.ToListAsync()));
     }
 
     [Fact]
@@ -269,6 +264,6 @@ public sealed class CreatePlanTests : AccessServiceTestsBase
         Envelope? envelope = await response.Content.ReadFromJsonAsync<Envelope>();
         Assert.Contains(
             envelope!.Error!.Messages,
-            m => string.Equals(m.Code, "plan.subscription.requires_recurring_term", StringComparison.Ordinal));
+            m => string.Equals(m.Code, "plan.offer.retired", StringComparison.Ordinal));
     }
 }

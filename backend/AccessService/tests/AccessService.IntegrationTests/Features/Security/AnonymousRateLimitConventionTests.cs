@@ -1,4 +1,4 @@
-using AccessService.Core.Features.Billing.UseCases;
+﻿using AccessService.Core.Features.Billing.UseCases;
 using AccessService.IntegrationTests.Infrastructure;
 using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.AspNetCore.RateLimiting;
@@ -22,7 +22,6 @@ public sealed class AnonymousRateLimitConventionTests : AccessServiceTestsBase
         [
             "/access/billing-config",
             "/access/invites/{token}/preview",
-            "/access/trainer-pro/offer",
             "/access/plans/public",
             "/access/plans/by-slug/{slug}",
         ];

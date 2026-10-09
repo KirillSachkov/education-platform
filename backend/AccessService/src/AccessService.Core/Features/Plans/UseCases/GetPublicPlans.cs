@@ -1,4 +1,4 @@
-using AccessService.Contracts.Plans.Dtos;
+﻿using AccessService.Contracts.Plans.Dtos;
 using AccessService.Core.Database;
 using AccessService.Domain;
 using Core.Abstractions;
@@ -48,8 +48,7 @@ public sealed class GetPublicPlansHandler
         GetPublicPlansQuery query,
         CancellationToken cancellationToken = default)
     {
-        // Catalog isolation (#674): TRAINER-scoped offers (Trainer Pro subscription) never appear
-        // in the platform pricing catalog — they're sold only via /access/trainer-pro/*.
+        // Historical retired offers stay isolated from the platform catalog.
         IReadOnlyList<Plan> plans = await _plans.GetManyByAsync(
             p => p.IsPublic && p.IsActive && p.Scope == PlanScope.PLATFORM,
             cancellationToken);

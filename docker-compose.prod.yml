@@ -150,43 +150,6 @@ services:
           memory: 256M
     restart: always
 
-  # ─── Trainer Service (interview-prep drill trainer — Ф1: no Wolverine/Redis) ───
-  # Included in EXPECTED_SERVICES in .gitlab-ci.yml: nginx routes /api/trainer/*
-  # directly to this container, so a stopped trainer-service is a public 502.
-  trainer-service-migrations:
-    container_name: trainer-service-migrations
-    image: ${DOCKER_REGISTRY:?DOCKER_REGISTRY must be set}trainer-service:${IMAGE_TAG:?IMAGE_TAG must be set}
-    <<: *migration
-    environment:
-      CONNECTIONSTRINGS__DATABASE: ${TRAINER_DB_CONNECTION}
-
-  trainer-service:
-    container_name: trainer-service
-    image: ${DOCKER_REGISTRY:?DOCKER_REGISTRY must be set}trainer-service:${IMAGE_TAG:?IMAGE_TAG must be set}
-    <<: *backend-env
-    depends_on:
-      postgres:
-        condition: service_healthy
-      trainer-service-migrations:
-        condition: service_completed_successfully
-    environment:
-      ASPNETCORE_URLS: http://+:8013
-      ASPNETCORE_ENVIRONMENT: Production
-      OTEL_SERVICE_NAME: TrainerService
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
-      CONNECTIONSTRINGS__DATABASE: ${TRAINER_DB_CONNECTION}
-    healthcheck:
-      <<: *healthcheck
-      test: ["CMD", "dotnet", "healthcheck/healthcheck.dll", "8013"]
-    logging: *logging
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-          cpus: "0.50"
-        reservations:
-          memory: 256M
-    restart: always
 
   # ─── Comment Service ───
   comment-service-migrations:

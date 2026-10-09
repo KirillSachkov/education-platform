@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using AccessService.Contracts.Plans.Dtos;
 using AccessService.Contracts.Plans.Requests;
@@ -255,32 +255,11 @@ public sealed class GetPublicPlansTests : AccessServiceTestsBase
     [Fact]
     public async Task TRAINER_PRO_SUBSCRIPTION_plan_is_excluded_from_public_catalog() // #674 — supersedes #614
     {
-        // #674: a published SUBSCRIPTION plan (cap TRAINER_PRO → Scope=TRAINER) is the trainer
-        // subscription. It MUST NOT appear in the platform pricing catalog — only a sibling
-        // PLATFORM plan does. (Trainer offer is served by GET /access/trainer-pro/offer instead.)
+        // A persisted historical trainer offer remains hidden from the platform catalog.
         Guid platformPlanId = await CreatePlanAsync("platform-full", "Полный доступ");
         await PublishAsync(platformPlanId);
 
-        CreatePlanRequest trainerRequest = new(
-            Tier: nameof(PlanTier.SUBSCRIPTION),
-            Slug: "trainer-pro",
-            DisplayName: "Тренажёр Pro",
-            ShortDescription: "Подписка на тренажёр собеседований",
-            LongDescription: null,
-            CoverFileId: null,
-            Features: null,
-            PriceCents: 49_000,
-            Currency: "RUB",
-            CourseIds: [],
-            DisplayOrder: 0,
-            RecurringIntervalDays: 30);
-
-        HttpResponseMessage createResponse = await AppHttpClient.PostAsJsonAsync(
-            "/access/plans/", trainerRequest);
-        createResponse.EnsureSuccessStatusCode();
-        Envelope<Guid>? created = await createResponse.Content.ReadFromJsonAsync<Envelope<Guid>>();
-        Assert.NotNull(created);
-        await PublishAsync(created.Result);
+        Guid trainerPlanId = await SeedLegacyTrainerPlanAsync("trainer-pro");
 
         RemoveAuthentication();
 
@@ -295,7 +274,7 @@ public sealed class GetPublicPlansTests : AccessServiceTestsBase
         // Only the PLATFORM plan comes back — the TRAINER_PRO subscription is filtered out.
         PublicPlanDto plan = Assert.Single(envelope.Result!);
         Assert.Equal(platformPlanId, plan.Id);
-        Assert.DoesNotContain(envelope.Result!, p => p.Id == created.Result);
+        Assert.DoesNotContain(envelope.Result!, p => p.Id == trainerPlanId);
     }
 
     [Fact]
@@ -303,26 +282,7 @@ public sealed class GetPublicPlansTests : AccessServiceTestsBase
     {
         // The trainer subscription has a slug but must not be reachable through the public
         // platform pricing detail page (/access/plans/by-slug/{slug}).
-        CreatePlanRequest trainerRequest = new(
-            Tier: nameof(PlanTier.SUBSCRIPTION),
-            Slug: "trainer-pro-detail",
-            DisplayName: "Тренажёр Pro",
-            ShortDescription: null,
-            LongDescription: null,
-            CoverFileId: null,
-            Features: null,
-            PriceCents: 49_000,
-            Currency: "RUB",
-            CourseIds: [],
-            DisplayOrder: 0,
-            RecurringIntervalDays: 30);
-
-        HttpResponseMessage createResponse = await AppHttpClient.PostAsJsonAsync(
-            "/access/plans/", trainerRequest);
-        createResponse.EnsureSuccessStatusCode();
-        Envelope<Guid>? created = await createResponse.Content.ReadFromJsonAsync<Envelope<Guid>>();
-        Assert.NotNull(created);
-        await PublishAsync(created.Result);
+        await SeedLegacyTrainerPlanAsync("trainer-pro-detail");
 
         RemoveAuthentication();
 
@@ -382,4 +342,18 @@ public sealed class GetPublicPlansTests : AccessServiceTestsBase
         Assert.Contains(plan.IncludedCourses!, c => c.Id == courseAId && c.Title == "Курс A");
         Assert.Contains(plan.IncludedCourses!, c => c.Id == courseBId && c.Title == "Курс B");
     }
+    private async Task<Guid> SeedLegacyTrainerPlanAsync(string slug)
+    {
+        Plan plan = Plan.Create(CurrentUserId, PlanTier.SUBSCRIPTION, PlanSlug.Of(slug).Value,
+            PlanDisplayName.Of("Legacy subscription").Value, [], null, term: PlanTerm.Recurring(30)).Value;
+        plan.UpdatePrice(49_000, "RUB");
+        plan.Publish();
+        await ExecuteInDbAsync(async db =>
+        {
+            db.Plans.Add(plan);
+            await db.SaveChangesAsync();
+        });
+        return plan.Id;
+    }
+
 }
