@@ -40,6 +40,8 @@ node --experimental-strip-types scripts/validate-legal-assets.mjs
 Она не устанавливает законность редакции, соответствие PDF тексту или право выпуска.
 Оператор отдельно сверяет hashes с утверждённым выпуском, оба registry, текущие и
 архивные URLs. Pending HEAD не означает, что владелец разрешил новую оферту.
+Подготовка приватного набора и её ограничения описаны в
+[legal-runtime-preparation.md](legal-runtime-preparation.md).
 
 ## Приватные файлы в runtime
 
