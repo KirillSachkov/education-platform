@@ -17,6 +17,7 @@ import { userProgressQueryOptions } from "@/entities/user-progress";
 import { BookmarkStatusProvider, BookmarkToggleButton } from "@/entities/bookmark";
 import { useCourseId, useCourseSlug } from "@/shared/providers/course-id-provider";
 import { routes } from "@/shared/config/routes";
+import { getErrorMessage } from "@/shared/api";
 import { useDebouncedValue } from "@/shared/hooks";
 import { cn } from "@/shared/lib/css";
 import {
@@ -48,6 +49,7 @@ export default function CourseKnowledgeBasePage() {
   const trimmedSearch = search.trim();
   const {
     data,
+    error,
     isLoading,
     isError,
     refetch,
@@ -181,8 +183,10 @@ export default function CourseKnowledgeBasePage() {
       {isError ? (
         <Card role="alert">
           <CardContent className="py-8 space-y-3">
-            <p>Не удалось загрузить материалы. Попробуйте ещё раз.</p>
-            <Button onClick={() => void refetch()}>Повторить</Button>
+            <p>{getErrorMessage(error, "Не удалось загрузить материалы. Попробуйте ещё раз.")}</p>
+            <Button className="min-touch min-h-11" onClick={() => void refetch()}>
+              Повторить
+            </Button>
           </CardContent>
         </Card>
       ) : isLoading ? (

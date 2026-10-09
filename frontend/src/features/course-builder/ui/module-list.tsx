@@ -381,7 +381,6 @@ export function ModuleList({
 
       {editModuleData && (
         <EditModuleDialog
-          moduleId={editModuleData.moduleId}
           open={!!editModuleData}
           onOpenChange={(open) => {
             if (!open) setEditModuleData(null);

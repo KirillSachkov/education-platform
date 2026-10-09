@@ -16,7 +16,6 @@ import { Controller, useForm } from "react-hook-form";
 import { moduleSchema, type ModuleFormData } from "../model/schemas";
 
 type Props = {
-  moduleId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: {
@@ -32,7 +31,6 @@ type Props = {
 };
 
 export function EditModuleDialog({
-  moduleId: _moduleId,
   open,
   onOpenChange,
   onSubmit: onSubmitProp,

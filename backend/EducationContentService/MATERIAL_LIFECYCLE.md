@@ -24,7 +24,7 @@
 | INV-4 | `module_items(module, material)` для модуля курса C требует `course_materials(C, material)`. | attach auto-create, detach cascade |
 | INV-5 | Title уникален среди non-DRAFT материалов по действующему filtered index/repository contract. | DB index + repository check |
 | INV-6 | `PUBLISHED` материал всегда имеет `Content != null` или `VideoId != null`; update не может обойти publish-проверку. | domain aggregate |
-| INV-7 | Hard delete атомарно удаляет ECS-ссылки (`module_items`, `course_materials`, `collection_items`, issue JSON refs, roadmap refs) и публикует `material.hard_deleted`. | explicit transaction in delete handler |
+| INV-7 | Hard delete атомарно удаляет ECS-ссылки (`module_items`, `course_materials`, `collection_items`, issue JSON refs) и публикует `material.hard_deleted`. | explicit transaction in delete handler |
 | INV-8 | Материал можно разместить в нескольких модулях; feed курса дедуплицирует его через `course_materials`. | schema + read queries |
 | INV-9 | `(course_id, material_id)` уникален; повторный attach идемпотентен. | unique index + handler |
 | INV-10 | Detach последнего курса не меняет `AccessType`; он каскадно удаляет module placement и публикует `material.access_changed`, чтобы orphan plan-tags были пересчитаны. | detach handler + outbox |
@@ -68,7 +68,7 @@
 ### Hard delete
 
 - Удаление выполняется одной ECS-транзакцией вместе с outbox event.
-- Consumers очищают Search, Progress, Comments, File assets и Redis access projection
+- Consumers очищают Progress, Comments, File assets и Redis access projection
   идемпотентно; save failure должен приводить к retry/DLQ, а не acknowledgement.
 - FileService использует revision/tombstone protocol: событие старой revision не удаляет новый asset.
 
