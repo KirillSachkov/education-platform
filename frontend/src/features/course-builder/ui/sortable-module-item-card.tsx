@@ -24,7 +24,6 @@ import { Icons } from "@/shared/ui/icons";
 import { pluralize } from "@/shared/lib/pluralize";
 import { Check, GripVertical, MoreHorizontal, Pencil, Sparkles, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { ArtifactBadges } from "./artifact-badges";
 import { ReorderArrows } from "./reorder-arrows";
 import {
   MaterialAccessTypeSubmenu,
@@ -176,14 +175,6 @@ export function SortableModuleItemCard({
         <span className="hidden sm:inline text-[10px] tabular-nums text-muted-foreground/70 shrink-0">
           {item.questionsCount} {pluralize(item.questionsCount, "вопрос", "вопроса", "вопросов")}
         </span>
-      )}
-
-      {isMaterial && (
-        <ArtifactBadges
-          hasTranscript={item.hasTranscript}
-          hasTimecodes={item.hasTimecodes}
-          hasSummary={item.hasSummary}
-        />
       )}
 
       <span className="hidden sm:inline-flex">

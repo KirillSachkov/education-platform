@@ -1,4 +1,4 @@
-using FileService.Core.Services;
+﻿using FileService.Core.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -14,7 +14,7 @@ public static class DependencyInjectionExtensions
 {
     public static IServiceCollection AddKinescope(this IServiceCollection services, IConfiguration configuration)
     {
-        services.Configure<KinescopeOptions>(configuration.GetSection(KinescopeOptions.SectionName));
+        services.Configure<KinescopeOptions>(configuration.GetSection(KinescopeOptions.SECTION_NAME));
 
         services.AddHttpClient<IVideoProvider, KinescopeApiClient>()
             .AddPolicyHandler((sp, _) => GetRetryPolicy(sp.GetRequiredService<IOptions<KinescopeOptions>>().Value))

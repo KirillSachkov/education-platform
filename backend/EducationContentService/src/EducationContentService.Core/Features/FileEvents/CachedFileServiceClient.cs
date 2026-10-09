@@ -1,4 +1,4 @@
-using FileService.Contracts.Assets;
+﻿using FileService.Contracts.Assets;
 using FileService.Contracts.HttpCommunication;
 using Microsoft.Extensions.Caching.Hybrid;
 
@@ -86,11 +86,6 @@ internal sealed class CachedFileServiceClient : IFileServiceClient
 
         return Result.Success<GetVideoResponse?, Error>(cached);
     }
-
-    public Task<Result<GetVideoProcessingSourceResponse?, Error>> GetVideoProcessingSourceAsync(
-        Guid videoId,
-        CancellationToken cancellationToken)
-        => _inner.GetVideoProcessingSourceAsync(videoId, cancellationToken);
 
     public Task<UnitResult<Error>> UpdateChaptersAsync(
         Guid videoId,

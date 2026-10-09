@@ -1,7 +1,6 @@
 import { RequireDisplayNameGate } from "@/features/onboarding-profile";
 import { AppProviders } from "@/shared/providers/app-providers";
 import { AccessExpiredOverlay } from "@/widgets/access-expired-overlay";
-import { AiJobsTracker } from "@/widgets/ai-jobs-tracker";
 import { OnboardingOverlay } from "@/widgets/onboarding-overlay";
 
 export default function AppRouteLayout({
@@ -23,7 +22,6 @@ export default function AppRouteLayout({
       <OnboardingOverlay />
       <AccessExpiredOverlay />
       <RequireDisplayNameGate />
-      <AiJobsTracker />
     </AppProviders>
   );
 }

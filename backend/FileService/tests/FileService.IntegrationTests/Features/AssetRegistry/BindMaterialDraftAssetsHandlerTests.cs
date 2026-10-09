@@ -1,4 +1,4 @@
-using CSharpFunctionalExtensions;
+﻿using CSharpFunctionalExtensions;
 using FileService.Core.Features.AssetRegistry.IntegrationEvents;
 using FileService.Domain;
 using FileService.IntegrationTests.Infrastructure;
@@ -132,7 +132,6 @@ public sealed class BindMaterialDraftAssetsHandlerTests : FileServiceTestsBase
             ActorCanManageAnyAsset: true));
 
         Assert.Empty(OutboxCollector.OfType<FileAssetBound>());
-        Assert.Empty(OutboxCollector.OfType<VideoReadyForProcessing>());
         await ExecuteInDb(async db =>
         {
             MediaAsset video = await db.MediaAssets.SingleAsync(asset => asset.Id == videoId);

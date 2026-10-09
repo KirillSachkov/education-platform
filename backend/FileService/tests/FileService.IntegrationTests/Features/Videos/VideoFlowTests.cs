@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using FileService.Contracts.Assets;
 using FileService.Contracts.Dtos;
@@ -66,7 +66,7 @@ public sealed class VideoFlowTests : FileServiceTestsBase
     }
 
     [Fact]
-    public async Task ReconcileVideos_PublishesVideoReadyOnlyAfterMaterialBindingConfirmation()
+    public async Task ReconcileVideos_ConfirmsMaterialBindingWithoutProcessingEvents()
     {
         InitiateVideoUploadResponse initiateResult = await InitiateVideoUploadAsync();
 
@@ -76,18 +76,19 @@ public sealed class VideoFlowTests : FileServiceTestsBase
         VideoReconciliationService service = scope.ServiceProvider.GetRequiredService<VideoReconciliationService>();
         await service.ReconcileVideosAsync(CancellationToken.None);
 
-        Assert.Empty(OutboxCollector.OfType<VideoReadyForProcessing>());
-        await ConfirmBindingAsync(initiateResult.AssetId);
-
-        VideoReadyForProcessing published = OutboxCollector.OfType<VideoReadyForProcessing>().Single();
-        Assert.Equal(initiateResult.AssetId, published.AssetId);
-        Assert.Equal("material_video", published.UsageType);
-        Assert.Equal("material", published.TargetEntityType);
-        Assert.NotEqual(Guid.Empty, published.AssetVersion);
+        OutboxCollector.Clear();
+        long revision = await ConfirmBindingAsync(initiateResult.AssetId);
+        Assert.Empty(OutboxCollector.Messages);
+        await ExecuteInDb(async db =>
+        {
+            MediaAsset asset = await db.MediaAssets.SingleAsync(x => x.Id == initiateResult.AssetId);
+            Assert.Equal(AssetStatus.READY, asset.Status);
+            Assert.Equal(revision, asset.ConfirmedBindingRevision);
+        });
     }
 
     [Fact]
-    public async Task ReconcileVideos_DoesNotPublishVideoReady_ForCourseVideo()
+    public async Task ReconcileVideos_PublishesBinding_ForCourseVideo()
     {
         InitiateVideoUploadRequest request = new(
             FileName: "course-intro.mp4",
@@ -104,9 +105,7 @@ public sealed class VideoFlowTests : FileServiceTestsBase
         VideoReconciliationService service = scope.ServiceProvider.GetRequiredService<VideoReconciliationService>();
         await service.ReconcileVideosAsync(CancellationToken.None);
 
-        // course_video → FileAssetBound публикуется, но авто-обработка только для material_video.
         Assert.NotEmpty(OutboxCollector.OfType<FileAssetBound>());
-        Assert.Empty(OutboxCollector.OfType<VideoReadyForProcessing>());
     }
 
     [Fact]
@@ -132,7 +131,6 @@ public sealed class VideoFlowTests : FileServiceTestsBase
         Assert.Equal(1, await reconciliation.ReconcileVideosAsync(CancellationToken.None));
 
         long secondRevision = await GetBindingRevisionAsync(second.AssetId);
-        Assert.Empty(OutboxCollector.OfType<VideoReadyForProcessing>());
         await InvokeMessageAndWaitAsync(new FileAssetBindingConfirmed(second.AssetId, secondRevision));
         await InvokeMessageAndWaitAsync(new FileAssetDetached(first.AssetId, firstRevision));
 
@@ -150,7 +148,7 @@ public sealed class VideoFlowTests : FileServiceTestsBase
     }
 
     [Fact]
-    public async Task ReconcileVideos_TwoPendingVideos_ProcessesOnlyConfirmedSelection()
+    public async Task ReconcileVideos_TwoPendingVideos_KeepsOnlyConfirmedSelection()
     {
         Guid materialId = Guid.NewGuid();
         InitiateVideoUploadResponse first = await InitiateVideoForMaterialAsync(materialId, "first-pending.mp4");
@@ -164,7 +162,6 @@ public sealed class VideoFlowTests : FileServiceTestsBase
 
         long firstRevision = await GetBindingRevisionAsync(first.AssetId);
         long secondRevision = await GetBindingRevisionAsync(second.AssetId);
-        Assert.Empty(OutboxCollector.OfType<VideoReadyForProcessing>());
         await InvokeMessageAndWaitAsync(new FileAssetBindingConfirmed(second.AssetId, secondRevision));
         await InvokeMessageAndWaitAsync(new FileAssetDetached(first.AssetId, firstRevision));
 
@@ -179,9 +176,6 @@ public sealed class VideoFlowTests : FileServiceTestsBase
         });
         FileAssetDeleted deleted = Assert.Single(OutboxCollector.OfType<FileAssetDeleted>());
         Assert.Equal(first.AssetId, deleted.AssetId);
-        VideoReadyForProcessing ready =
-            Assert.Single(OutboxCollector.OfType<VideoReadyForProcessing>());
-        Assert.Equal(second.AssetId, ready.AssetId);
     }
 
     [Fact]
@@ -213,7 +207,6 @@ public sealed class VideoFlowTests : FileServiceTestsBase
         });
 
         Assert.Empty(OutboxCollector.OfType<FileAssetDeleted>());
-        Assert.Empty(OutboxCollector.OfType<VideoReadyForProcessing>());
     }
 
     [Fact]
@@ -327,7 +320,7 @@ public sealed class VideoFlowTests : FileServiceTestsBase
     }
 
     [Fact]
-    public async Task ReconcileVideos_LowerConfirmedRevisionStillPublishesReady()
+    public async Task ReconcileVideos_LowerConfirmedRevisionStillPublishesBinding()
     {
         Guid materialId = Guid.NewGuid();
         InitiateVideoUploadResponse video =
@@ -349,12 +342,12 @@ public sealed class VideoFlowTests : FileServiceTestsBase
             scope.ServiceProvider.GetRequiredService<VideoReconciliationService>();
         await reconciliation.ReconcileVideosAsync(CancellationToken.None);
 
-        VideoReadyForProcessing ready = Assert.Single(OutboxCollector.OfType<VideoReadyForProcessing>());
-        Assert.Equal(video.AssetId, ready.AssetId);
+        FileAssetBound bound = Assert.IsType<FileAssetBound>(Assert.Single(OutboxCollector.Messages));
+        Assert.Equal(video.AssetId, bound.AssetId);
     }
 
     [Fact]
-    public async Task ReconcileVideos_DetachedLowerRevisionDoesNotPublishReady()
+    public async Task ReconcileVideos_DetachedLowerRevisionPreservesDetachBoundary()
     {
         Guid materialId = Guid.NewGuid();
         InitiateVideoUploadResponse video =
@@ -375,7 +368,6 @@ public sealed class VideoFlowTests : FileServiceTestsBase
             scope.ServiceProvider.GetRequiredService<VideoReconciliationService>();
         await reconciliation.ReconcileVideosAsync(CancellationToken.None);
 
-        Assert.Empty(OutboxCollector.OfType<VideoReadyForProcessing>());
         await ExecuteInDb(async db =>
         {
             MediaAsset asset = await db.MediaAssets.SingleAsync(item => item.Id == video.AssetId);

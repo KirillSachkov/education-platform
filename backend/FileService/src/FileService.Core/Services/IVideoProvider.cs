@@ -1,4 +1,4 @@
-namespace FileService.Core.Services;
+﻿namespace FileService.Core.Services;
 
 public sealed record VideoUploadInitResult(
     string ExternalAssetId,
@@ -12,13 +12,6 @@ public sealed record VideoProviderAssetInfo(
     double? Duration,
     int? Width,
     int? Height);
-
-public sealed record VideoProcessingSourceInfo(
-    string ExternalAssetId,
-    string SourceType,
-    string Url,
-    DateTime ExpiresAt,
-    double? DurationSeconds);
 
 public sealed record VideoProviderChapter(
     string Id,
@@ -40,10 +33,6 @@ public interface IVideoProvider
 
     Task<Result<IReadOnlyDictionary<string, VideoProviderAssetInfo>, Error>> GetStatusesBatchAsync(
         IReadOnlyList<string> externalAssetIds,
-        CancellationToken cancellationToken = default);
-
-    Task<Result<VideoProcessingSourceInfo, Error>> GetProcessingSourceAsync(
-        string externalAssetId,
         CancellationToken cancellationToken = default);
 
     Task<Result<IReadOnlyList<VideoProviderChapter>, Error>> GetChaptersAsync(

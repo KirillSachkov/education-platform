@@ -22,7 +22,6 @@ SERVICES = (
     "CommentService",
     "EducationContentService",
     "FileService",
-    "MaterialProcessingService",
     "NotificationService",
     "ProgressService",
     "TelegramBotService",

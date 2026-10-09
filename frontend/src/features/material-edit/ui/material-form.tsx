@@ -30,7 +30,7 @@ import { MaterialPreviewUpload } from "./material-preview-upload";
 import { MATERIAL_KINDS, materialFormSchema, type MaterialFormValues } from "../model/schemas";
 import { useFormAutosave, type AutosaveStatus } from "../model/use-form-autosave";
 import { useMediaAutosave } from "../model/use-media-autosave";
-import { VideoAiProcessingPanel } from "./video-ai-processing-panel";
+import { VideoChaptersEditor } from "./video-chapters-editor";
 
 const MarkdownEditor = dynamic(
   () =>
@@ -515,6 +515,7 @@ export function MaterialForm({
             <Icons.film size={15} className="text-muted-foreground" />
             <Label>Видео</Label>
           </div>
+          {/* eslint-disable-next-line react-hooks/refs -- The slot passes these callbacks to upload events; it does not invoke them during render. */}
           {renderVideoUpload?.({
             entityId: materialId ?? null,
             entityType: EntityTypes.MATERIAL,
@@ -541,13 +542,7 @@ export function MaterialForm({
         </div>
       </div>
 
-      {videoAssetId && (
-        <VideoAiProcessingPanel
-          videoId={videoAssetId}
-          materialId={materialId ?? null}
-          hasMaterialContent={!!form.watch("content")?.trim()}
-        />
-      )}
+      {videoAssetId && <VideoChaptersEditor videoId={videoAssetId} />}
 
       {/* Авторское «Описание» отдельно от content: content используется как конспект. */}
       <div className="flex flex-col gap-2">
@@ -611,6 +606,7 @@ export function MaterialForm({
       </div>
 
       {/* Блок привязки квиза «Проверь себя» (#494) — рендерится страницей через слот. */}
+      {/* eslint-disable-next-line react-hooks/refs -- The slot passes this callback to quiz selection events; it does not invoke it during render. */}
       {renderQuizSection?.({ quizId, onQuizIdChange: handleQuizIdChange })}
 
       {!hideSubmitButton && (

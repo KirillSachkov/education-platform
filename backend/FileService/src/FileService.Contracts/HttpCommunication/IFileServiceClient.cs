@@ -1,14 +1,10 @@
-using FileService.Contracts.Assets;
+﻿using FileService.Contracts.Assets;
 
 namespace FileService.Contracts.HttpCommunication;
 
 public interface IFileServiceClient
 {
     Task<Result<GetVideoResponse?, Error>> GetVideoAsync(Guid videoId, CancellationToken cancellationToken);
-
-    Task<Result<GetVideoProcessingSourceResponse?, Error>> GetVideoProcessingSourceAsync(
-        Guid videoId,
-        CancellationToken cancellationToken);
 
     Task<UnitResult<Error>> UpdateChaptersAsync(
         Guid videoId,

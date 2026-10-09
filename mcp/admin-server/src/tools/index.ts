@@ -58,6 +58,7 @@ import {
   eduCollectionBulkSetItemsAccess,
 } from './collections.js';
 import { eduFileUpload, eduDraftAssetsBind } from './files.js';
+import { eduVideoSubtitlesExport, eduModuleTranscriptsExport } from './transcripts.js';
 import {
   eduProjectDetail,
   eduProjectUpdate,
@@ -184,6 +185,8 @@ export const allTools: ReadonlyArray<ToolDefinition<any, any>> = [
   eduMaterialUpdate,
   eduMaterialArchive,
   eduMaterialPublish,
+  eduVideoSubtitlesExport,
+  eduModuleTranscriptsExport,
   // Collections
   eduCollectionDetail,
   eduCollectionSectionAdd,
@@ -226,7 +229,6 @@ export const allTools: ReadonlyArray<ToolDefinition<any, any>> = [
   // Bulk review-prompt coverage (#356): which tasks still lack prompts
   eduProjectReviewCoverage,
   eduCourseReviewCoverage,
-  // Tags: curate / dedupe the tag vocabulary (list / merge / rename / delete)
   // Plan home pins + onboarding bulk-reset (epic #397)
   homePinsList,
   homePinsAdd,
