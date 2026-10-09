@@ -229,7 +229,6 @@ export const allTools: ReadonlyArray<ToolDefinition<any, any>> = [
   // Bulk review-prompt coverage (#356): which tasks still lack prompts
   eduProjectReviewCoverage,
   eduCourseReviewCoverage,
-  // Tags: curate / dedupe the tag vocabulary (list / merge / rename / delete)
   // Plan home pins + onboarding bulk-reset (epic #397)
   homePinsList,
   homePinsAdd,

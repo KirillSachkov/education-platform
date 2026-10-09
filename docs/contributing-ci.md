@@ -155,7 +155,7 @@ local script fixtures do not provide this evidence.
 3. Read main branch protection: strict `required-checks` bound to app `15368`,
    administrators enforced, PRs required with zero human approvals, no force push
    or deletion. Confirm the first zero-parent main run selects every class.
-4. On the exact trusted main run, confirm all 12 image jobs and the final manifest
+4. On the exact trusted main run, confirm all 10 image jobs and the final manifest
    pass. Download its bounded manifest and inspect it:
 
    ```bash
@@ -163,13 +163,13 @@ local script fixtures do not provide this evidence.
      --name image-manifest-<GitHub-SHA> --dir /tmp/image-acceptance
    jq -e --arg sha '<GitHub-SHA>' \
      '.source_sha == $sha and (.images | length == 10) and
-      ([.images[].name] | unique | length == 12) and
+      ([.images[].name] | unique | length == 10) and
       all(.images[]; .source_sha == $sha and (.digest | test("^sha256:[0-9a-f]{64}$")))' \
      /tmp/image-acceptance/image-manifest.json
    ```
 
 5. Read every new GHCR package's visibility and digest metadata with the owner API.
-   Confirm all 12 are public. Independently pull each digest using an empty Docker
+   Confirm all 10 are public. Independently pull each digest using an empty Docker
    credential directory:
 
    ```bash
