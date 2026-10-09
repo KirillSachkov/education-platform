@@ -1,8 +1,9 @@
-using ProgressService.Core.Abstractions;
+﻿using ProgressService.Core.Abstractions;
 using Shared.Messaging.IntegrationEvents.Education.Events;
 
 namespace ProgressService.Core.Features.Lifecycle.IntegrationEvents;
 
+/// <summary>Removes retained material progress and bookmarks after a hard delete.</summary>
 /// <remarks>
 ///     Попытки квизов НЕ каскадятся (ST-13 #493): квиз — standalone-сущность, переиспользуемая
 ///     несколькими материалами; его попытки чистит <see cref="QuizHardDeletedHandler"/> на
@@ -14,7 +15,6 @@ public sealed class MaterialHardDeletedHandler
     private readonly IAnonymousMaterialViewRepository _anonymousMaterialViewRepository;
     private readonly IModuleItemProgressRepository _moduleItemProgressRepository;
     private readonly IMaterialBookmarkRepository _bookmarkRepository;
-    private readonly IMaterialNoteRepository _materialNoteRepository;
     private readonly ILogger<MaterialHardDeletedHandler> _logger;
 
     public MaterialHardDeletedHandler(
@@ -22,14 +22,12 @@ public sealed class MaterialHardDeletedHandler
         IAnonymousMaterialViewRepository anonymousMaterialViewRepository,
         IModuleItemProgressRepository moduleItemProgressRepository,
         IMaterialBookmarkRepository bookmarkRepository,
-        IMaterialNoteRepository materialNoteRepository,
         ILogger<MaterialHardDeletedHandler> logger)
     {
         _materialViewRepository = materialViewRepository;
         _anonymousMaterialViewRepository = anonymousMaterialViewRepository;
         _moduleItemProgressRepository = moduleItemProgressRepository;
         _bookmarkRepository = bookmarkRepository;
-        _materialNoteRepository = materialNoteRepository;
         _logger = logger;
     }
 
@@ -47,16 +45,12 @@ public sealed class MaterialHardDeletedHandler
         int bookmarks = await _bookmarkRepository.DeleteByTargetEntityIdsAsync(
             [message.MaterialId], cancellationToken);
 
-        int notes = await _materialNoteRepository.DeleteByMaterialIdAsync(
-            message.MaterialId, cancellationToken);
-
         _logger.LogInformation(
-            "MaterialHardDeleted {MaterialId}: deleted {MaterialViews} material views, {AnonymousViews} anonymous views, {ModuleItems} module items, {Bookmarks} bookmarks, {Notes} notes",
+            "MaterialHardDeleted {MaterialId}: deleted {MaterialViews} material views, {AnonymousViews} anonymous views, {ModuleItems} module items, {Bookmarks} bookmarks",
             message.MaterialId,
             materialViews,
             anonymousViews,
             moduleItems,
-            bookmarks,
-            notes);
+            bookmarks);
     }
 }

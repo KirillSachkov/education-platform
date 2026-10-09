@@ -1,4 +1,4 @@
-namespace ContentAccess;
+﻿namespace ContentAccess;
 
 /// <summary>
 /// Иммутабельный набор grant-тегов пользователя. Хранит теги как <see cref="Tags"/>

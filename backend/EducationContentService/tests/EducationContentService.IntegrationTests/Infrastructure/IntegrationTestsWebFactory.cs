@@ -1,4 +1,4 @@
-using System.Data.Common;
+﻿using System.Data.Common;
 using System.Threading.RateLimiting;
 using Core.Database;
 using EducationContentService.Core.Database;
@@ -340,7 +340,7 @@ public class IntegrationTestsWebFactory : WebApplicationFactory<Program>, IAsync
             services.Configure<RateLimiterOptions>(options =>
             {
                 options.RejectionStatusCode = 429;
-                string[] policies = ["anonymous-read", "short-link-create"];
+                string[] policies = ["anonymous-read"];
                 foreach (string policy in policies)
                 {
                     options.AddPolicy(policy, _ => RateLimitPartition.GetNoLimiter(string.Empty));

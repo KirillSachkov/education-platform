@@ -1,10 +1,9 @@
-using Common;
+﻿using Common;
 using Microsoft.EntityFrameworkCore;
 using ProgressService.Domain.Bookmarks;
 using ProgressService.Domain.Enrollments;
 using ProgressService.Domain.Materials;
 using ProgressService.Domain.Modules;
-using ProgressService.Domain.Notes;
 using ProgressService.Domain.Quizzes;
 using ProgressService.IntegrationTests.Infrastructure;
 using Shared.Messaging.IntegrationEvents.Education.Events;
@@ -59,12 +58,8 @@ public class MaterialHardDeletedHandlerTests : ProgressServiceTestsBase
             MaterialBookmark bookmark = MaterialBookmark.Create(
                 userId, courseId, bookmarkRef).Value;
             db.MaterialBookmarks.Add(bookmark);
-
-            // Заметка на удаляемый материал и «соседняя» — на другой.
-            MaterialNote note = MaterialNote.Create(userId, materialId, "заметка").Value;
-            MaterialNote otherNote = MaterialNote.Create(userId, otherMaterialId, "другая").Value;
-            db.MaterialNotes.Add(note);
-            db.MaterialNotes.Add(otherNote);
+            db.MaterialBookmarks.Add(MaterialBookmark.Create(userId, courseId,
+                BookmarkEntityReference.Of(EntityType.Material, otherMaterialId).Value).Value);
 
             // Попытка квиза: квиз standalone (ST-13 #493) — удаление материала её НЕ трогает,
             // cleanup попыток идёт только через quiz.hard_deleted (QuizHardDeletedHandler).
@@ -106,15 +101,8 @@ public class MaterialHardDeletedHandlerTests : ProgressServiceTestsBase
                 x.EntityReference.Type == EntityType.Material
                 && x.EntityReference.Id == materialId));
         Assert.Equal(0, bookmarksForDeleted);
-
-        // Заметки удалены только для удаляемого материала
-        int notesForDeleted = await ExecuteInDb(db =>
-            db.MaterialNotes.CountAsync(x => x.MaterialId == materialId));
-        Assert.Equal(0, notesForDeleted);
-
-        int otherNotes = await ExecuteInDb(db =>
-            db.MaterialNotes.CountAsync(x => x.MaterialId == otherMaterialId));
-        Assert.Equal(1, otherNotes);
+        Assert.Equal(1, await ExecuteInDb(db => db.MaterialBookmarks.CountAsync(x =>
+            x.EntityReference.Type == EntityType.Material && x.EntityReference.Id == otherMaterialId)));
 
         // Попытки квизов переживают удаление материала: квиз standalone (ST-13 #493),
         // их cleanup — только на quiz.hard_deleted.

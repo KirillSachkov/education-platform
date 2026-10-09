@@ -12,6 +12,11 @@ apply. Drafts and materials from other courses are excluded. Locked published ca
 the metadata permitted by the material lifecycle; their preview is redacted. Missing access
 decisions are treated as denial. Searching never grants access to the material body.
 
+Roadmaps, short links, material notes and certificates have no active handlers, repositories
+or models. Separate corrective ECS and Progress migrations remove only their tables. Auth removes
+only the retired Roadmaps flag from author contracts and stored JSON; its earlier Leaderboard
+retirement remains a separate migration. Other author values and identity data remain intact.
+
 Bookmarks and course collections remain active. Course search does not filter collections or
 change collection progress. Legacy material detail routes remain available under their existing
 access checks, including links for purchased content. The global discovery showcase is retired.
@@ -27,9 +32,9 @@ approved release and recovery plan.
    Verify checksums and restore the exact backup in isolation before proceeding.
 3. Verify counts and representative access/progress flows for purchased courses, materials,
    homework, bookmarks and course collections in the restored database.
-4. Review a forward and rollback sequence. Apply corrective ECS/Progress migrations only during
+4. Review a forward and rollback sequence. Apply corrective ECS/Progress/Auth migrations only during
    the approved release; retain their old migration history. These migrations must not drop
-   bookmarks, collections, material content, grants or retained progress.
+   bookmarks, collections, material content, grants, retained progress or other author flags.
 5. Stop only the retired discovery consumers and Typesense during that approved operation.
    Verify the source inventory, course search, bookmark round-trip and collection progress.
 6. Review schema deletion separately after the recovery evidence and consumer checks pass.

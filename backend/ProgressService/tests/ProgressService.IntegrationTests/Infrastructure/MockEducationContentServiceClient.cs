@@ -1,4 +1,4 @@
-using Common;
+﻿using Common;
 using EducationContentService.Contracts;
 using CSharpFunctionalExtensions;
 using EducationContentService.Contracts.Courses;

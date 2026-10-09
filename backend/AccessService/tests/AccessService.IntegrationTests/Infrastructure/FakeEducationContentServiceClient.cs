@@ -1,4 +1,4 @@
-using CSharpFunctionalExtensions;
+﻿using CSharpFunctionalExtensions;
 using EducationContentService.Contracts;
 using EducationContentService.Contracts.Digest;
 using EducationContentService.Contracts.Courses;

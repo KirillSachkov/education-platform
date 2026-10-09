@@ -1,6 +1,6 @@
 # EducationContentService
 
-Owns courses, modules, materials, projects and issues with review specs, quizzes, collections, roadmaps, and short links in PostgreSQL schema `education`
+Owns courses, modules, materials, projects and issues with review specs, quizzes and course collections in PostgreSQL schema `education`
 (port 8001).
 
 ## Context routing
@@ -13,8 +13,8 @@ Cross-service backend rules come from [`../AGENTS.md`](../AGENTS.md).
 
 ECS is authoritative for content `AccessType` and writes per-resource Redis access tags
 (`access:public`, `authenticated`, `plan:all`, `plan:course:{id}`); AccessService owns user plan
-tags. It publishes `Education` lifecycle events and serves `/internal/` lookups for Progress,
-Search, and ownership, including the versioned view `education.comment_target_ownership_v1`.
+tags. It publishes `Education` lifecycle events and serves `/internal/` lookups for Progress
+and ownership, including the versioned view `education.comment_target_ownership_v1`.
 It confirms FileService media bindings with `FileAssetBindingConfirmed`.
 
 ## Entrypoint and verification

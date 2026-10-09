@@ -97,7 +97,7 @@ public sealed class GetAuthorSpaceBySlugHandler
         PropertyNameCaseInsensitive = true
     };
 
-    private static readonly AuthorSpaceFeatureFlagsDto _defaultFlags = new(false, false, false, true, false);
+    private static readonly AuthorSpaceFeatureFlagsDto _defaultFlags = new(false, false, false, false);
 
     private AuthorSpaceFeatureFlagsDto MapFlags(string? json)
     {

@@ -4,5 +4,4 @@ public sealed record AuthorSpaceFeatureFlagsDto(
     bool GitHubIntegration,
     bool PrReviews,
     bool AiAssistant,
-    bool Roadmaps,
     bool CustomLanding);

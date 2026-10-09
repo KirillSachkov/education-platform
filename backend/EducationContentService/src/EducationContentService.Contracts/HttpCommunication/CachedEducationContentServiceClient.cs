@@ -1,4 +1,4 @@
-using EducationContentService.Contracts.Courses;
+﻿using EducationContentService.Contracts.Courses;
 using EducationContentService.Contracts.Digest;
 using EducationContentService.Contracts.Issues;
 using EducationContentService.Contracts.Materials;

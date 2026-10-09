@@ -1,4 +1,4 @@
-using ContentAccess;
+﻿using ContentAccess;
 using EducationContentService.Core.Features.Materials.Queries;
 using CSharpFunctionalExtensions;
 using EducationContentService.Contracts;

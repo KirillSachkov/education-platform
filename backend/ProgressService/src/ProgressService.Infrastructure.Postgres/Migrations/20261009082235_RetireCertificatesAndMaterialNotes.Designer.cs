@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ProgressService.Infrastructure.Postgres;
@@ -11,9 +12,11 @@ using ProgressService.Infrastructure.Postgres;
 namespace ProgressService.Infrastructure.Postgres.Migrations
 {
     [DbContext(typeof(ProgressDbContext))]
-    partial class ProgressDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261009082235_RetireCertificatesAndMaterialNotes")]
+    partial class RetireCertificatesAndMaterialNotes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

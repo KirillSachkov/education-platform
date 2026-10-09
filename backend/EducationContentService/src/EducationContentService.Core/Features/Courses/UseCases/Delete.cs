@@ -1,4 +1,4 @@
-using ContentAccess;
+﻿using ContentAccess;
 using Core.Abstractions;
 using Core.Database;
 using EducationContentService.Core.Database;
@@ -9,7 +9,6 @@ using EducationContentService.Core.Features.CourseQuizzes;
 using EducationContentService.Core.Features.Materials;
 using EducationContentService.Core.Features.ProjectItems;
 using EducationContentService.Core.Features.Quizzes;
-using EducationContentService.Core.Features.Roadmaps;
 using EducationContentService.Domain.Collections;
 using EducationContentService.Domain.Courses;
 using EducationContentService.Domain.Materials;
@@ -54,7 +53,6 @@ public sealed class DeleteCourseHandler : ICommandHandler<Guid, DeleteCourseComm
     private readonly IOutboxService _outbox;
     private readonly IResourceAccessWriter _resourceAccessWriter;
     private readonly IUserGrantWriter _userGrantWriter;
-    private readonly RoadmapCleanupService _roadmapCleanup;
     private readonly HybridCache _cache;
     private readonly ILogger<DeleteCourseHandler> _logger;
     private readonly UserScopedData _userScopedData;
@@ -72,7 +70,6 @@ public sealed class DeleteCourseHandler : ICommandHandler<Guid, DeleteCourseComm
         IOutboxService outbox,
         IResourceAccessWriter resourceAccessWriter,
         IUserGrantWriter userGrantWriter,
-        RoadmapCleanupService roadmapCleanup,
         HybridCache cache,
         ILogger<DeleteCourseHandler> logger,
         UserScopedData userScopedData)
@@ -89,7 +86,6 @@ public sealed class DeleteCourseHandler : ICommandHandler<Guid, DeleteCourseComm
         _outbox = outbox;
         _resourceAccessWriter = resourceAccessWriter;
         _userGrantWriter = userGrantWriter;
-        _roadmapCleanup = roadmapCleanup;
         _cache = cache;
         _logger = logger;
         _userScopedData = userScopedData;
@@ -194,7 +190,6 @@ public sealed class DeleteCourseHandler : ICommandHandler<Guid, DeleteCourseComm
             }
         }
 
-        await _roadmapCleanup.DeleteCourseRoadmapAsync(course.Id, cancellationToken);
 
         await _coursesRepository.DeleteAsync(course, cancellationToken);
 
@@ -218,4 +213,3 @@ public sealed class DeleteCourseHandler : ICommandHandler<Guid, DeleteCourseComm
         return course.Id;
     }
 }
-

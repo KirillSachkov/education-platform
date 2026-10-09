@@ -176,7 +176,7 @@ public class AuthorSpaceTests : IntegrationTestsBase
         var updateRequest = new UpdateAuthorSpaceRequest(
             "My awesome space",
             null,
-            new AuthorSpaceFeatureFlagsDto(true, true, false, false, true));
+            new AuthorSpaceFeatureFlagsDto(true, true, false, true));
 
         HttpResponseMessage updateResponse = await HttpClient.PatchAsJsonAsync(
             "/users/me/author-space",
@@ -189,6 +189,8 @@ public class AuthorSpaceTests : IntegrationTestsBase
         Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
         Assert.DoesNotContain("leaderboard", await getResponse.Content.ReadAsStringAsync(), StringComparison.OrdinalIgnoreCase);
 
+        Assert.DoesNotContain("roadmaps", await getResponse.Content.ReadAsStringAsync(), StringComparison.OrdinalIgnoreCase);
+
         AuthorSpaceDetailResponse? dto = await ReadDetailResponseAsync(getResponse);
         Assert.NotNull(dto);
         Assert.Equal("My awesome space", dto.Tagline);
@@ -196,7 +198,6 @@ public class AuthorSpaceTests : IntegrationTestsBase
         Assert.True(dto.FeatureFlags.GitHubIntegration);
         Assert.True(dto.FeatureFlags.PrReviews);
         Assert.False(dto.FeatureFlags.AiAssistant);
-        Assert.False(dto.FeatureFlags.Roadmaps);
         Assert.True(dto.FeatureFlags.CustomLanding);
     }
 
@@ -253,6 +254,8 @@ public class AuthorSpaceTests : IntegrationTestsBase
         HttpResponseMessage getResponse = await HttpClient.GetAsync("/users/me/author-space");
         Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
         Assert.DoesNotContain("leaderboard", await getResponse.Content.ReadAsStringAsync(), StringComparison.OrdinalIgnoreCase);
+
+        Assert.DoesNotContain("roadmaps", await getResponse.Content.ReadAsStringAsync(), StringComparison.OrdinalIgnoreCase);
 
         AuthorSpaceDetailResponse? dto = await ReadDetailResponseAsync(getResponse);
         Assert.NotNull(dto);

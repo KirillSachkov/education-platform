@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using ContentAccess;
 using EducationContentService.Contracts.SearchLookup;
 using EducationContentService.Domain.Courses;

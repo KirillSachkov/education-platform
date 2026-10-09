@@ -1,4 +1,4 @@
-using System.Data.Common;
+﻿using System.Data.Common;
 using Core.Abstractions;
 using Core.Database;
 using Dapper;
@@ -82,9 +82,6 @@ public sealed class DeleteMaterialHandler : ICommandHandler<Guid, DeleteMaterial
         // - issues.internal_materials — JSONB-массив value object'ов. Ключи (`ReferenceId`,
         //   `ItemType`) — PascalCase из EF Core ToJson() default'а; если в DbContext добавят
         //   JsonNamingPolicy.CamelCase, JSONB-фильтр станет no-op'ом — обновлять обе стороны вместе.
-        // - roadmap_edges + roadmap_nodes — узлы EntityReference хранят materialId в jsonb.data
-        //   (data->>'entityType'='Material', data->>'entityId'=materialId). Frontend сериализует
-        //   data в camelCase (см. RoadmapNode.Data). Edges не имеют FK к nodes — удаляем явно.
         DbConnection connection = _transactionManager.GetDbConnection();
         const string cascadeSql = """
             DELETE FROM module_items
@@ -106,20 +103,6 @@ public sealed class DeleteMaterialHandler : ICommandHandler<Guid, DeleteMaterial
             WHERE internal_materials @> jsonb_build_array(
                 jsonb_build_object('ReferenceId', @MaterialIdText, 'ItemType', 'Material'));
 
-            WITH material_nodes AS (
-                SELECT id FROM roadmap_nodes
-                WHERE node_type = 'EntityReference'
-                  AND data->>'entityType' = 'Material'
-                  AND data->>'entityId'   = @MaterialIdText
-            )
-            DELETE FROM roadmap_edges
-            WHERE source_node_id IN (SELECT id FROM material_nodes)
-               OR target_node_id IN (SELECT id FROM material_nodes);
-
-            DELETE FROM roadmap_nodes
-            WHERE node_type = 'EntityReference'
-              AND data->>'entityType' = 'Material'
-              AND data->>'entityId'   = @MaterialIdText;
             """;
         await connection.ExecuteAsync(
             new CommandDefinition(

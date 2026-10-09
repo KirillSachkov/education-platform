@@ -1,4 +1,4 @@
-using Common;
+﻿using Common;
 using Microsoft.EntityFrameworkCore;
 using ProgressService.Contracts;
 using ProgressService.Contracts.Dtos;

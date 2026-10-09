@@ -1,4 +1,4 @@
-using ContentAccess;
+﻿using ContentAccess;
 using EducationContentService.Contracts.Materials;
 using FileService.Contracts.Assets;
 using FileService.Contracts.HttpCommunication;

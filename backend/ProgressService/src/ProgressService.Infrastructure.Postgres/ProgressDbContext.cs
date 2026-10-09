@@ -1,5 +1,4 @@
 ﻿using ProgressService.Domain.AuthorQuestions;
-using ProgressService.Domain.Certificates;
 using ProgressService.Domain.ContentAccess;
 using ProgressService.Domain.CoursePositions;
 using ProgressService.Domain.Enrollments;
@@ -8,7 +7,6 @@ using ProgressService.Domain.Issues;
 using ProgressService.Domain.IssueSubmissions;
 using ProgressService.Domain.Materials;
 using ProgressService.Domain.Modules;
-using ProgressService.Domain.Notes;
 using ProgressService.Domain.Projects;
 using ProgressService.Domain.Quizzes;
 using Wolverine.EntityFrameworkCore;
@@ -42,13 +40,9 @@ public class ProgressDbContext : DbContext
 
     public DbSet<MaterialBookmark> MaterialBookmarks => Set<MaterialBookmark>();
 
-    public DbSet<MaterialNote> MaterialNotes => Set<MaterialNote>();
-
     public DbSet<IssueAuthorQuestion> IssueAuthorQuestions => Set<IssueAuthorQuestion>();
 
     public DbSet<QuizAttempt> QuizAttempts => Set<QuizAttempt>();
-
-    public DbSet<CourseCertificate> CourseCertificates => Set<CourseCertificate>();
 
     public DbSet<CoursePosition> CoursePositions => Set<CoursePosition>();
 

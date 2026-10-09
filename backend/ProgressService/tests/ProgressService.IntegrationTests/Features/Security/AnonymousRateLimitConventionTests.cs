@@ -21,7 +21,6 @@ public sealed class AnonymousRateLimitConventionTests : ProgressServiceTestsBase
         string[] routes =
         [
             "/progress/courses/{courseId:guid}/public-stats",
-            "/progress/certificates/{certificateId:guid}",
         ];
 
         IReadOnlyList<RouteEndpoint> endpoints = Services

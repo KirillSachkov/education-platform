@@ -1,4 +1,4 @@
-namespace EducationContentService.Contracts.SearchLookup;
+﻿namespace EducationContentService.Contracts.SearchLookup;
 
 public sealed record CourseSearchLookupDto(
     Guid Id,

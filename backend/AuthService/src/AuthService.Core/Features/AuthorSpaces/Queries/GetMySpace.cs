@@ -58,7 +58,6 @@ public sealed class GetMyAuthorSpaceHandler
                 flags.GitHubIntegration,
                 flags.PrReviews,
                 flags.AiAssistant,
-                flags.Roadmaps,
                 flags.CustomLanding),
             space.CreatedAt,
             space.UpdatedAt);

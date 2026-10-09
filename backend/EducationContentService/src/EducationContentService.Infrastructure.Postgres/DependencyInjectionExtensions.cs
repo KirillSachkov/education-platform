@@ -1,4 +1,4 @@
-using Core.Database;
+﻿using Core.Database;
 using Dapper;
 using EducationContentService.Core;
 using EducationContentService.Core.Database;
@@ -11,8 +11,6 @@ using EducationContentService.Core.Features.Materials;
 using EducationContentService.Core.Features.ModuleItems;
 using EducationContentService.Core.Features.ProjectItems;
 using EducationContentService.Core.Features.Quizzes;
-using EducationContentService.Core.Features.Roadmaps;
-using EducationContentService.Core.Features.ShortLinks;
 using EducationContentService.Domain.Collections;
 using EducationContentService.Domain.Courses;
 using EducationContentService.Domain.Modules;
@@ -55,7 +53,6 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IIssuesRepository, IssuesRepository>();
         services.AddScoped<IQuizzesRepository, QuizzesRepository>();
         services.AddScoped<IReviewConfigRepository, ReviewConfigRepository>();
-        services.AddScoped<IRoadmapsRepository, RoadmapsRepository>();
         services.AddScoped<ICollectionsRepository, CollectionsRepository>();
         services.AddScoped<ICollectionSectionsRepository, CollectionSectionsRepository>();
         services.AddScoped<IOrderedItemsRepository<CollectionSection>>(sp =>
@@ -63,7 +60,6 @@ public static class DependencyInjectionExtensions
         services.AddScoped<ICollectionItemsRepository, CollectionItemsRepository>();
         services.AddScoped<IOrderedItemsRepository<CollectionItem>>(sp =>
             sp.GetRequiredService<ICollectionItemsRepository>());
-        services.AddScoped<IShortLinksRepository, ShortLinksRepository>();
         services.AddScoped<CourseMaterialService>();
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;

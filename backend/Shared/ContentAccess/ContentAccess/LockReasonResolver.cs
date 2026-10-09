@@ -1,4 +1,4 @@
-namespace ContentAccess;
+﻿namespace ContentAccess;
 
 /// <summary>
 /// Результат проверки доступа с декодированной причиной блокировки для UI-подсказок.
