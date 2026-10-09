@@ -622,7 +622,7 @@ schema. A failed preflight or compose startup leaves `pending.env` unpromoted fo
 retry.
 
 After both the current and target releases carry `MEDIA_BINDING_PROTOCOL=1`, the special cutover
-is no longer needed: all migration services in the selected release inventory run as a fail-fast preflight while the
+is no longer needed. All migration services in the selected release inventory run as a fail-fast preflight while the
 current application revision remains online, followed by the full compose recreation.
 
 ### Rollback boundary
@@ -643,7 +643,7 @@ migrations, use one of these recovery paths:
   deploy the matching pre-marker images.
 
 After both `current.env` and `previous.env` carry the marker, ordinary image rollback is allowed.
-Rollback compose startup is fail-closed too: a failed migration or dependency never triggers a
+Rollback compose startup is fail-closed too. A failed migration or dependency never triggers a
 manual start of containers left in `Created`, and release metadata remains unchanged.
 The FileService migration `Down` also refuses to collapse revisions while prepared and confirmed
 values differ; drain/reconcile outstanding bindings before any manual schema downgrade.
