@@ -178,5 +178,121 @@ class RemoteProduction(RemoteFixture):
         with self.assertRaises(ValueError): self.host.verify_release()
 
 
+class NormalRuntime(RemoteFixture):
+    """Readiness checks use private synthetic inputs and never contact a host."""
+
+    def setUp(self):
+        super().setUp()
+        self.runtime = self.root / "private-runtime"
+        self.markdown = self.runtime / "markdown"
+        self.pdf = self.runtime / "pdf"
+        self.markdown.mkdir(parents=True)
+        self.pdf.mkdir()
+        self.host.runtime_root = self.runtime
+        self.versions = {"offer": "v2", "privacy": "v3", "consent-pd": "v2",
+                         "cookies": "v1", "consent-marketing": "v1"}
+        self.registry_names = {
+            "frontend/src/shared/legal/versions.ts": 'export const CURRENT_LEGAL_VERSIONS = {' +
+                ','.join('"' + slug + '":"' + version + '"' for slug, version in self.versions.items()) + '};',
+            "backend/AuthService/src/AuthService.Core/Services/LegalDocumentVersions.cs": '\n'.join(
+                'public const string ' + field + ' = "' + self.versions[slug] + '";'
+                for slug, field in [("offer", "Offer"), ("privacy", "PrivacyPolicy"),
+                                    ("consent-pd", "PersonalDataConsent"), ("cookies", "CookiesPolicy"),
+                                    ("consent-marketing", "MarketingConsent")])}
+        configurations = {name: {"base64": base64.b64encode(text.encode()).decode(),
+                                 "sha256": hashlib.sha256(text.encode()).hexdigest()}
+                          for name, text in self.registry_names.items()}
+        business = self.runtime / "business.json"
+        business.write_text(json.dumps({"name": "Example", "taxId": "0" * 12, "registrationId": "0" * 15,
+                                       "addressLines": ["Example address"], "taxOffice": "Example office",
+                                       "email": "operator@example.test", "hours": "Example hours",
+                                       "copyrightName": "Example"}))
+        for slug, version in {**self.versions, "offer": "v1"}.items():
+            self.write_pair(slug, version)
+        self.write_pair("offer", "v2")
+        self.approval = {"schema_version": 1, "source_sha": "b" * 40,
+                         "environment": {"LEGAL_DOCUMENTS_DIR": str(self.markdown),
+                                         "LEGAL_PDFS_DIR": str(self.pdf), "BUSINESS_DETAILS_FILE": str(business)},
+                         "registry_hashes": {name: item["sha256"] for name, item in configurations.items()},
+                         "file_hashes": {}}
+        self.refresh_hashes()
+        self.host.target = {"source_sha": "b" * 40, "configuration_files": configurations,
+                            "runtime_approval": self.approval}
+
+    def write_pair(self, slug, version):
+        (self.markdown / (slug + "-" + version + ".md")).write_text("# Synthetic terms\nComplete text.\n")
+        (self.pdf / (slug + "-" + version + ".pdf")).write_bytes(b"%PDF-1.7\nsynthetic fixture\n")
+
+    def refresh_hashes(self):
+        self.approval["file_hashes"] = {str(path): hashlib.sha256(path.read_bytes()).hexdigest()
+                                        for path in self.runtime.rglob("*") if path.is_file()}
+
+    def test_accepts_matching_registries_current_pairs_and_approved_archive(self):
+        self.assertEqual(self.host.normal_runtime(), self.approval)
+        self.assertEqual(self.host.legal_versions, self.versions)
+        checked = [arguments[-1] for arguments, _ in self.host.calls if arguments[0] == "setpriv"]
+        self.assertEqual(set(checked), set(self.approval["file_hashes"]))
+        self.assertTrue(all(arguments[:6] == ["setpriv", "--reuid=1000", "--regid=1000", "--clear-groups", "test", "-r"]
+                            for arguments, _ in self.host.calls))
+
+    def test_rejects_approval_for_another_source_or_registry(self):
+        self.approval["source_sha"] = "c" * 40
+        with self.assertRaisesRegex(ValueError, "does not select this source"): self.host.normal_runtime()
+        self.approval["source_sha"] = "b" * 40
+        for name in self.registry_names:
+            with self.subTest(registry=name):
+                original = self.approval["registry_hashes"][name]
+                self.approval["registry_hashes"][name] = "0" * 64
+                with self.assertRaisesRegex(ValueError, "both legal registries"): self.host.normal_runtime()
+                self.approval["registry_hashes"][name] = original
+
+    def test_rejects_different_frontend_and_backend_versions(self):
+        name = "backend/AuthService/src/AuthService.Core/Services/LegalDocumentVersions.cs"
+        text = self.registry_names[name].replace('Offer = "v2"', 'Offer = "v1"').encode()
+        self.host.target["configuration_files"][name] = {
+            "base64": base64.b64encode(text).decode(), "sha256": hashlib.sha256(text).hexdigest()}
+        self.approval["registry_hashes"][name] = hashlib.sha256(text).hexdigest()
+        with self.assertRaisesRegex(ValueError, "legal versions differ"): self.host.normal_runtime()
+
+    def test_rejects_missing_current_pair_even_when_archive_exists(self):
+        for path in [self.markdown / "offer-v2.md", self.pdf / "offer-v2.pdf"]:
+            with self.subTest(path=path.name):
+                expected = self.approval["file_hashes"].pop(str(path))
+                with self.assertRaisesRegex(ValueError, "pair is not approved"): self.host.normal_runtime()
+                self.approval["file_hashes"][str(path)] = expected
+
+    def test_rejects_changed_bytes_including_archived_documents(self):
+        for path in [self.markdown / "offer-v2.md", self.pdf / "offer-v1.pdf"]:
+            with self.subTest(path=path.name):
+                original = path.read_bytes()
+                path.write_bytes(original + b"changed")
+                with self.assertRaisesRegex(ValueError, "file hash mismatch"): self.host.normal_runtime()
+                path.write_bytes(original)
+
+    def test_rejects_empty_placeholder_markdown_and_non_pdf_bytes(self):
+        for content in ["", "# Terms\n⟦EFFECTIVE DATE⟧"]:
+            with self.subTest(content=content):
+                (self.markdown / "offer-v2.md").write_text(content)
+                self.refresh_hashes()
+                with self.assertRaisesRegex(ValueError, "empty or unfinished"): self.host.normal_runtime()
+        self.write_pair("offer", "v2")
+        (self.pdf / "offer-v2.pdf").write_bytes(b"not a PDF")
+        self.refresh_hashes()
+        with self.assertRaisesRegex(ValueError, "empty or unfinished"): self.host.normal_runtime()
+
+    def test_rejects_unreadable_uid1000_inputs(self):
+        with patch.object(self.host, "command", side_effect=PermissionError("synthetic UID1000 denial")):
+            with self.assertRaises(PermissionError): self.host.normal_runtime()
+
+    def test_rejects_invalid_business_record(self):
+        business = Path(self.approval["environment"]["BUSINESS_DETAILS_FILE"])
+        record = json.loads(business.read_text())
+        for patch_record in [{"taxId": "invalid"}, {"email": "invalid"}, {"addressLines": []}, {"extra": "field"}]:
+            with self.subTest(patch_record=patch_record):
+                business.write_text(json.dumps({**record, **patch_record}))
+                self.refresh_hashes()
+                with self.assertRaisesRegex(ValueError, "eight-field business runtime"): self.host.normal_runtime()
+
+
 if __name__ == "__main__":
     unittest.main()
