@@ -3,12 +3,13 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { adminNav } from "@/shared/config/app-navigation";
 import { routes } from "@/shared/config/routes";
+import type * as SharedApi from "@/shared/api";
 import AdminAiModelsRoute from "../page";
 
 const { get, put } = vi.hoisted(() => ({ get: vi.fn(), put: vi.fn() }));
 
 vi.mock("@/shared/api", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/shared/api")>();
+  const actual = await importOriginal<typeof SharedApi>();
   return { ...actual, apiClient: { ...actual.apiClient, get, put } };
 });
 
@@ -49,8 +50,8 @@ describe("retained AssignmentReview AI settings route", () => {
     expect(adminNav.some((item) => item.href === routes.adminAiModels)).toBe(true);
     expect(screen.getByRole("heading", { name: "AI-модели для проверки заданий" })).toBeVisible();
     fireEvent.change(model, { target: { value: "synthetic/reviewer" } });
-    fireEvent.click(screen.getByRole("button", { name: "Сохранить", exact: true }));
-    await waitFor(() =>
+    fireEvent.click(screen.getByRole("button", { name: "Сохранить" }));
+    await waitFor(() => {
       expect(put).toHaveBeenCalledWith("/assignment-review/admin/ai-settings/", {
         reviewer: {
           model: "synthetic/reviewer",
@@ -61,8 +62,8 @@ describe("retained AssignmentReview AI settings route", () => {
         reviewerBasePrompt: "Review the student changes",
         reviewEnabled: true,
         repoContextEnabled: false,
-      }),
-    );
+      });
+    });
     expect(get.mock.calls.every(([url]) => url === "/assignment-review/admin/ai-settings/")).toBe(
       true,
     );
