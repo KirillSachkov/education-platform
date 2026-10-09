@@ -67,7 +67,7 @@ if result.returncode or not receipt.exists():
     sys.exit(1)
 data=json.loads(receipt.read_text())
 if set(data)-{"status","operation","applications","health_services","source_sha","version"}: raise RuntimeError("invalid public result")
-if type(data.get("applications")) is not int or type(data.get("health_services")) is not int or (data["applications"],data["health_services"]) not in {(13,12),(14,13)}: raise RuntimeError("invalid public counts")
+if type(data.get("applications")) is not int or type(data.get("health_services")) is not int or (data["applications"],data["health_services"]) not in {(11,10),(14,13)}: raise RuntimeError("invalid public counts")
 print(json.dumps(data))
 '''
 

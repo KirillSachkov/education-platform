@@ -165,30 +165,6 @@ public sealed class SearchLookupTests : EducationContentServiceTestsBase
     }
 
     [Fact]
-    public async Task GetCourseMaterialIds_ReturnsUnionOfCourseMaterialsAndModuleItems()
-    {
-        // #378: каскад пере-индекса при archive/restore берёт полный список материалов курса —
-        // привязанных напрямую (course_materials) и через модули (module_items→course_items).
-        Guid courseId = await CreatePublishedCourseAsync("Cascade course");
-        Guid moduleId = await CreatePublishedModuleAsync("Module");
-        Guid directMaterialId = await CreatePublishedMaterialAsync("Direct material", "# body", DomainAccessType.REGISTERED);
-        Guid moduleMaterialId = await CreatePublishedMaterialAsync("Module material", "# body", DomainAccessType.REGISTERED);
-
-        await LinkMaterialToCourseAsync(courseId, directMaterialId);
-        await LinkModuleToCourseAsync(courseId, moduleId);
-        await LinkMaterialToModuleAsync(moduleId, moduleMaterialId);
-
-        HttpResponseMessage response = await AppHttpClient.GetAsync($"/internal/search/courses/{courseId}/material-ids");
-
-        response.EnsureSuccessStatusCode();
-
-        CourseMaterialIdsDto dto = await ReadResultAsync<CourseMaterialIdsDto>(response);
-        Assert.Equal(
-            new HashSet<Guid> { directMaterialId, moduleMaterialId },
-            new HashSet<Guid>(dto.MaterialIds));
-    }
-
-    [Fact]
     public async Task GetIssueSearchLookup_ReturnsProjectModuleAndCourseContext()
     {
         Guid courseId = await CreatePublishedCourseAsync("Algorithms", 990m);

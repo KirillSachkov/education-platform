@@ -33,8 +33,13 @@ from release_model import (
 
 CRITICAL = (
     "POSTGRES_USER", "POSTGRES_PASSWORD", "RABBITMQ_DEFAULT_USER", "RABBITMQ_DEFAULT_PASS",
-    "TYPESENSE_API_KEY", "BOT__TOKEN", "INFISICAL_AUTH_SECRET", "INFISICAL_ENCRYPTION_KEY",
+    "BOT__TOKEN", "INFISICAL_AUTH_SECRET", "INFISICAL_ENCRYPTION_KEY",
 )
+LEGACY_CRITICAL = (*CRITICAL, "TYPESENSE_API_KEY")
+
+
+def critical_secrets(registry):
+    return LEGACY_CRITICAL if registry == LEGACY_REGISTRY else CRITICAL
 
 
 def sha256(path):
@@ -235,10 +240,10 @@ class HostOperation:
             raise ValueError("approved original legacy roles changed")
         self.baseline_env_text = (self.root / ".env").read_text()
         self.baseline_env = self.environment_values(self.root / ".env")
-        if any(not self.baseline_env.get(key) for key in CRITICAL):
+        baseline_release = self.current_record or {**self.roles["roles"]["current"], "registry": LEGACY_REGISTRY}
+        if any(not self.baseline_env.get(key) for key in critical_secrets(baseline_release["registry"])):
             raise ValueError("baseline critical secret missing")
         self.env.update(self.baseline_env)
-        baseline_release = self.current_record or {**self.roles["roles"]["current"], "registry": LEGACY_REGISTRY}
         references = image_manifest(baseline_release["image_manifest"], baseline_release["source_sha"], baseline_release["registry"])
         self.services = services_for_registry(baseline_release["registry"])
         if self.inputs["operation"] != "rollback":
@@ -353,9 +358,10 @@ class HostOperation:
         candidate = self.run / "candidate.env"
         write_private(candidate, body)
         parsed = self.environment_values(candidate)
-        if any(not parsed.get(key) for key in CRITICAL):
+        required = critical_secrets(self.target["registry"])
+        if any(not parsed.get(key) for key in required):
             raise ValueError("candidate critical secret missing")
-        if any(parsed.get(key) != self.baseline_env[key] for key in CRITICAL):
+        if any(parsed.get(key) != self.baseline_env[key] for key in required if key in self.baseline_env):
             raise ValueError("unexpected critical secret rotation")
         if self.inputs["release"] in {"current", "previous"}:
             for key, value in self.baseline_env.items():
@@ -366,7 +372,7 @@ class HostOperation:
             retained_file = self.run / "retained-rollback.env"
             write_private(retained_file, retained)
             old = self.environment_values(retained_file)
-            if any(old.get(key) != parsed[key] for key in CRITICAL):
+            if any(old.get(key) != parsed[key] for key in required):
                 raise ValueError("retained rollback secrets differ from live secrets")
             body = retained.rstrip("\n") + "\n" + "\n".join(
                 line for line in body.splitlines() if line.partition("=")[0].strip() not in old)

@@ -8,7 +8,6 @@ export {
   materialBindingsQueryOptions,
   materialDetailQueryOptions,
   materialsApi,
-  materialsCardMetaQueryOptions,
   materialsQueryOptions,
 } from "./api";
 export {
@@ -37,7 +36,6 @@ export type {
   GetMaterialsRequest,
   MaterialAccessType,
   MaterialBindingsDto,
-  MaterialCardMetaDto,
   MaterialChapterDto,
   MaterialCollectionBindingDto,
   MaterialCourseBindingDto,

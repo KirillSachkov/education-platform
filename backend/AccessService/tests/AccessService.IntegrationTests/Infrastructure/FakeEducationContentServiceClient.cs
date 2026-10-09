@@ -109,9 +109,6 @@ public sealed class FakeEducationContentServiceClient : IEducationContentService
     public Task<Result<CollectionSearchLookupDto, Error>> GetCollectionSearchLookupAsync(Guid collectionId, CancellationToken cancellationToken)
         => throw new NotImplementedException();
 
-    public Task<Result<CourseMaterialIdsDto, Error>> GetCourseMaterialIdsAsync(Guid courseId, CancellationToken cancellationToken)
-        => throw new NotImplementedException();
-
     public Task<Result<CourseDto, Error>> GetCourseLookupAsync(Guid courseId, CancellationToken cancellationToken)
     {
         if (CourseAuthorsById.TryGetValue(courseId, out Guid authorId))

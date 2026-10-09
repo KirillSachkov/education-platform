@@ -54,7 +54,7 @@ stays private; Actions reports fixed status, operation and service counts.
 
 The host adapter takes an exclusive operation lock. Probe checks configuration,
 binary identities, tools, Compose project, database volume and health for the selected
-registry (13 legacy services, 12 source services), without registry login, pull, export,
+registry (13 legacy services, 10 source services), without registry login, pull, export,
 dump or application changes.
 Telegram belongs to image and migration inventories but not the blocking
 health gate.
@@ -83,7 +83,7 @@ migration/backfill entrypoints remain authoritative. Start the selected release 
 with their dependency gates. Recreate only changed configuration consumers;
 file bind mounts otherwise keep the old inode after atomic file replacement.
 
-Require healthy services from the selected registry (13 legacy, 12 source), public page/sitemap/OIDC checks, running
+Require healthy services from the selected registry (13 legacy, 10 source), public page/sitemap/OIDC checks, running
 application and PostgreSQL digest identities, and matching configuration.
 Then promote release metadata. Preserve a transition receipt and both old
 records before changing the current/previous pair. No automatic rollback runs.
@@ -138,13 +138,16 @@ Compose nor standalone restore falls back to the retired registry.
 
 ## Source topology and historical roles
 
-The public build inventory excludes TrainerService. The frozen private `current` and
-`previous` roles retain their original fourteen images, including TrainerService, for
+The public build inventory excludes TrainerService, SearchService and TagService. The frozen private `current` and
+`previous` roles retain their original fourteen images, including TrainerService, SearchService and TagService, for
 rollback. `release_model.py` validates each registry against its own complete inventory.
 The host adapter selects migrations, startup and health checks from the target registry.
 A source merge does not disable an existing production container or remove its data.
 
 A future trainer shutdown requires a private archive, successful isolated restore,
 a reviewed disable sequence and matching rollback evidence before any schema retirement.
-Committed trainer migrations remain at their original paths as history and have no
-project or image in the active source build.
+Committed migrations for these retired services remain at their original paths as history and have no
+project or image in the active source build. Source environment validation does not require a
+Typesense key; legacy environment validation still requires its original key.
+
+Search and tag schema retirement follows the [retirement procedure](retired-discovery.md).

@@ -210,10 +210,6 @@ public sealed class CachedEducationContentServiceClient : IEducationContentServi
         Guid collectionId, CancellationToken cancellationToken)
         => _inner.GetCollectionSearchLookupAsync(collectionId, cancellationToken);
 
-    public Task<Result<CourseMaterialIdsDto, Error>> GetCourseMaterialIdsAsync(
-        Guid courseId, CancellationToken cancellationToken)
-        => _inner.GetCourseMaterialIdsAsync(courseId, cancellationToken);
-
     public Task<Result<IReadOnlyList<MaterialCourseContextDto>, Error>> GetMaterialCourseContextsAsync(
         Guid materialId, CancellationToken cancellationToken)
         => _inner.GetMaterialCourseContextsAsync(materialId, cancellationToken);

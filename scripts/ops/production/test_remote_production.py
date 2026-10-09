@@ -14,7 +14,7 @@ import urllib.error
 
 from release_model import PUBLIC_REGISTRY, services_for_registry
 from release_model import LEGACY_HEALTH_SERVICES as HEALTH_SERVICES, LEGACY_REGISTRY, LEGACY_SERVICES as SERVICES
-from remote_production import CRITICAL, HostOperation, dotenv, metadata_text, write_json, write_private
+from remote_production import CRITICAL, LEGACY_CRITICAL, HostOperation, dotenv, metadata_text, write_json, write_private
 from test_release_model import roles
 
 
@@ -70,7 +70,7 @@ class RemoteFixture(unittest.TestCase):
         self.packet = {"private_roles": private, "operation": "deploy", "release": "current",
                        "adapter_source_sha": "f" * 40, "run_id": "123", "run_attempt": "1", "credentials": {}}
         (self.root / "releases/current.env").write_text(metadata_text(private["roles"]["current"]["metadata"]))
-        (self.root / ".env").write_text("".join(key + "=example-secret\n" for key in CRITICAL))
+        (self.root / ".env").write_text("".join(key + "=example-secret\n" for key in LEGACY_CRITICAL))
         self.host = FixtureHost(self.packet, self.run, self.root)
 
 
@@ -84,6 +84,33 @@ class RemoteProduction(RemoteFixture):
         self.assertEqual(parsed, {"HASH": "alpha#omega", "BACKSLASH": "alpha\\omega", "ESCAPED": "alpha\nomega",
                                   "COMMENT": "alpha", "LITERAL": "$(touch /tmp/forbidden)"})
         with self.assertRaises(ValueError): dotenv("KEY=one\nKEY=two\n")
+
+    def test_legacy_baseline_requires_typesense_secret(self):
+        (self.root / ".env").write_text("".join(key + "=example-secret\n" for key in CRITICAL))
+        with self.assertRaisesRegex(ValueError, "baseline critical secret missing"):
+            self.baseline()
+
+    def test_source_export_needs_no_typesense_secret_and_preserves_common_secrets(self):
+        self.baseline()
+        self.host.target = {"registry": PUBLIC_REGISTRY, "postgres_image": self.host.roles["postgres_image"], "metadata": {}}
+        self.host.inputs = {**self.host.inputs, "release": "normal"}
+        self.host.packet["credentials"] = {"INFISICAL_CLIENT_ID": "fixture", "INFISICAL_CLIENT_SECRET": "fixture", "INFISICAL_PROJECT_ID": "fixture"}
+        original_command = self.host.command
+        exported = "".join(key + "=example-secret\n" for key in CRITICAL)
+
+        def command(arguments, **kwargs):
+            if arguments[:2] == ["infisical", "login"]:
+                return b"fixture-token"
+            if arguments[:2] == ["infisical", "export"]:
+                return exported.encode()
+            return original_command(arguments, **kwargs)
+
+        self.host.command = command
+        self.host.export_env()
+        self.assertNotIn("TYPESENSE_API_KEY", dotenv(self.host.candidate_env_text))
+        exported = exported.replace("POSTGRES_PASSWORD=example-secret", "POSTGRES_PASSWORD=rotated")
+        with self.assertRaisesRegex(ValueError, "unexpected critical secret rotation"):
+            self.host.export_env()
 
     def test_probe_is_readonly_and_requires_exact_health(self):
         self.host.inputs = {**self.host.inputs, "operation": "probe"}
@@ -183,7 +210,7 @@ class RemoteProduction(RemoteFixture):
             self.host.health(1)
         self.assertNotIn("trainer-service", [call.args[0] for call in inspect.call_args_list])
         receipt = self.host.public_receipt()
-        self.assertEqual((receipt["applications"], receipt["health_services"]), (13, 12))
+        self.assertEqual((receipt["applications"], receipt["health_services"]), (11, 10))
 
     def test_running_postgres_must_use_exact_ghcr_reference_and_digest(self):
         self.baseline(); self.host.choose_target()

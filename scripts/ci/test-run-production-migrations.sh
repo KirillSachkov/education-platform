@@ -76,7 +76,19 @@ actual_failed_cutover="$(<"$log_file")"
 FAKE_DOCKER_LOG="$log_file" DOCKER_BIN="$FAKE_DOCKER" \
     bash "$SCRIPT_UNDER_TEST" docker-compose.test.yml "$current_release" legacy >/dev/null
 legacy_services="$(awk '{print $NF}' "$log_file")"
-expected_legacy="${expected_services%assignment-review-service-migrations}"$'trainer-service-migrations\nassignment-review-service-migrations'
+expected_legacy=$'auth-service-migrations
+education-service-migrations
+file-service-migrations
+progress-service-migrations
+comment-service-migrations
+tag-service-migrations
+search-service-migrations
+access-service-migrations
+material-processing-service-migrations
+notification-service-migrations
+telegram-bot-service-migrations
+trainer-service-migrations
+assignment-review-service-migrations'
 [[ "$legacy_services" == "$expected_legacy" ]] || fail "legacy migration inventory changed"
 
 : > "$log_file"

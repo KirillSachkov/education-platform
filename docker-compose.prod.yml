@@ -32,7 +32,7 @@ x-logging: &logging
     max-file: "3"
 
 services:
-  # ─── Search Service ───
+  # ─── Access Service ───
   access-service-migrations:
     container_name: access-service-migrations
     image: ${DOCKER_REGISTRY:?DOCKER_REGISTRY must be set}access-service:${IMAGE_TAG:?IMAGE_TAG must be set}

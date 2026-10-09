@@ -59,7 +59,7 @@ class Selection(unittest.TestCase):
         event = {"ref": "refs/heads/main", "before": ci.ZERO, "after": self.initial}
         result = ci.select("push", event, self.initial, CONFIG, self.repo)
         self.assertTrue(all(result["selected"].values()))
-        self.assertEqual(13, len(result["images_matrix"]["include"]))
+        self.assertEqual(11, len(result["images_matrix"]["include"]))
         self.assertEqual("tree", self.git("cat-file", "-t", result["base"]))
         self.write("docs/new.md", "new")
         with self.assertRaises(ValueError):
@@ -134,7 +134,7 @@ class Selection(unittest.TestCase):
                        stdout=subprocess.DEVNULL)
         values = dict(line.split("=", 1) for line in output.read_text().splitlines())
         self.assertEqual("false", values["images"])
-        self.assertEqual(13, len(json.loads(values["images_matrix"])["include"]))
+        self.assertEqual(11, len(json.loads(values["images_matrix"])["include"]))
 
     def test_bootstrap_exemption_is_guarded_and_content_exact(self):
         import hashlib
@@ -296,7 +296,7 @@ class ImageInventory(unittest.TestCase):
         self.records = [images.image_record(name, "sha256:" + "b" * 64, self.sha, self.names) for name in self.names]
 
     def test_complete_immutable_manifest(self):
-        self.assertEqual(13, len(images.collect(self.records, self.sha, self.names)["images"]))
+        self.assertEqual(11, len(images.collect(self.records, self.sha, self.names)["images"]))
         for records in (self.records[:-1], self.records + self.records[:1]):
             with self.assertRaises(ValueError):
                 images.collect(records, self.sha, self.names)

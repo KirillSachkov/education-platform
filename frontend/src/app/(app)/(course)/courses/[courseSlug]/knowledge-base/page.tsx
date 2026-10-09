@@ -30,7 +30,6 @@ import {
 import { Card, CardContent } from "@/shared/ui/kit/card";
 import { Icons } from "@/shared/ui/icons";
 import { Input } from "@/shared/ui/kit/input";
-import { getErrorMessage } from "@/shared/api";
 import { Button } from "@/shared/ui/kit/button";
 import { Skeleton } from "@/shared/ui/kit/skeleton";
 export default function CourseKnowledgeBasePage() {
@@ -51,7 +50,6 @@ export default function CourseKnowledgeBasePage() {
     data,
     isLoading,
     isError,
-    error,
     refetch,
     isFetching,
     hasNextPage,
@@ -183,7 +181,7 @@ export default function CourseKnowledgeBasePage() {
       {isError ? (
         <Card role="alert">
           <CardContent className="py-8 space-y-3">
-            <p>{getErrorMessage(error, "Не удалось загрузить материалы")}</p>
+            <p>Не удалось загрузить материалы. Попробуйте ещё раз.</p>
             <Button onClick={() => void refetch()}>Повторить</Button>
           </CardContent>
         </Card>

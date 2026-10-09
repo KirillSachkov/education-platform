@@ -75,11 +75,6 @@ internal sealed class EducationContentServiceClient : BaseHttpClient, IEducation
         CancellationToken cancellationToken)
         => GetAsync<CollectionSearchLookupDto>($"/internal/search/collections/{collectionId}", cancellationToken);
 
-    public Task<Result<CourseMaterialIdsDto, Error>> GetCourseMaterialIdsAsync(
-        Guid courseId,
-        CancellationToken cancellationToken)
-        => GetAsync<CourseMaterialIdsDto>($"/internal/search/courses/{courseId}/material-ids", cancellationToken);
-
     // Progress lookup contracts (service-to-service)
     public Task<Result<CourseDto, Error>> GetCourseLookupAsync(
         Guid courseId,

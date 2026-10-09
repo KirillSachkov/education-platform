@@ -13,7 +13,7 @@ LEGACY_SERVICES = (
     "trainer-service", "assignment-review-service", "frontend",
 )
 # Frozen original private roles retain their historical topology for rollback.
-SERVICES = tuple(name for name in LEGACY_SERVICES if name != "trainer-service")
+SERVICES = tuple(name for name in LEGACY_SERVICES if name not in {"trainer-service", "search-service", "tag-service"})
 HEALTH_SERVICES = tuple(name for name in SERVICES if name != "telegram-bot-service")
 LEGACY_HEALTH_SERVICES = tuple(name for name in LEGACY_SERVICES if name != "telegram-bot-service")
 

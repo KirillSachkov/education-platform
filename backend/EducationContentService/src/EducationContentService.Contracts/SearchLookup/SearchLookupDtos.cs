@@ -84,10 +84,3 @@ public sealed record CollectionSearchLookupDto(
     IReadOnlyList<string> RequiredAccessTags,
     DateTime UpdatedAt,
     Guid? AuthorId = null);
-
-/// <summary>
-/// Id всех материалов, привязанных к курсу (course_materials ∪ module_items).
-/// SearchService использует для каскадного пере-индекса видимости при archive/restore
-/// курса (#378).
-/// </summary>
-public sealed record CourseMaterialIdsDto(IReadOnlyList<Guid> MaterialIds);

@@ -6,7 +6,6 @@ import type {
   CreateMaterialRequest,
   GetMaterialsRequest,
   MaterialBindingsDto,
-  MaterialCardMetaDto,
   MaterialDetailDto,
   MaterialFeedItemDto,
   MaterialFeedScope,
@@ -243,28 +242,6 @@ export const materialBindingsQueryOptions = (materialId: MaterialId) =>
     },
     enabled: !!materialId,
   });
-
-/**
- * Батч-мета карточек (просмотры + длительность видео) для поверхностей, которые строят
- * карточки не из ECS-фидов — база знаний рендерит search-документы Typesense, где этих
- * полей нет. Возвращает Map materialId → meta. Issue #500.
- */
-export const materialsCardMetaQueryOptions = (materialIds: MaterialId[]) => {
-  const ids = [...new Set(materialIds)].sort();
-  return queryOptions({
-    queryKey: [materialsQueryOptions.baseKey, "card-meta", ids] as const,
-    queryFn: async ({ signal }) => {
-      const res = await apiClient.post<Envelope<MaterialCardMetaDto[]>>(
-        "/materials/card-meta/",
-        { ids },
-        { signal },
-      );
-      return new Map((res.data.result ?? []).map((meta) => [meta.materialId, meta]));
-    },
-    enabled: ids.length > 0,
-    staleTime: 5 * 60_000,
-  });
-};
 
 export const materialDetailQueryOptions = (materialId: MaterialId) =>
   queryOptions({

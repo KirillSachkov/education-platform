@@ -299,11 +299,6 @@ public sealed class MockEducationContentServiceClient : IEducationContentService
         CancellationToken cancellationToken)
         => throw new NotImplementedException("Collections are not used in ProgressService tests");
 
-    public Task<Result<CourseMaterialIdsDto, Error>> GetCourseMaterialIdsAsync(
-        Guid courseId,
-        CancellationToken cancellationToken)
-        => throw new NotImplementedException("Course material ids are not used in ProgressService tests");
-
     public Task<Result<CourseDto, Error>> GetCourseLookupAsync(
         Guid courseId,
         CancellationToken cancellationToken)

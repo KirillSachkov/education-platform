@@ -91,7 +91,7 @@ export interface MaterialFeedItemDto {
    */
   durationSeconds?: number | null;
   /**
-   * Авторский кредit карточки (#569). Мёржится из card-meta для базы знаний.
+   * Авторский кредit карточки (#569). Возвращается фидом материалов.
    */
   authorDisplayName?: string | null;
   authorAvatarUrl?: string | null;
@@ -126,19 +126,6 @@ export interface MaterialBindingsDto {
   courses: MaterialCourseBindingDto[];
   modules: MaterialModuleBindingDto[];
   collections: MaterialCollectionBindingDto[];
-}
-
-/**
- * Лёгкая мета карточки: просмотры + длительность видео. Батч-эндпоинт для поверхностей,
- * которые строят карточки не из ECS-фидов (база знаний — из search-документов). Issue #500.
- */
-export interface MaterialCardMetaDto {
-  materialId: MaterialId;
-  viewsCount: number;
-  durationSeconds: number | null;
-  /** Авторский кредit карточки (#569). null если AuthService недоступен / нет аватара. */
-  authorDisplayName: string | null;
-  authorAvatarUrl: string | null;
 }
 
 /**

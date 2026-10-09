@@ -36,13 +36,6 @@ public interface IEducationContentServiceClient
 
     Task<Result<CollectionSearchLookupDto, Error>> GetCollectionSearchLookupAsync(Guid collectionId, CancellationToken cancellationToken);
 
-    /// <summary>
-    ///     Id всех материалов курса (course_materials ∪ module_items). Используется
-    ///     SearchService для каскадного пере-индекса видимости дочерних материалов
-    ///     при archive/restore курса (#378).
-    /// </summary>
-    Task<Result<CourseMaterialIdsDto, Error>> GetCourseMaterialIdsAsync(Guid courseId, CancellationToken cancellationToken);
-
     // Progress lookup contracts (service-to-service)
     Task<Result<CourseDto, Error>> GetCourseLookupAsync(Guid courseId, CancellationToken cancellationToken);
 
