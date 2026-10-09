@@ -1,4 +1,4 @@
-using Core.Abstractions;
+﻿using Core.Abstractions;
 using Core.Database;
 using Core.Validation;
 using FluentValidation;
@@ -23,7 +23,7 @@ namespace ProgressService.Core.Features.Reviews.UseCases;
 ///     доменных переходов (прецедент — <c>AiReviewIterationCompletedHandler.ApplyVerdictGate</c>):
 ///     normalize <see cref="IssueProgress"/> → UNDER_REVIEW, затем <see cref="IssueSubmission.ForceApprove"/>,
 ///     который поднимает тот же <c>IssueSubmissionApproveEvent</c>, что и обычный Approve. Каскад
-///     (IssueProgress.Approve → COMPLETED + XP/project/module + integration event
+///     (IssueProgress.Approve → COMPLETED + project/module + integration event
 ///     <c>issue_submission.approved</c>) отрабатывает без изменений.
 /// </summary>
 public sealed record MarkIssueCompleteCommand(
@@ -151,7 +151,7 @@ public sealed class MarkIssueCompleteHandler : ICommandHandler<MarkIssueComplete
             return UnitResult.Success<Error>();
         }
 
-        // Если shared issue-progress уже COMPLETED — задачу приняли по другой попытке: XP/project/
+        // Если shared issue-progress уже COMPLETED — задачу приняли по другой попытке: project/
         // module уже начислены. Тогда только закрываем саму попытку (cascadeProgress=false), без
         // повторного approve-каскада, который упал бы на не-UNDER_REVIEW в IssueProgress.Approve().
         bool issueAlreadyComplete = issueProgress.Status == IssueProgressStatus.COMPLETED;

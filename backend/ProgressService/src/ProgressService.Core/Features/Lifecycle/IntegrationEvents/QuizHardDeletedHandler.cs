@@ -1,16 +1,10 @@
-using ProgressService.Core.Abstractions;
+﻿using ProgressService.Core.Abstractions;
 using Shared.Messaging.IntegrationEvents.Education.Events;
 
 namespace ProgressService.Core.Features.Lifecycle.IntegrationEvents;
 
-/// <summary>
-///     Cleanup на <c>quiz.hard_deleted</c> (ST-13 #493): квиз — standalone-сущность,
-///     при полном удалении сносим его попытки (<c>quiz_attempts</c>) и пункты прогресса
-///     модулей (<c>module_item_progress</c> item_type=QUIZ). Routing: wildcard-binding
-///     <c>*.hard_deleted</c> очереди <c>progress.education.lifecycle_events</c> уже
-///     покрывает <c>quiz.hard_deleted</c>. LevelTestAttempt'ы намеренно НЕ трогаем —
-///     самодостаточные снапшоты, переживают удаление квиза (#479).
-/// </summary>
+/// <summary>Очищает попытки и Quiz-элементы прогресса при quiz.hard_deleted.
+///     Событие имеет exact binding в progress.education.lifecycle_events.</summary>
 public sealed class QuizHardDeletedHandler
 {
     private readonly IQuizAttemptRepository _quizAttemptRepository;

@@ -1,4 +1,4 @@
-using SharedKernel.DomainEvents;
+﻿using SharedKernel.DomainEvents;
 
 namespace ProgressService.Domain.Enrollments;
 
@@ -7,7 +7,7 @@ namespace ProgressService.Domain.Enrollments;
 ///
 /// После access-derive-model (#367): чистый <b>lazy progress-anchor</b>. Доступ полностью
 /// определяется через AccessService PlanGrant'ы и Redis plan-теги; эта запись существует только
-/// как FK-родитель прогресса (module/issue/project/xp). Создаётся «по требованию» на первом
+/// как FK-родитель прогресса (module/issue/project). Создаётся «по требованию» на первом
 /// entitled-взаимодействии (<see cref="CreateAnchor"/>) либо как author pre-seed на
 /// <c>course.created</c>. Никаких archive/sort-key/source-ref концептов — revoke режется на
 /// Redis-уровне, строка остаётся как история.
@@ -42,7 +42,7 @@ public sealed class CourseEnrollment : AggregateRoot
 
     public Guid CourseId { get; private set; }
 
-    /// <summary>ID автора курса (денормализация для per-space лидерборда).</summary>
+    /// <summary>ID автора курса (владелец курса для проверки прав на ревью).</summary>
     public Guid AuthorId { get; private set; }
 
     /// <summary>
@@ -61,7 +61,7 @@ public sealed class CourseEnrollment : AggregateRoot
     /// <summary>
     ///     Silent constructor for the lazily-created progress anchor (access-derive-model).
     ///     Raises <b>no</b> domain/integration event — the row exists purely as the FK parent for
-    ///     progress (module/issue/project/xp). Access is governed by AccessService grants, not by
+    ///     progress (module/issue/project). Access is governed by AccessService grants, not by
     ///     this row, so there is nothing to signal downstream. Used by <c>EnsureEnrollmentAsync</c>
     ///     on first entitled engagement and for the author pre-seed.
     /// </summary>

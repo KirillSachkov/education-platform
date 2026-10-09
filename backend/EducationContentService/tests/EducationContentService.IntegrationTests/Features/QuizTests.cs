@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using CSharpFunctionalExtensions;
@@ -31,6 +31,17 @@ public class QuizTests : EducationContentServiceTestsBase
 
     // ===== Author CRUD (standalone после инверсии #489) =====
 
+    [Theory]
+    [InlineData("LEVEL_TEST")]
+    [InlineData("999")]
+    public async Task CreateQuiz_WithRetiredOrUndefinedPurpose_ReturnsBadRequest(string purpose)
+    {
+        AuthenticateAs(Guid.NewGuid(), "platform-author");
+        HttpResponseMessage response = await AppHttpClient.PostAsJsonAsync(
+            "/quizzes/", new CreateQuizRequest("Учебный квиз", Purpose: purpose));
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
     [Fact]
     public async Task QuizAuthorFlow_CreateGetUpdatePublish_Roundtrip()
     {
@@ -60,7 +71,6 @@ public class QuizTests : EducationContentServiceTestsBase
         Assert.Equal("DRAFT", authorView.Status);
         Assert.Equal("REGISTERED", authorView.AccessType);
         Assert.Equal("MATERIAL_CHECK", authorView.Purpose);
-        Assert.Null(authorView.LevelTestConfig);
         Assert.Equal(3, authorView.Questions.Count);
 
         QuizQuestionAuthorDto single = authorView.Questions[0];
@@ -569,218 +579,6 @@ public class QuizTests : EducationContentServiceTestsBase
     // ===== Level-test (#476) =====
 
     [Fact]
-    public async Task CreateLevelTestQuiz_WithSectionsDifficultiesAndConfig_RoundtripsViaAuthorGet()
-    {
-        CancellationToken ct = CancellationToken.None;
-        Guid authorId = Guid.NewGuid();
-        AuthenticateAs(authorId, "platform-author");
-
-        Guid recommendedCourseId = Guid.NewGuid();
-        Guid fallbackCourseId = Guid.NewGuid();
-
-        var createRequest = new CreateQuizRequest(
-            "Входной тест уровня",
-            Questions:
-            [
-                new QuizQuestionRequest(
-                    null,
-                    "SINGLE_CHOICE",
-                    "Что такое CLR?",
-                    [new QuizOptionRequest(_singleOptionA, "Среда выполнения"), new QuizOptionRequest(_singleOptionB, "Компилятор")],
-                    [_singleOptionA],
-                    Section: "csharp-basics",
-                    Difficulty: "JUNIOR"),
-                new QuizQuestionRequest(
-                    null,
-                    "OPEN_TEXT",
-                    "Объясните boxing/unboxing",
-                    null,
-                    null,
-                    "Эталонное объяснение",
-                    Section: "csharp-advanced",
-                    Difficulty: "SENIOR"),
-            ],
-            PassingScorePercent: 70,
-            Purpose: "LEVEL_TEST",
-            LevelTestConfig: new LevelTestConfigRequest(
-                [
-                    new LevelThresholdRequest("JUNIOR", 0),
-                    new LevelThresholdRequest("MIDDLE", 45),
-                    new LevelThresholdRequest("SENIOR", 75),
-                ],
-                [
-                    new LevelTestSectionRequest("csharp-basics", "Основы C#", 1.0m, recommendedCourseId),
-                    new LevelTestSectionRequest("csharp-advanced", "Продвинутый C#", 2.5m),
-                ],
-                fallbackCourseId));
-
-        HttpResponseMessage createResponse = await AppHttpClient.PostAsJsonAsync("/quizzes", createRequest, ct);
-        Assert.Equal(HttpStatusCode.OK, createResponse.StatusCode);
-        Guid quizId = await ReadResultAsync<Guid>(createResponse);
-
-        // GET перечитывает агрегат из БД — проверяет, что обе JSONB-колонки
-        // (questions c section/difficulty + level_test_config) переживают round-trip.
-        QuizAuthorDto authorView = await ReadResultAsync<QuizAuthorDto>(
-            await AppHttpClient.GetAsync($"/quizzes/{quizId}", ct));
-
-        Assert.Equal("LEVEL_TEST", authorView.Purpose);
-        // Воронка level-test'а публична — AccessType-дефолт PUBLIC.
-        Assert.Equal("PUBLIC", authorView.AccessType);
-
-        Assert.Equal(2, authorView.Questions.Count);
-        Assert.Equal("csharp-basics", authorView.Questions[0].Section);
-        Assert.Equal("JUNIOR", authorView.Questions[0].Difficulty);
-        Assert.Equal("csharp-advanced", authorView.Questions[1].Section);
-        Assert.Equal("SENIOR", authorView.Questions[1].Difficulty);
-
-        Assert.NotNull(authorView.LevelTestConfig);
-        LevelTestConfigDto config = authorView.LevelTestConfig!;
-        Assert.Equal(3, config.LevelThresholds.Count);
-        Assert.Equal("JUNIOR", config.LevelThresholds[0].Level);
-        Assert.Equal(0, config.LevelThresholds[0].MinPercent);
-        Assert.Equal("MIDDLE", config.LevelThresholds[1].Level);
-        Assert.Equal(45, config.LevelThresholds[1].MinPercent);
-        Assert.Equal("SENIOR", config.LevelThresholds[2].Level);
-        Assert.Equal(75, config.LevelThresholds[2].MinPercent);
-
-        Assert.Equal(2, config.Sections.Count);
-        Assert.Equal("csharp-basics", config.Sections[0].Key);
-        Assert.Equal("Основы C#", config.Sections[0].Title);
-        Assert.Equal(1.0m, config.Sections[0].Weight);
-        Assert.Equal(recommendedCourseId, config.Sections[0].RecommendedCourseId);
-        Assert.Equal("csharp-advanced", config.Sections[1].Key);
-        Assert.Equal(2.5m, config.Sections[1].Weight);
-        Assert.Null(config.Sections[1].RecommendedCourseId);
-        Assert.Equal(fallbackCourseId, config.FallbackCourseId);
-
-        // --- Update: автор правит конфиг (replace целиком), purpose immutable ---
-        var updateRequest = new UpdateQuizRequest(
-            "Входной тест уровня v2",
-            createRequest.Questions,
-            PassingScorePercent: 70,
-            LevelTestConfig: new LevelTestConfigRequest(
-                [new LevelThresholdRequest("JUNIOR", 0), new LevelThresholdRequest("SENIOR", 80)],
-                [new LevelTestSectionRequest("csharp-basics", "Основы C#")]));
-
-        HttpResponseMessage updateResponse = await AppHttpClient.PutAsJsonAsync($"/quizzes/{quizId}", updateRequest, ct);
-        Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
-
-        QuizAuthorDto updatedView = await ReadResultAsync<QuizAuthorDto>(
-            await AppHttpClient.GetAsync($"/quizzes/{quizId}", ct));
-
-        Assert.Equal("LEVEL_TEST", updatedView.Purpose);
-        Assert.NotNull(updatedView.LevelTestConfig);
-        Assert.Equal(2, updatedView.LevelTestConfig!.LevelThresholds.Count);
-        Assert.Equal("SENIOR", updatedView.LevelTestConfig.LevelThresholds[1].Level);
-        Assert.Equal(80, updatedView.LevelTestConfig.LevelThresholds[1].MinPercent);
-        LevelTestSectionDto updatedSection = Assert.Single(updatedView.LevelTestConfig.Sections);
-        Assert.Equal(1.0m, updatedSection.Weight);
-        Assert.Null(updatedView.LevelTestConfig.FallbackCourseId);
-    }
-
-    // ===== Author level-test rediscovery (#487) =====
-
-    [Fact]
-    public async Task GetMyLevelTests_AsOwner_ReturnsOwnDraftWithAnswersAndConfig()
-    {
-        CancellationToken ct = CancellationToken.None;
-        Guid authorId = Guid.NewGuid();
-        Guid recommendedCourseId = Guid.NewGuid();
-
-        LevelTestConfig config = LevelTestConfig.Create(
-            [
-                new LevelThreshold(DeveloperLevel.JUNIOR, 0),
-                new LevelThreshold(DeveloperLevel.MIDDLE, 45),
-                new LevelThreshold(DeveloperLevel.SENIOR, 75),
-            ],
-            [new LevelTestSection("csharp-basics", "Основы C#", 1.0m, recommendedCourseId)],
-            fallbackCourseId: null).Value;
-
-        Guid quizId = await SeedQuizAsync(
-            authorId, publish: false,
-            purpose: QuizPurpose.LEVEL_TEST, levelTestConfig: config);
-
-        // Чужой level-test не должен попасть в выдачу владельца.
-        await SeedQuizAsync(
-            Guid.NewGuid(), publish: true, purpose: QuizPurpose.LEVEL_TEST);
-
-        AuthenticateAs(authorId, "platform-author");
-        HttpResponseMessage response = await AppHttpClient.GetAsync("/quizzes/level-test/mine", ct);
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        List<QuizAuthorDto> levelTests = await ReadResultAsync<List<QuizAuthorDto>>(response);
-
-        QuizAuthorDto quiz = Assert.Single(levelTests);
-        Assert.Equal(quizId, quiz.Id);
-        Assert.Equal(authorId, quiz.AuthorId);
-        Assert.Equal("DRAFT", quiz.Status);
-        Assert.Equal("LEVEL_TEST", quiz.Purpose);
-
-        // Полная авторская проекция: ответы + section/difficulty на вопросах.
-        Assert.Equal(3, quiz.Questions.Count);
-        Assert.Equal(new[] { _singleOptionA }, quiz.Questions[0].CorrectOptionIds);
-        Assert.Equal("csharp-basics", quiz.Questions[0].Section);
-        Assert.Equal("JUNIOR", quiz.Questions[0].Difficulty);
-        Assert.Equal("Эталонный ответ для грейдера", quiz.Questions[2].ReferenceAnswer);
-
-        // LevelTestConfig целиком (пороги/секции с весами и рекомендациями).
-        Assert.NotNull(quiz.LevelTestConfig);
-        Assert.Equal(3, quiz.LevelTestConfig!.LevelThresholds.Count);
-        LevelTestSectionDto section = Assert.Single(quiz.LevelTestConfig.Sections);
-        Assert.Equal("csharp-basics", section.Key);
-        Assert.Equal(recommendedCourseId, section.RecommendedCourseId);
-    }
-
-    [Fact]
-    public async Task GetMyLevelTests_NoLevelTests_ReturnsEmptyList()
-    {
-        CancellationToken ct = CancellationToken.None;
-        Guid authorId = Guid.NewGuid();
-        // MATERIAL_CHECK-квиз автора не должен попасть в level-test выдачу.
-        await SeedQuizAsync(authorId, publish: true);
-
-        AuthenticateAs(authorId, "platform-author");
-        HttpResponseMessage response = await AppHttpClient.GetAsync("/quizzes/level-test/mine", ct);
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        List<QuizAuthorDto> levelTests = await ReadResultAsync<List<QuizAuthorDto>>(response);
-        Assert.Empty(levelTests);
-    }
-
-    [Fact]
-    public async Task GetMyLevelTests_AsAdmin_ReturnsAllAuthorsLevelTests_NewestFirst()
-    {
-        CancellationToken ct = CancellationToken.None;
-        Guid olderQuizId = await SeedQuizAsync(
-            Guid.NewGuid(), publish: true, purpose: QuizPurpose.LEVEL_TEST);
-        Guid newerQuizId = await SeedQuizAsync(
-            Guid.NewGuid(), publish: false, purpose: QuizPurpose.LEVEL_TEST);
-
-        AuthenticateAsAdmin();
-        HttpResponseMessage response = await AppHttpClient.GetAsync("/quizzes/level-test/mine", ct);
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        List<QuizAuthorDto> levelTests = await ReadResultAsync<List<QuizAuthorDto>>(response);
-
-        Assert.Equal(2, levelTests.Count);
-        Assert.Equal(newerQuizId, levelTests[0].Id);
-        Assert.Equal(olderQuizId, levelTests[1].Id);
-    }
-
-    [Fact]
-    public async Task GetMyLevelTests_Anonymous_Returns401()
-    {
-        CancellationToken ct = CancellationToken.None;
-        RemoveAuthentication();
-
-        HttpResponseMessage response = await AppHttpClient.GetAsync("/quizzes/level-test/mine", ct);
-
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-    }
-
-    // ===== Author rediscovery by material (#471) =====
-
-    [Fact]
     public async Task GetAuthorQuizByMaterial_DraftQuiz_AsOwner_Returns200WithAnswers()
     {
         CancellationToken ct = CancellationToken.None;
@@ -990,7 +788,6 @@ public class QuizTests : EducationContentServiceTestsBase
         Assert.Equal(quizId, answerKey.QuizId);
         Assert.Equal("MATERIAL_CHECK", answerKey.Purpose);
         Assert.Equal("ENROLLED", answerKey.AccessType);
-        Assert.Null(answerKey.LevelTestConfig);
         Assert.Equal(70, answerKey.PassingScorePercent);
         Assert.Equal(3, answerKey.Questions.Count);
         Assert.Equal(new[] { _singleOptionA }, answerKey.Questions[0].CorrectOptionIds);
@@ -1007,92 +804,6 @@ public class QuizTests : EducationContentServiceTestsBase
         // Text — для AI-грейдинга открытых ответов в ProgressService (ST-5, #480).
         Assert.Equal("Объясните difference между class и struct", answerKey.Questions[2].Text);
         Assert.Equal("Эталонный ответ для грейдера", answerKey.Questions[2].ReferenceAnswer);
-    }
-
-    [Fact]
-    public async Task GetQuizAnswerKey_LevelTestQuiz_ReturnsPurposeQuestionMetadataAndFullConfig()
-    {
-        CancellationToken ct = CancellationToken.None;
-        Guid authorId = Guid.NewGuid();
-        Guid recommendedCourseId = Guid.NewGuid();
-        Guid fallbackCourseId = Guid.NewGuid();
-
-        LevelTestConfig config = LevelTestConfig.Create(
-            [
-                new LevelThreshold(DeveloperLevel.JUNIOR, 0),
-                new LevelThreshold(DeveloperLevel.MIDDLE, 45),
-                new LevelThreshold(DeveloperLevel.SENIOR, 75),
-            ],
-            [
-                new LevelTestSection("csharp-basics", "Основы C#", 1.0m, recommendedCourseId),
-                new LevelTestSection("csharp-advanced", "Продвинутый C#", 2.5m, null),
-            ],
-            fallbackCourseId).Value;
-
-        Guid quizId = await SeedQuizAsync(
-            authorId,
-            publish: true,
-            purpose: QuizPurpose.LEVEL_TEST,
-            levelTestConfig: config);
-
-        AuthenticateAsAdmin();
-        HttpResponseMessage response = await AppHttpClient.GetAsync($"/internal/quizzes/{quizId}/answer-key", ct);
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-        // Точный casing JSON-ключей — контракт для S2S-клиента (BaseHttpClient
-        // десериализует web-defaults camelCase; ProgressService ST-4 строит на этом
-        // секционный скоринг). Сервер пишет компактный camelCase JSON.
-        string rawJson = await response.Content.ReadAsStringAsync(ct);
-        Assert.Contains("\"purpose\":\"LEVEL_TEST\"", rawJson, StringComparison.Ordinal);
-        Assert.Contains("\"accessType\":\"PUBLIC\"", rawJson, StringComparison.Ordinal);
-        Assert.Contains("\"section\":\"csharp-basics\"", rawJson, StringComparison.Ordinal);
-        Assert.Contains("\"difficulty\":\"JUNIOR\"", rawJson, StringComparison.Ordinal);
-        Assert.Contains("\"levelTestConfig\":{", rawJson, StringComparison.Ordinal);
-        Assert.Contains("\"levelThresholds\":[", rawJson, StringComparison.Ordinal);
-        Assert.Contains("\"level\":\"MIDDLE\"", rawJson, StringComparison.Ordinal);
-        Assert.Contains("\"minPercent\":45", rawJson, StringComparison.Ordinal);
-        Assert.Contains("\"sections\":[", rawJson, StringComparison.Ordinal);
-        Assert.Contains("\"key\":\"csharp-advanced\"", rawJson, StringComparison.Ordinal);
-        Assert.Contains("\"weight\":2.5", rawJson, StringComparison.Ordinal);
-        Assert.Contains($"\"recommendedCourseId\":\"{recommendedCourseId}\"", rawJson, StringComparison.Ordinal);
-        Assert.Contains($"\"fallbackCourseId\":\"{fallbackCourseId}\"", rawJson, StringComparison.Ordinal);
-
-        QuizAnswerKeyDto answerKey = await ReadResultAsync<QuizAnswerKeyDto>(response);
-
-        Assert.Equal(quizId, answerKey.QuizId);
-        Assert.Equal("LEVEL_TEST", answerKey.Purpose);
-
-        // Section/Difficulty per-вопрос: Q1 размечен, Q2/Q3 — нет (null проходит насквозь).
-        Assert.Equal(3, answerKey.Questions.Count);
-        Assert.Equal("Что такое CLR?", answerKey.Questions[0].Text);
-        Assert.Equal("csharp-basics", answerKey.Questions[0].Section);
-        Assert.Equal("JUNIOR", answerKey.Questions[0].Difficulty);
-        Assert.Equal(new[] { _singleOptionA }, answerKey.Questions[0].CorrectOptionIds);
-        Assert.Null(answerKey.Questions[1].Section);
-        Assert.Null(answerKey.Questions[1].Difficulty);
-        Assert.Equal("Эталонный ответ для грейдера", answerKey.Questions[2].ReferenceAnswer);
-
-        // Полный LevelTestConfig: пороги + секции с весами/рекомендациями + fallback.
-        Assert.NotNull(answerKey.LevelTestConfig);
-        LevelTestConfigDto configDto = answerKey.LevelTestConfig!;
-        Assert.Equal(3, configDto.LevelThresholds.Count);
-        Assert.Equal("JUNIOR", configDto.LevelThresholds[0].Level);
-        Assert.Equal(0, configDto.LevelThresholds[0].MinPercent);
-        Assert.Equal("MIDDLE", configDto.LevelThresholds[1].Level);
-        Assert.Equal(45, configDto.LevelThresholds[1].MinPercent);
-        Assert.Equal("SENIOR", configDto.LevelThresholds[2].Level);
-        Assert.Equal(75, configDto.LevelThresholds[2].MinPercent);
-
-        Assert.Equal(2, configDto.Sections.Count);
-        Assert.Equal("csharp-basics", configDto.Sections[0].Key);
-        Assert.Equal("Основы C#", configDto.Sections[0].Title);
-        Assert.Equal(1.0m, configDto.Sections[0].Weight);
-        Assert.Equal(recommendedCourseId, configDto.Sections[0].RecommendedCourseId);
-        Assert.Equal("csharp-advanced", configDto.Sections[1].Key);
-        Assert.Equal(2.5m, configDto.Sections[1].Weight);
-        Assert.Null(configDto.Sections[1].RecommendedCourseId);
-        Assert.Equal(fallbackCourseId, configDto.FallbackCourseId);
     }
 
     [Fact]
@@ -1162,7 +873,6 @@ public class QuizTests : EducationContentServiceTestsBase
         Guid authorId,
         bool publish,
         QuizPurpose purpose = QuizPurpose.MATERIAL_CHECK,
-        LevelTestConfig? levelTestConfig = null,
         AccessType accessType = AccessType.PUBLIC)
     {
         Guid quizId = Guid.Empty;
@@ -1174,7 +884,6 @@ public class QuizTests : EducationContentServiceTestsBase
                 Title.Create($"Квиз {Guid.NewGuid():N}").Value,
                 questions,
                 purpose: purpose,
-                levelTestConfig: levelTestConfig,
                 accessType: accessType).Value;
 
             if (publish)

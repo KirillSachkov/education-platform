@@ -1,11 +1,11 @@
-using ProgressService.Domain.Enrollments;
+﻿using ProgressService.Domain.Enrollments;
 
 namespace ProgressService.Core.Abstractions;
 
 /// <summary>
 ///     Ensures a lazily-created <see cref="CourseEnrollment"/> progress anchor exists for a
 ///     (user, course) pair (access-derive-model Phase 2). The anchor is the FK parent for
-///     module/issue/project progress and XP — it holds progress only and does NOT gate access
+///     module/issue/project progress — it holds progress only and does NOT gate access
 ///     (access lives in AccessService grants + Redis tags).
 ///
 ///     <para>Idempotent: returns the existing row if present, otherwise creates a new silent

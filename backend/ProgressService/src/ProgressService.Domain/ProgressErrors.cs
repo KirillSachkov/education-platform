@@ -86,9 +86,6 @@ public static class ProgressErrors
     public static Error ProjectProgressNotStarted() =>
         Error.Conflict("project.progress.not.started", "Прогресс по проекту ещё не начат");
 
-    public static Error UserGamificationStatsNotFound() =>
-        Error.NotFound("gamification.stats.not.found", "Статистика геймификации не найдена");
-
     public static Error ModuleCannotBeCompleted(string completedName, string totalName) =>
         Error.Validation(
             "module.progress.cannot.complete",
@@ -106,18 +103,6 @@ public static class ProgressErrors
 
     public static Error AttemptNumberMustBePositive(string fieldName) =>
         Error.Validation("issue.submission.attempt.invalid", $"{fieldName} должен быть больше нуля");
-
-    public static Error XpAmountMustBePositive(string fieldName) =>
-        Error.Validation("gamification.xp.invalid", $"{fieldName} должен быть больше нуля");
-
-    public static Error LevelMustBePositive(string fieldName) =>
-        Error.Validation("gamification.level.invalid", $"{fieldName} должен быть больше нуля");
-
-    public static Error LevelCannotDecrease() =>
-        Error.Validation("gamification.level.cannot.decrease", "Текущий уровень не может быть понижен");
-
-    public static Error XpAmountExceedsTotal() =>
-        Error.Validation("gamification.xp.amount.exceeds.total", "Списываемое количество XP превышает накопленное");
 
     public static Error SubmissionUrlMustBeAbsoluteHttpUrl(string fieldName) =>
         Error.Validation(
@@ -186,25 +171,10 @@ public static class ProgressErrors
             "education.content.service.unavailable",
             "Сервис образовательного контента недоступен");
 
-    public static Error QuizAttemptLevelTestForbidden() =>
-        Error.Validation(
-            "quiz.attempt.level.test.forbidden",
-            "У level-test свой флоу — пройдите тест уровня на /level-test");
-
     public static Error QuizAccessDenied() =>
         Error.Authorization(
             "quiz.access.denied",
             "У вас нет доступа к этому квизу. Запишитесь на курс или выберите полный тариф");
-
-    public static Error QuizCheckLevelTestForbidden() =>
-        Error.Validation(
-            "quiz.check.level.test.forbidden",
-            "Проверка ответов недоступна в тесте уровня");
-
-    public static Error QuizAdminLevelTestForbidden() =>
-        Error.Validation(
-            "quiz.admin.level.test.forbidden",
-            "Аналитика теста уровня доступна на отдельной странице");
 
     public static Error QuizNotInCourse() =>
         Error.NotFound("quiz.not.in.course", "Тест не входит в этот курс");
@@ -265,36 +235,4 @@ public static class ProgressErrors
             "auth.service.unavailable",
             "Сервис пользователей недоступен");
 
-    public static Error LevelTestAttemptAnonymousIdRequired() =>
-        Error.Validation(
-            "level.test.attempt.anonymous.id.required",
-            "Для анонимной попытки нужен анонимный идентификатор");
-
-    public static Error LevelTestAttemptQuizPurposeInvalid() =>
-        Error.Validation(
-            "level.test.attempt.quiz.purpose.invalid",
-            "Этот квиз не является тестом на уровень");
-
-    public static Error LevelTestAttemptNotFound() =>
-        Error.NotFound("level.test.attempt.not.found", "Попытка теста на уровень не найдена");
-
-    public static Error LevelTestAttemptAlreadyClaimed() =>
-        Error.Conflict(
-            "level.test.attempt.already.claimed",
-            "Попытка уже привязана к другому пользователю");
-
-    public static Error LevelTestAttemptResultAuthenticationRequired() =>
-        Error.Authentication(
-            "level.test.attempt.result.authentication.required",
-            "Войдите, чтобы увидеть полный разбор попытки");
-
-    public static Error LevelTestAttemptResultAccessDenied() =>
-        Error.Authorization(
-            "level.test.attempt.result.access.denied",
-            "Полный разбор доступен только владельцу попытки");
-
-    public static Error LevelTestAiGradingNotPending() =>
-        Error.Conflict(
-            "level.test.attempt.ai.grading.not.pending",
-            "AI-грейдинг для этой попытки не ожидается");
 }

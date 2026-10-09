@@ -1,4 +1,4 @@
-using ProgressService.Core.Abstractions;
+﻿using ProgressService.Core.Abstractions;
 using ProgressService.Domain.Issues;
 using ProgressService.Domain.Issues.Events;
 using ProgressService.Domain.IssueSubmissions;
@@ -9,7 +9,7 @@ namespace ProgressService.Core.Features.Issues.EventHandlers;
 /// <summary>
 /// При reopen submission'а синхронизирует статус IssueProgress: переводит COMPLETED|REQUESTED_CHANGES
 /// → UNDER_REVIEW. Если был COMPLETED — IssueProgress сам поднимет
-/// <see cref="IssueProgressReopenedEvent"/> для отката XP / project / module прогресса.
+/// <see cref="IssueProgressReopenedEvent"/> для отката project / module прогресса.
 /// </summary>
 public sealed class ReopenIssueProgressOnSubmissionReviewReopened
     : IDomainEventHandler<IssueSubmissionReviewReopenedEvent>

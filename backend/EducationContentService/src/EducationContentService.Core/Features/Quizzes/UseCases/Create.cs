@@ -1,4 +1,4 @@
-using Core.Abstractions;
+﻿using Core.Abstractions;
 using Core.Database;
 using Core.Validation;
 using EducationContentService.Contracts.Quizzes;
@@ -93,7 +93,8 @@ public sealed class CreateQuizHandler : ICommandHandler<Guid, CreateQuizCommand>
 
         QuizPurpose purpose = QuizPurpose.MATERIAL_CHECK;
         if (!string.IsNullOrWhiteSpace(command.Request.Purpose)
-            && !Enum.TryParse(command.Request.Purpose, ignoreCase: true, out purpose))
+            && (!Enum.TryParse(command.Request.Purpose, ignoreCase: true, out purpose)
+                || !Enum.IsDefined(purpose)))
         {
             return EducationErrors.InvalidQuizPurpose(command.Request.Purpose);
         }
@@ -105,10 +106,6 @@ public sealed class CreateQuizHandler : ICommandHandler<Guid, CreateQuizCommand>
         Result<List<QuizQuestion>, Error> questionsResult = QuizQuestionMapper.Map(command.Request.Questions);
         if (questionsResult.IsFailure)
             return questionsResult.Error;
-
-        Result<LevelTestConfig?, Error> configResult = QuizLevelTestConfigMapper.Map(command.Request.LevelTestConfig);
-        if (configResult.IsFailure)
-            return configResult.Error;
 
         bool titleConflict = await _quizzesRepository.ExistsByTitleAsync(
             title, excludeId: null, cancellationToken);
@@ -129,7 +126,6 @@ public sealed class CreateQuizHandler : ICommandHandler<Guid, CreateQuizCommand>
             questionsResult.Value,
             command.Request.PassingScorePercent,
             purpose,
-            configResult.Value,
             accessType);
         if (quizResult.IsFailure)
             return quizResult.Error;

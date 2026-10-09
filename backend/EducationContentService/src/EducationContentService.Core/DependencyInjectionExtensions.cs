@@ -42,9 +42,6 @@ public static class DependencyInjectionExtensions
         services.AddHandlers(typeof(DependencyInjectionExtensions).Assembly);
         services.AddValidatorsFromAssembly(typeof(DependencyInjectionExtensions).Assembly);
 
-        // ST-7 (#482) observability — singleton funnel-metrics aggregator (level-test).
-        services.AddSingleton<Diagnostics.EducationContentMetrics>();
-
         services.AddFileServiceHttpCommunication(configuration);
         services.AddMaterialProcessingServiceHttpCommunication(configuration);
         services.AddProgressServiceHttpCommunication(configuration, enableCaching: true);

@@ -1,7 +1,6 @@
 # EducationContentService
 
-Owns courses, modules, materials, projects and issues with review specs, quizzes (including
-level tests), collections, roadmaps, and short links in PostgreSQL schema `education`
+Owns courses, modules, materials, projects and issues with review specs, quizzes, collections, roadmaps, and short links in PostgreSQL schema `education`
 (port 8001).
 
 ## Context routing

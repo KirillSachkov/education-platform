@@ -1,12 +1,12 @@
-namespace ProgressService.Contracts.Requests;
+﻿namespace ProgressService.Contracts.Requests;
 
 /// <summary>
 ///     Запрос на ручную установку ЛЮБОГО статуса прогресса задачи студенту (#518).
 ///     Автор/админ/модератор переключает статус из полной палитры
 ///     (NOT_STARTED / IN_PROGRESS / UNDER_REVIEW / REQUESTED_CHANGES / COMPLETED), минуя обычный
 ///     workflow проверки. Для COMPLETED создаётся синтетический принятый submission и прогоняется
-///     каскад XP/project/module; для остальных — только переключение статуса прогресса с
-///     симметричным откатом XP при уходе из COMPLETED.
+///     каскад project/module; для остальных — только переключение статуса прогресса с
+///     симметричным откатом прогресса при уходе из COMPLETED.
 /// </summary>
 /// <param name="UserId">Студент, которому выставляется статус задачи.</param>
 /// <param name="TargetStatus">

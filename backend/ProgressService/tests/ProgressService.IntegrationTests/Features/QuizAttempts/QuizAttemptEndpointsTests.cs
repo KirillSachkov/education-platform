@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using ContentAccess;
@@ -19,7 +19,6 @@ public sealed class QuizAttemptEndpointsTests : ProgressServiceTestsBase
     private const string MULTI_CHOICE = "MULTI_CHOICE";
     private const string OPEN_TEXT = "OPEN_TEXT";
     private const string MATERIAL_CHECK = "MATERIAL_CHECK";
-    private const string LEVEL_TEST = "LEVEL_TEST";
     private const string ENROLLED = "ENROLLED";
     private const int PASSING_SCORE = 70;
 
@@ -144,8 +143,7 @@ public sealed class QuizAttemptEndpointsTests : ProgressServiceTestsBase
             quizId,
             MATERIAL_CHECK,
             PASSING_SCORE,
-            [new QuizAnswerKeyQuestionDto(_q1, MULTI_CHOICE, "Вопрос 1", null, null, [optionA, optionC], null)],
-            LevelTestConfig: null));
+            [new QuizAnswerKeyQuestionDto(_q1, MULTI_CHOICE, "Вопрос 1", null, null, [optionA, optionC], null)]));
 
         AuthenticateAs(Guid.NewGuid(), "platform-participant");
 
@@ -172,8 +170,7 @@ public sealed class QuizAttemptEndpointsTests : ProgressServiceTestsBase
             quizId,
             MATERIAL_CHECK,
             PASSING_SCORE,
-            [new QuizAnswerKeyQuestionDto(_q1, MULTI_CHOICE, "Вопрос 1", null, null, [optionA, optionC], null)],
-            LevelTestConfig: null));
+            [new QuizAnswerKeyQuestionDto(_q1, MULTI_CHOICE, "Вопрос 1", null, null, [optionA, optionC], null)]));
 
         AuthenticateAs(Guid.NewGuid(), "platform-participant");
 
@@ -197,8 +194,7 @@ public sealed class QuizAttemptEndpointsTests : ProgressServiceTestsBase
             quizId,
             MATERIAL_CHECK,
             PASSING_SCORE,
-            [new QuizAnswerKeyQuestionDto(_q1, OPEN_TEXT, "Открытый вопрос 1", null, null, [], "Эталонное объяснение")],
-            LevelTestConfig: null));
+            [new QuizAnswerKeyQuestionDto(_q1, OPEN_TEXT, "Открытый вопрос 1", null, null, [], "Эталонное объяснение")]));
 
         AuthenticateAs(Guid.NewGuid(), "platform-participant");
 
@@ -227,8 +223,7 @@ public sealed class QuizAttemptEndpointsTests : ProgressServiceTestsBase
             [
                 new QuizAnswerKeyQuestionDto(_q1, SINGLE_CHOICE, "Вопрос 1", null, null, [_q1Correct], null),
                 new QuizAnswerKeyQuestionDto(_q2, OPEN_TEXT, "Открытый вопрос 2", null, null, [], "Эталон для самопроверки"),
-            ],
-            LevelTestConfig: null));
+            ]));
 
         AuthenticateAs(Guid.NewGuid(), "platform-participant");
 
@@ -302,31 +297,6 @@ public sealed class QuizAttemptEndpointsTests : ProgressServiceTestsBase
     }
 
     [Fact]
-    public async Task Submit_LevelTestQuiz_Returns400LevelTestForbidden()
-    {
-        // У level-test собственный флоу попыток (/level-test) — обычный сабмит запрещён.
-        Guid quizId = Guid.NewGuid();
-        EducationContentClient.AddQuizAnswerKey(new QuizAnswerKeyDto(
-            quizId,
-            LEVEL_TEST,
-            PASSING_SCORE,
-            [new QuizAnswerKeyQuestionDto(_q1, SINGLE_CHOICE, "Вопрос 1", null, null, [_q1Correct], null)],
-            LevelTestConfig: null));
-
-        AuthenticateAs(Guid.NewGuid(), "platform-participant");
-
-        HttpResponseMessage response = await AppHttpClient.PostAsJsonAsync(
-            AttemptsUrl(quizId),
-            new SubmitQuizAttemptRequest([new SubmitQuizAnswerItem(_q1, [_q1Correct], null)]));
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal("quiz.attempt.level.test.forbidden", await ReadErrorCodeAsync(response));
-
-        int attemptsCount = await ExecuteInDb(async db => await db.QuizAttempts.CountAsync());
-        Assert.Equal(0, attemptsCount);
-    }
-
-    [Fact]
     public async Task Submit_UnknownQuiz_Returns404()
     {
         AuthenticateAs(Guid.NewGuid(), "platform-participant");
@@ -376,8 +346,7 @@ public sealed class QuizAttemptEndpointsTests : ProgressServiceTestsBase
             quizId,
             MATERIAL_CHECK,
             PASSING_SCORE,
-            [new QuizAnswerKeyQuestionDto(_q1, SINGLE_CHOICE, "Вопрос 1", null, null, [_q1Correct], null)],
-            LevelTestConfig: null));
+            [new QuizAnswerKeyQuestionDto(_q1, SINGLE_CHOICE, "Вопрос 1", null, null, [_q1Correct], null)]));
 
         AuthenticateAs(Guid.NewGuid(), "platform-participant");
 
@@ -409,8 +378,7 @@ public sealed class QuizAttemptEndpointsTests : ProgressServiceTestsBase
             quizId,
             MATERIAL_CHECK,
             PASSING_SCORE,
-            [new QuizAnswerKeyQuestionDto(_q1, SINGLE_CHOICE, "Вопрос 1", null, null, [_q1Correct], null)],
-            LevelTestConfig: null));
+            [new QuizAnswerKeyQuestionDto(_q1, SINGLE_CHOICE, "Вопрос 1", null, null, [_q1Correct], null)]));
 
         AuthenticateAs(Guid.NewGuid(), "platform-participant");
 
@@ -442,8 +410,7 @@ public sealed class QuizAttemptEndpointsTests : ProgressServiceTestsBase
             [
                 new QuizAnswerKeyQuestionDto(_q1, MULTI_CHOICE, "Вопрос 1", null, null, [_q1Correct, _q1Wrong], null),
                 new QuizAnswerKeyQuestionDto(_q2, OPEN_TEXT, "Открытый вопрос 2", null, null, [], "Эталон"),
-            ],
-            LevelTestConfig: null));
+            ]));
 
         AuthenticateAs(userId, "platform-participant");
 
@@ -489,8 +456,7 @@ public sealed class QuizAttemptEndpointsTests : ProgressServiceTestsBase
                     Options: null, Explanation: explanation),
                 new QuizAnswerKeyQuestionDto(
                     _q2, SINGLE_CHOICE, "Вопрос без пояснения", null, null, [_q2Correct], null),
-            ],
-            LevelTestConfig: null));
+            ]));
 
         AuthenticateAs(userId, "platform-participant");
 
@@ -709,7 +675,6 @@ public sealed class QuizAttemptEndpointsTests : ProgressServiceTestsBase
                 new QuizAnswerKeyQuestionDto(_q2, SINGLE_CHOICE, "Вопрос 2", null, null, [_q2Correct], null),
                 new QuizAnswerKeyQuestionDto(_q3, SINGLE_CHOICE, "Вопрос 3", null, null, [_q3Correct], null),
             ],
-            LevelTestConfig: null,
             AccessType: accessType));
         return quizId;
     }

@@ -1,12 +1,6 @@
-namespace ProgressService.Contracts.Responses;
+﻿namespace ProgressService.Contracts.Responses;
 
-/// <summary>
-///     Author per-course аналитика по тестам (#634): тесты ЭТОГО курса с агрегатами
-///     попыток. Зеркало <see cref="QuizAdminOverviewResponse"/>, но скоупится одним
-///     курсом (квизы из его <c>module_items</c>), поэтому без полей курса в строке.
-///     LEVEL_TEST исключён (в blueprint.QuizIds его нет; defense-in-depth — фильтр по
-///     Purpose на enrichment'е). Доступ — владелец курса / admin / content-moderator.
-/// </summary>
+/// <summary>Аналитика попыток учебных квизов указанного курса.</summary>
 public sealed record CourseQuizStatsOverviewResponse(
     Guid CourseId,
     int TotalQuizzesWithAttempts,

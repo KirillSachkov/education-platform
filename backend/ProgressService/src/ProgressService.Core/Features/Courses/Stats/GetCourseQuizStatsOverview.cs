@@ -1,4 +1,4 @@
-using System.Data.Common;
+﻿using System.Data.Common;
 using Core.Abstractions;
 using Core.Database;
 using Dapper;
@@ -30,20 +30,11 @@ public sealed class GetCourseQuizStatsOverviewEndpoint : IEndpoint
             .RequirePermissions(PlatformPermissions.Courses.MANAGE);
 }
 
-/// <summary>
-///     Author per-course аналитика по тестам (#634): агрегат <c>quiz_attempts</c> по
-///     квизам ЭТОГО курса (из <c>blueprint.QuizIds</c> — PUBLISHED module-placed
-///     MATERIAL_CHECK квизы) — число попыток, уникальные студенты, доля зачётов, средний
-///     балл, + top-line KPI. Зеркало <see cref="QuizAttempts.Admin.GetQuizAdminOverviewHandler"/>,
-///     но SQL фильтруется <c>quiz_id = ANY(@QuizIds)</c> и доступ — владелец курса
-///     (ownership через ECS), а не глобальный <c>Users.VIEW</c>. Курс без тестов →
-///     200 с пустым списком (не 404). LEVEL_TEST в blueprint не попадает; фильтр по
-///     Purpose на enrichment'е — defense-in-depth. Read-only Dapper.
-/// </summary>
+/// <summary>Агрегирует попытки только по квизам указанного курса под проверкой ownership.
+///     Курс без квизов возвращает пустой список.</summary>
 public sealed class GetCourseQuizStatsOverviewHandler
     : IQueryHandlerWithResult<CourseQuizStatsOverviewResponse, GetCourseQuizStatsOverviewQuery>
 {
-    private const string LEVEL_TEST = "LEVEL_TEST";
     private const int SUMMARY_BATCH_SIZE = 200;
 
     private readonly ITransactionManager _transactionManager;
@@ -119,8 +110,6 @@ public sealed class GetCourseQuizStatsOverviewHandler
             return Empty(query.CourseId);
         }
 
-        // Заголовки тестов + defense-in-depth фильтр LEVEL_TEST (blueprint.QuizIds его
-        // не несёт, но если когда-нибудь понесёт — не утекает в аналитику курса).
         var summaryList = new List<QuizSummaryLookupDto>(aggregates.Count);
         foreach (Guid[] batch in aggregates.Select(a => a.QuizId).Chunk(SUMMARY_BATCH_SIZE))
         {
@@ -139,8 +128,7 @@ public sealed class GetCourseQuizStatsOverviewHandler
             .ToDictionary(g => g.Key, g => g.First());
 
         List<AggregateRow> kept = aggregates
-            .Where(a => summaries.TryGetValue(a.QuizId, out QuizSummaryLookupDto? s)
-                && !string.Equals(s.Purpose, LEVEL_TEST, StringComparison.Ordinal))
+            .Where(a => summaries.ContainsKey(a.QuizId))
             .ToList();
 
         if (kept.Count == 0)

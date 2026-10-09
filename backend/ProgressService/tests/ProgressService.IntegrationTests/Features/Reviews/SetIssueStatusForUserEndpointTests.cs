@@ -1,10 +1,9 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
 using Microsoft.EntityFrameworkCore;
 using ProgressService.Contracts.Requests;
 using ProgressService.Domain.Enrollments;
-using ProgressService.Domain.Gamification;
 using ProgressService.Domain.IssueSubmissions;
 using ProgressService.Domain.Issues;
 using ProgressService.Domain.Modules;
@@ -16,7 +15,6 @@ namespace ProgressService.IntegrationTests.Features.Reviews;
 /// <summary>
 ///     Ручной staff-override статуса задачи студенту (#518). Автор/админ/модератор выставляет ЛЮБОЙ
 ///     статус прогресса из полной палитры, минуя обычный workflow. COMPLETED → синтетический принятый
-///     submission + каскад XP/project/module + integration event; уход из COMPLETED → откат XP/project/
 ///     module; промежуточные статусы (NOT_STARTED / IN_PROGRESS / UNDER_REVIEW / REQUESTED_CHANGES) —
 ///     только переключение статуса без submission'а.
 /// </summary>
@@ -37,7 +35,7 @@ public class SetIssueStatusForUserEndpointTests : ProgressServiceTestsBase
             request);
 
     [Fact]
-    public async Task SetStatus_TargetCompleted_NeverStarted_ShouldRollUpAndAwardXpAndPublishApproved()
+    public async Task SetStatus_TargetCompleted_NeverStarted_ShouldRollUpAndPublishApproved()
     {
         Guid authorId = Guid.NewGuid();
         Guid studentId = Guid.NewGuid();
@@ -82,13 +80,6 @@ public class SetIssueStatusForUserEndpointTests : ProgressServiceTestsBase
         Assert.NotNull(moduleItem);
         Assert.Equal(ModuleItemProgressStatus.COMPLETED, moduleItem.Status);
 
-        int xpAwardCount = await ExecuteInDb(db =>
-            db.XpAwards.CountAsync(x =>
-                x.UserId == studentId
-                && x.AwardType == XpAwardType.ISSUE_APPROVED
-                && x.SourceId == issueProgress!.Id));
-        Assert.Equal(1, xpAwardCount);
-
         Shared.Messaging.IntegrationEvents.Progress.Events.IssueSubmissionApproved approved =
             NoOpOutboxService.Published
                 .OfType<Shared.Messaging.IntegrationEvents.Progress.Events.IssueSubmissionApproved>()
@@ -104,7 +95,7 @@ public class SetIssueStatusForUserEndpointTests : ProgressServiceTestsBase
     }
 
     [Fact]
-    public async Task SetStatus_TargetCompleted_Twice_ShouldBeIdempotentNoDoubleXp()
+    public async Task SetStatus_TargetCompleted_Twice_ShouldBeIdempotent()
     {
         Guid authorId = Guid.NewGuid();
         Guid studentId = Guid.NewGuid();
@@ -122,8 +113,6 @@ public class SetIssueStatusForUserEndpointTests : ProgressServiceTestsBase
 
         IssueProgress issueProgress = (await ExecuteInDb(db =>
             db.IssueProgresses.FirstAsync(x => x.IssueId == issueId)));
-        long totalXpBefore = await TotalXpAsync(studentId);
-        Assert.Equal(1, await XpCountAsync(studentId, issueProgress.Id));
 
         NoOpOutboxService.Reset();
 
@@ -132,14 +121,12 @@ public class SetIssueStatusForUserEndpointTests : ProgressServiceTestsBase
 
         Assert.Equal(IssueProgressStatus.COMPLETED,
             (await ExecuteInDb(db => db.IssueProgresses.FirstAsync(x => x.IssueId == issueId))).Status);
-        Assert.Equal(1, await XpCountAsync(studentId, issueProgress.Id));
-        Assert.Equal(totalXpBefore, await TotalXpAsync(studentId));
         Assert.Empty(NoOpOutboxService.Published
             .OfType<Shared.Messaging.IntegrationEvents.Progress.Events.IssueSubmissionApproved>());
     }
 
     [Fact]
-    public async Task SetStatus_CompletedToNotStarted_ShouldRollBackXpAndProjectAndModule()
+    public async Task SetStatus_CompletedToNotStarted_ShouldRollBackProjectAndModule()
     {
         Guid authorId = Guid.NewGuid();
         Guid studentId = Guid.NewGuid();
@@ -157,7 +144,6 @@ public class SetIssueStatusForUserEndpointTests : ProgressServiceTestsBase
 
         IssueProgress issueProgress = await ExecuteInDb(db =>
             db.IssueProgresses.FirstAsync(x => x.IssueId == issueId));
-        long totalXpAfterComplete = await TotalXpAsync(studentId);
 
         HttpResponseMessage rollback = await SetStatusAsync(
             courseId, issueId, new SetIssueStatusForUserRequest(studentId, "NOT_STARTED"));
@@ -169,11 +155,7 @@ public class SetIssueStatusForUserEndpointTests : ProgressServiceTestsBase
         Assert.Null(after.StartedAt);
         Assert.Null(after.CompletedAt);
 
-        // ISSUE_APPROVED XP откатился (revoke удаляет ledger-строку этого источника). Total XP
-        // снизился (зеркалит каноничный ReopenReview — ModuleCompleted/ProjectCompleted XP сам
         // reopen-каскад не отзывает, поэтому проверяем < , а не == 0).
-        Assert.Equal(0, await XpCountAsync(studentId, issueProgress.Id));
-        Assert.True(await TotalXpAsync(studentId) < totalXpAfterComplete);
 
         // ProjectProgress декрементирован.
         ProjectProgress projectProgress = await ExecuteInDb(db =>
@@ -189,25 +171,25 @@ public class SetIssueStatusForUserEndpointTests : ProgressServiceTestsBase
     }
 
     [Fact]
-    public async Task SetStatus_CompletedToInProgress_ShouldRollBackXp()
+    public async Task SetStatus_CompletedToInProgress_ShouldRollBackProgress()
     {
         await AssertRollbackFromCompletedAsync("IN_PROGRESS", IssueProgressStatus.IN_PROGRESS);
     }
 
     [Fact]
-    public async Task SetStatus_CompletedToRequestedChanges_ShouldRollBackXp()
+    public async Task SetStatus_CompletedToRequestedChanges_ShouldRollBackProgress()
     {
         await AssertRollbackFromCompletedAsync("REQUESTED_CHANGES", IssueProgressStatus.REQUESTED_CHANGES);
     }
 
     [Fact]
-    public async Task SetStatus_CompletedToUnderReview_ShouldRollBackXp()
+    public async Task SetStatus_CompletedToUnderReview_ShouldRollBackProgress()
     {
         await AssertRollbackFromCompletedAsync("UNDER_REVIEW", IssueProgressStatus.UNDER_REVIEW);
     }
 
     [Fact]
-    public async Task SetStatus_NotStartedToInProgress_ShouldSetStatusNoSubmissionNoXp()
+    public async Task SetStatus_NotStartedToInProgress_ShouldSetStatusNoSubmission()
     {
         Guid authorId = Guid.NewGuid();
         Guid studentId = Guid.NewGuid();
@@ -229,11 +211,8 @@ public class SetIssueStatusForUserEndpointTests : ProgressServiceTestsBase
             db.IssueProgresses.FirstAsync(x => x.IssueId == issueId));
         Assert.Equal(IssueProgressStatus.IN_PROGRESS, issueProgress.Status);
 
-        // Никакого submission'а / approve-event / XP.
         Assert.Equal(0, await ExecuteInDb(db =>
             db.IssueSubmissions.CountAsync(x => x.IssueProgressId == issueProgress.Id)));
-        Assert.Equal(0, await XpCountAsync(studentId, issueProgress.Id));
-        Assert.Equal(0, await TotalXpAsync(studentId));
         Assert.Empty(NoOpOutboxService.Published
             .OfType<Shared.Messaging.IntegrationEvents.Progress.Events.IssueSubmissionApproved>());
     }
@@ -260,7 +239,6 @@ public class SetIssueStatusForUserEndpointTests : ProgressServiceTestsBase
         IssueProgress issueProgress = await ExecuteInDb(db =>
             db.IssueProgresses.FirstAsync(x => x.IssueId == issueId));
         Assert.Equal(IssueProgressStatus.NOT_STARTED, issueProgress.Status);
-        Assert.Equal(0, await XpCountAsync(studentId, issueProgress.Id));
     }
 
     [Fact]
@@ -357,7 +335,6 @@ public class SetIssueStatusForUserEndpointTests : ProgressServiceTestsBase
 
     /// <summary>
     ///     Завершает задачу через endpoint, затем переводит в <paramref name="targetRaw"/> и проверяет
-    ///     откат XP + статус. Общий хелпер для IN_PROGRESS / REQUESTED_CHANGES / UNDER_REVIEW.
     /// </summary>
     private async Task AssertRollbackFromCompletedAsync(string targetRaw, IssueProgressStatus expected)
     {
@@ -377,8 +354,6 @@ public class SetIssueStatusForUserEndpointTests : ProgressServiceTestsBase
 
         IssueProgress issueProgress = await ExecuteInDb(db =>
             db.IssueProgresses.FirstAsync(x => x.IssueId == issueId));
-        Assert.Equal(1, await XpCountAsync(studentId, issueProgress.Id));
-        long totalXpAfterComplete = await TotalXpAsync(studentId);
 
         HttpResponseMessage rollback = await SetStatusAsync(
             courseId, issueId, new SetIssueStatusForUserRequest(studentId, targetRaw));
@@ -389,28 +364,9 @@ public class SetIssueStatusForUserEndpointTests : ProgressServiceTestsBase
         Assert.Equal(expected, after.Status);
         Assert.Null(after.CompletedAt);
 
-        // ISSUE_APPROVED XP откатился (revoke удаляет ledger-строку источника); total XP снизился
-        // (каноничный ReopenReview не отзывает Module/ProjectCompleted XP — проверяем <, не == 0).
-        Assert.Equal(0, await XpCountAsync(studentId, issueProgress.Id));
-        Assert.True(await TotalXpAsync(studentId) < totalXpAfterComplete);
-
         ProjectProgress projectProgress = await ExecuteInDb(db =>
             db.ProjectProgresses.FirstAsync(x => x.ProjectId == projectId));
         Assert.Equal(0, projectProgress.TotalIssuesCompleted);
-    }
-
-    private Task<int> XpCountAsync(Guid userId, Guid sourceId) =>
-        ExecuteInDb(db => db.XpAwards.CountAsync(x =>
-            x.UserId == userId && x.AwardType == XpAwardType.ISSUE_APPROVED && x.SourceId == sourceId));
-
-    private async Task<long> TotalXpAsync(Guid userId)
-    {
-        return await ExecuteInDb(async db =>
-        {
-            UserGamificationStats? stats = await db.UserGamificationStats
-                .FirstOrDefaultAsync(x => x.UserId == userId);
-            return stats?.TotalXp ?? 0;
-        });
     }
 
     private void SeedCourseIssueContext(Guid courseId, Guid authorId, Guid projectId, Guid issueId, Guid? moduleId)

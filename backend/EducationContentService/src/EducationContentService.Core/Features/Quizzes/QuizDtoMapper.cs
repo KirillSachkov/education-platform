@@ -1,4 +1,4 @@
-using EducationContentService.Contracts.Quizzes;
+﻿using EducationContentService.Contracts.Quizzes;
 using EducationContentService.Domain.Quizzes;
 
 namespace EducationContentService.Core.Features.Quizzes;
@@ -31,10 +31,10 @@ public static class QuizDtoMapper
                     q.ReferenceAnswer,
                     q.Explanation))
                 .ToList(),
-            ToLevelTestConfigDto(quiz.LevelTestConfig),
             quiz.CreatedAt,
             quiz.UpdatedAt);
 
+    /// <summary>Студенческая проекция квиза без ключа ответов.</summary>
     /// <param name="materialId">
     ///     Материал-контекст запроса (<c>GET /materials/{id}/quiz</c>) либо <c>null</c>
     ///     для standalone-чтения <c>GET /quizzes/{id}/student</c> (#490).
@@ -55,18 +55,6 @@ public static class QuizDtoMapper
                     q.Options.Select(o => new QuizOptionDto(o.Id, o.Text)).ToList()))
                 .ToList());
 
-    private static LevelTestConfigDto? ToLevelTestConfigDto(LevelTestConfig? config) =>
-        config is null
-            ? null
-            : new LevelTestConfigDto(
-                config.LevelThresholds
-                    .Select(t => new LevelThresholdDto(t.Level.ToString(), t.MinPercent))
-                    .ToList(),
-                config.Sections
-                    .Select(s => new LevelTestSectionDto(s.Key, s.Title, s.Weight, s.RecommendedCourseId))
-                    .ToList(),
-                config.FallbackCourseId);
-
     public static QuizAnswerKeyDto ToAnswerKeyDto(Quiz quiz) =>
         new(
             quiz.Id,
@@ -84,6 +72,5 @@ public static class QuizDtoMapper
                     q.Options.Select(o => new QuizOptionDto(o.Id, o.Text)).ToList(),
                     q.Explanation))
                 .ToList(),
-            ToLevelTestConfigDto(quiz.LevelTestConfig),
             quiz.AccessType.ToString());
 }

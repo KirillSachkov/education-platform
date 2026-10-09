@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using EducationContentService.Core.Features.Quizzes.Queries;
 using EducationContentService.Domain;
 using EducationContentService.Domain.Courses;
@@ -10,12 +10,7 @@ using Ordering;
 
 namespace EducationContentService.IntegrationTests.Features;
 
-/// <summary>
-///     ST-12 (#492), Task B: общая авторская библиотека квизов <c>GET /quizzes/mine</c> —
-///     все квизы caller'а любого статуса и purpose (LEVEL_TEST фильтрует фронт),
-///     newest-first, counts (materials по <c>materials.quiz_id</c>, курсы по
-///     <c>course_quizzes</c>); admin видит все, чужие скрыты.
-/// </summary>
+/// <summary>Список квизов автора с фильтрами и проверкой доступа.</summary>
 [Collection(nameof(IntegrationTestsFixture))]
 public class GetMyQuizzesTests : EducationContentServiceTestsBase
 {
@@ -39,8 +34,8 @@ public class GetMyQuizzesTests : EducationContentServiceTestsBase
         await SeedMaterialWithQuizAsync(authorId, usedQuizId);
         await SeedMaterialWithQuizAsync(authorId, usedQuizId);
 
-        Guid draftLevelTestId = await SeedQuizAsync(
-            authorId, publish: false, AccessType.PUBLIC, QuizPurpose.LEVEL_TEST, "Черновик level-test");
+        Guid draftQuizId = await SeedQuizAsync(
+            authorId, publish: false, AccessType.PUBLIC, QuizPurpose.MATERIAL_CHECK, "Черновик квиза");
 
         await SeedQuizAsync(
             otherAuthorId, publish: true, AccessType.PUBLIC, QuizPurpose.MATERIAL_CHECK, "Чужой квиз");
@@ -53,10 +48,10 @@ public class GetMyQuizzesTests : EducationContentServiceTestsBase
 
         Assert.Equal(2, quizzes.Count);
 
-        // Newest-first: level-test создан позже.
-        Assert.Equal(draftLevelTestId, quizzes[0].Id);
+        // Newest-first: черновик создан позже.
+        Assert.Equal(draftQuizId, quizzes[0].Id);
         Assert.Equal("DRAFT", quizzes[0].Status);
-        Assert.Equal("LEVEL_TEST", quizzes[0].Purpose);
+        Assert.Equal("MATERIAL_CHECK", quizzes[0].Purpose);
         Assert.Equal(0, quizzes[0].UsedByMaterialsCount);
         Assert.Equal(0, quizzes[0].CourseCount);
 

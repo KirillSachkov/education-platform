@@ -1,4 +1,4 @@
-using Core.Abstractions;
+﻿using Core.Abstractions;
 using Core.Database;
 using Core.Validation;
 using EducationContentService.Contracts.Quizzes;
@@ -57,13 +57,8 @@ public sealed class UpdateQuizEndpoint : IEndpoint
     }
 }
 
-/// <summary>
-///     Обновляет заголовок / проходной балл / весь набор вопросов / level-test
-///     конфигурацию целиком (MVP-контракт <see cref="Quiz.UpdateQuestions"/>:
-///     replace, не patch; <c>LevelTestConfig = null</c> — очищает).
-///     При смене <see cref="Quiz.AccessType"/> публикует <c>quiz.access_changed</c> (#490) —
-///     self-consume handler пересчитывает Redis-теги (только для PUBLISHED-квизов).
-/// </summary>
+/// <summary>Обновляет standalone-квиз; заменяет вопросы целиком.
+///     Проверяет ownership и сохраняет изменение доступа через outbox.</summary>
 public sealed class UpdateQuizHandler : ICommandHandler<Guid, UpdateQuizCommand>
 {
     private readonly IQuizzesRepository _quizzesRepository;
@@ -117,10 +112,6 @@ public sealed class UpdateQuizHandler : ICommandHandler<Guid, UpdateQuizCommand>
         if (questionsResult.IsFailure)
             return questionsResult.Error;
 
-        Result<LevelTestConfig?, Error> configResult = QuizLevelTestConfigMapper.Map(command.Request.LevelTestConfig);
-        if (configResult.IsFailure)
-            return configResult.Error;
-
         bool titleConflict = await _quizzesRepository.ExistsByTitleAsync(
             title, excludeId: quiz.Id, cancellationToken);
         if (titleConflict)
@@ -134,7 +125,7 @@ public sealed class UpdateQuizHandler : ICommandHandler<Guid, UpdateQuizCommand>
         AccessType previousAccessType = quiz.AccessType;
 
         UnitResult<Error> updateResult = quiz.Update(
-            title, command.Request.PassingScorePercent, configResult.Value, accessType);
+            title, command.Request.PassingScorePercent, accessType);
         if (updateResult.IsFailure)
             return updateResult.Error;
 

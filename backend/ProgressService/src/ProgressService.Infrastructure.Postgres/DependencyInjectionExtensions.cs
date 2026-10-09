@@ -1,4 +1,4 @@
-using AccessService.Contracts.HttpCommunication;
+﻿using AccessService.Contracts.HttpCommunication;
 using Core.Database;
 using Dapper;
 using AuthService.Contracts.HttpCommunication;
@@ -55,15 +55,11 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IMaterialViewRepository, MaterialViewRepository>();
         services.AddScoped<IAnonymousMaterialViewRepository, AnonymousMaterialViewRepository>();
         services.AddScoped<ICoursePositionRepository, CoursePositionRepository>();
-        services.AddScoped<IProgressUserRepository, ProgressUserRepository>();
         services.AddScoped<IMaterialBookmarkRepository, MaterialBookmarkRepository>();
         services.AddScoped<IMaterialNoteRepository, MaterialNoteRepository>();
         services.AddScoped<IIssueAuthorQuestionRepository, IssueAuthorQuestionRepository>();
         services.AddScoped<IQuizAttemptRepository, QuizAttemptRepository>();
-        services.AddScoped<ILevelTestAttemptRepository, LevelTestAttemptRepository>();
         services.AddScoped<ICourseCertificateRepository, CourseCertificateRepository>();
-        services.AddScoped<IUserStatsRepository, UserStatsRepository>();
-        services.AddScoped<IXpAwardRepository, XpAwardRepository>();
 
         services.AddDomainEvents(typeof(ConnectionStringNames).Assembly);
 

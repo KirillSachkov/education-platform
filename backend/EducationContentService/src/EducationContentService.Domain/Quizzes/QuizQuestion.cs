@@ -1,4 +1,4 @@
-namespace EducationContentService.Domain.Quizzes;
+﻿namespace EducationContentService.Domain.Quizzes;
 
 /// <summary>
 ///     Value Object — вопрос квиза. Хранится элементом упорядоченного JSONB-массива
@@ -66,12 +66,11 @@ public sealed class QuizQuestion
     public string? ReferenceAnswer { get; }
 
     /// <summary>
-    ///     Ключ секции level-test'а (kebab-case, например <c>csharp-basics</c>) —
-    ///     матчится с <see cref="LevelTestSection.Key"/>. <c>null</c> — вне секций.
+    ///     Ключ секции вопроса. <c>null</c> — вне секций.
     /// </summary>
     public string? Section { get; }
 
-    /// <summary>Сложность вопроса (метаданные level-test скоринга). <c>null</c> — не задана.</summary>
+    /// <summary>Сложность вопроса. <c>null</c> — не задана.</summary>
     public QuestionDifficulty? Difficulty { get; }
 
     /// <summary>

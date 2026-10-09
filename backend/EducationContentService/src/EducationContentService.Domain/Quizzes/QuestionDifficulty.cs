@@ -1,7 +1,7 @@
-namespace EducationContentService.Domain.Quizzes;
+﻿namespace EducationContentService.Domain.Quizzes;
 
 /// <summary>
-///     Сложность вопроса квиза (метаданные для level-test скоринга).
+///     Сложность вопроса квиза.
 ///     Сериализуется строкой (UPPER_SNAKE_CASE) в JSONB и API.
 /// </summary>
 public enum QuestionDifficulty

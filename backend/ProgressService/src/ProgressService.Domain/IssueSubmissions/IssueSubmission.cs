@@ -1,4 +1,4 @@
-using ProgressService.Domain.Issues;
+﻿using ProgressService.Domain.Issues;
 using ProgressService.Domain.Issues.Events;
 using SharedKernel.DomainEvents;
 
@@ -235,10 +235,10 @@ public sealed class IssueSubmission : AggregateRoot
     ///     в IN_REVIEW (закрепляя <paramref name="reviewerId"/> как принявшего), затем APPROVED.
     ///     <para>
     ///     <paramref name="cascadeProgress"/> = <c>true</c> (дефолт) поднимает
-    ///     <see cref="IssueSubmissionApproveEvent"/> — каскад на IssueProgress + XP/project/module +
+    ///     <see cref="IssueSubmissionApproveEvent"/> — каскад на IssueProgress + project/module +
     ///     integration event <c>issue_submission.approved</c> отрабатывают как у обычного Approve.
     ///     Передаётся <c>false</c>, когда shared <see cref="Issues.IssueProgress"/> уже COMPLETED
-    ///     (задачу приняли по другой попытке): XP/project/module начислены, повторный
+    ///     (задачу приняли по другой попытке): project/module начислены, повторный
     ///     <c>IssueProgress.Approve()</c> упал бы на не-UNDER_REVIEW — поэтому закрываем только саму
     ///     попытку, событие не поднимаем.
     ///     </para>
@@ -386,7 +386,7 @@ public sealed class IssueSubmission : AggregateRoot
     ///     Возвращает уже проверенную попытку (APPROVED или CHANGES_REQUESTED) обратно в статус
     ///     IN_REVIEW, очищая feedback и ReviewedAt. Используется, когда ревьюер хочет пересмотреть
     ///     своё решение (например, поставил Approve по ошибке). Каскад на IssueProgress + откат
-    ///     XP / project / module прогресса делается через домен-event <see cref="IssueSubmissionReviewReopenedEvent"/>.
+    ///     project / module прогресса делается через домен-event <see cref="IssueSubmissionReviewReopenedEvent"/>.
     /// </summary>
     public UnitResult<Error> ReopenReview()
     {

@@ -1,4 +1,4 @@
-using Core.Abstractions;
+﻿using Core.Abstractions;
 using Core.Database;
 using EducationContentService.Contracts.HttpCommunication;
 using EducationContentService.Contracts.Issues;
@@ -191,7 +191,7 @@ public sealed class StaffIssueCompletionService : IStaffIssueCompletionService
             issueProgress = issueProgressResult.Value;
         }
 
-        // Если задача уже принята по другой попытке — XP/project/module начислены. Не дублируем
+        // Если задача уже принята по другой попытке — project/module начислены. Не дублируем
         // каскад: создаём синтетический submission уже как APPROVED без approve-event (cascadeProgress=false).
         bool issueAlreadyComplete = issueProgress.Status == IssueProgressStatus.COMPLETED;
 

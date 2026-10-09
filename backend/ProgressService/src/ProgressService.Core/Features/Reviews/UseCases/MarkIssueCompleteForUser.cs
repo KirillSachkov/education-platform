@@ -1,4 +1,4 @@
-using Core.Abstractions;
+﻿using Core.Abstractions;
 using Core.Validation;
 using EducationContentService.Contracts.HttpCommunication;
 using EducationContentService.Contracts.ProgressLookup;
@@ -23,11 +23,11 @@ namespace ProgressService.Core.Features.Reviews.UseCases;
 ///     ModuleProgress → IssueProgress), создать синтетический принятый <see cref="IssueSubmission"/>
 ///     и прогнать обычный каскад через <see cref="IssueSubmission.ForceApprove"/> — единообразно с
 ///     <see cref="MarkIssueCompleteHandler"/>. Каскад (IssueProgress.Approve → COMPLETED +
-///     XP/project/module + integration event <c>issue_submission.approved</c>) отрабатывает
+///     project/module + integration event <c>issue_submission.approved</c>) отрабатывает
 ///     существующими guard'ами без изменений.
 ///     <para>
 ///     Идемпотентность: если <see cref="IssueProgress"/> уже COMPLETED (задачу приняли раньше) —
-///     no-op 200, XP не дублируется.
+///     no-op 200, события не дублируются.
 ///     </para>
 /// </summary>
 public sealed record MarkIssueCompleteForUserCommand(

@@ -1,9 +1,8 @@
-using System.Net;
+﻿using System.Net;
 using Core.Database;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using ProgressService.Core.Abstractions;
-using ProgressService.Domain.Gamification;
 using ProgressService.Domain.Materials;
 using ProgressService.Domain.Modules;
 using ProgressService.IntegrationTests.Infrastructure;
@@ -195,46 +194,11 @@ public class MarkMaterialViewedTests : ProgressServiceTestsBase
                 && x.ReferenceId == materialId
                 && x.Status == ModuleItemProgressStatus.COMPLETED));
 
-        // XP начисляется user-scoped один раз (source=materialId, award=MATERIAL_VIEWED)
         // вне зависимости от числа затронутых enrollment'ов.
-        int xpAwardCount = await ExecuteInDb(db =>
-            db.XpAwards.CountAsync(x =>
-                x.UserId == userId
-                && x.AwardType == XpAwardType.MATERIAL_VIEWED
-                && x.SourceId == materialId));
 
         Assert.Equal(1, viewCount);
         Assert.Equal(1, completedInA);
         Assert.Equal(1, completedInB);
-        Assert.Equal(1, xpAwardCount);
-    }
-
-    [Fact]
-    public async Task MarkMaterialViewed_MaterialViewedAward_StoresWithNullEnrollmentId()
-    {
-        // MATERIAL_VIEWED — единственный user-scoped award; enrollment_id nullable.
-        Guid userId = Guid.NewGuid();
-        Guid courseId = Guid.NewGuid();
-        Guid moduleId = Guid.NewGuid();
-        Guid materialId = Guid.NewGuid();
-
-        AuthenticateAs(userId, "platform-admin");
-        EducationContentClient.AddCourse(courseId, hasFreeContent: true);
-        EducationContentClient.AddMaterialCourseContext(materialId, courseId, moduleId, moduleItemsTotal: 1);
-
-        await EnrollAsync(courseId, userId);
-
-        HttpResponseMessage response = await PostAsync($"/progress/materials/{materialId}/view");
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-        XpAward? award = await ExecuteInDb(db =>
-            db.XpAwards.FirstOrDefaultAsync(x =>
-                x.UserId == userId
-                && x.AwardType == XpAwardType.MATERIAL_VIEWED
-                && x.SourceId == materialId));
-
-        Assert.NotNull(award);
-        Assert.Null(award.EnrollmentId);
     }
 
     [Fact]

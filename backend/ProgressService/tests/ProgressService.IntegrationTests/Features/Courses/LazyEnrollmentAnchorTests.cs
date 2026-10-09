@@ -1,10 +1,9 @@
-using System.Net;
+﻿using System.Net;
 using ContentAccess;
 using Microsoft.EntityFrameworkCore;
 using ProgressService.Contracts.Requests;
 using ProgressService.Contracts.Responses;
 using ProgressService.Domain.Enrollments;
-using ProgressService.Domain.Gamification;
 using ProgressService.Domain.Modules;
 using ProgressService.Domain.Projects;
 using ProgressService.IntegrationTests.Infrastructure;
@@ -367,57 +366,6 @@ public class LazyEnrollmentAnchorTests : ProgressServiceTestsBase
         int positionCount = await ExecuteInDb(db =>
             db.CoursePositions.CountAsync(p => p.UserId == userId && p.CourseId == courseId));
         Assert.Equal(0, positionCount);
-    }
-
-    // ---- (d) Leaderboard invariant: XP earned via a lazy path ranks the user (doc §8 Q4) ----
-
-    [Fact]
-    public async Task LazyEngagement_EarnsXp_AndAppearsOnAuthorLeaderboard()
-    {
-        // Proves "every XP path ensure-creates the anchor": a grant-holder with NO pre-existing
-        // enrollment marks a material viewed → MATERIAL_VIEWED XP (enrollment_id=null) + an
-        // ENGAGEMENT anchor carrying author_id. The author-scoped leaderboard finds the user via
-        // the anchor (author_users CTE) and sums the user-scoped XP branch → ranked.
-        Guid userId = Guid.NewGuid();
-        Guid authorId = Guid.NewGuid();
-        Guid courseId = Guid.NewGuid();
-        Guid moduleId = Guid.NewGuid();
-        Guid materialId = Guid.NewGuid();
-
-        AuthenticateAs(userId, "platform-participant");
-        EducationContentClient.AddCourse(courseId, authorId: authorId);
-        EducationContentClient.AddMaterialCourseContext(materialId, courseId, moduleId, moduleItemsTotal: 1);
-
-        HttpResponseMessage viewed = await PostAsync($"/progress/materials/{materialId}/view");
-        Assert.Equal(HttpStatusCode.OK, viewed.StatusCode);
-
-        // Invariant pre-checks: anchor exists with the right author + a user-scoped XP award landed.
-        CourseEnrollment? anchor = await ExecuteInDb(db =>
-            db.CourseEnrollments.FirstOrDefaultAsync(e => e.UserId == userId && e.CourseId == courseId));
-        Assert.NotNull(anchor);
-        Assert.Equal(authorId, anchor.AuthorId);
-
-        XpAward? award = await ExecuteInDb(db =>
-            db.XpAwards.FirstOrDefaultAsync(x =>
-                x.UserId == userId && x.AwardType == XpAwardType.MATERIAL_VIEWED && x.SourceId == materialId));
-        Assert.NotNull(award);
-        Assert.Null(award.EnrollmentId);
-
-        // Author-scoped leaderboard must rank the user.
-        HttpResponseMessage leaderboard = await AppHttpClient.GetAsync(
-            $"/progress/leaderboard?page=1&pageSize=10&authorId={authorId}");
-        Assert.Equal(HttpStatusCode.OK, leaderboard.StatusCode);
-
-        GetLeaderboardResponse result = await ReadWrappedResultAsync<GetLeaderboardResponse>(leaderboard);
-
-        // The lazy-created anchor makes the user discoverable by the author-scoped leaderboard;
-        // their user-scoped (enrollment_id=null) MATERIAL_VIEWED XP — plus MODULE_COMPLETED for the
-        // single-item module the view also completed — is summed → ranked. The exact total is
-        // secondary; the invariant is "earned XP via a lazy path ⇒ ranked".
-        Assert.Equal(1, result.TotalCount);
-        Assert.Contains(result.Items, i => i.UserId == userId && i.TotalXp > 0);
-        Assert.NotNull(result.CurrentUser);
-        Assert.Equal(userId, result.CurrentUser!.UserId);
     }
 
     private async Task AssertNoEnrollment(Guid userId, Guid courseId)

@@ -1,4 +1,4 @@
-using EducationContentService.Contracts.ProgressLookup;
+﻿using EducationContentService.Contracts.ProgressLookup;
 using ProgressService.Domain.Issues;
 
 namespace ProgressService.Core.Abstractions;
@@ -8,7 +8,7 @@ namespace ProgressService.Core.Abstractions;
 ///     он дошёл сам» — строит полную progress-цепочку (lazy enrollment anchor → ProjectProgress →
 ///     ModuleProgress + ModuleItemProgress если задача в модуле → IssueProgress), создаёт синтетический
 ///     принятый <c>IssueSubmission</c> и прогоняет обычный approve-каскад (IssueProgress.Approve →
-///     COMPLETED + XP/project/module + integration event <c>issue_submission.approved</c>).
+///     COMPLETED + project/module + integration event <c>issue_submission.approved</c>).
 ///     <para>
 ///     Используется и <c>MarkIssueCompleteForUserHandler</c> (#398), и
 ///     <c>SetIssueStatusForUserHandler</c> (#518, ветка target=COMPLETED) — единый источник правды
@@ -25,8 +25,8 @@ public interface IStaffIssueCompletionService
 {
     /// <summary>
     ///     Принимает задачу <paramref name="issueId"/> студенту <paramref name="studentId"/> в курсе
-    ///     <paramref name="courseId"/>. Идемпотентно: если <c>IssueProgress</c> уже COMPLETED — XP не
-    ///     дублируется, approve-event не уходит.
+    ///     <paramref name="courseId"/>. Идемпотентно: если <c>IssueProgress</c> уже COMPLETED —
+    ///     approve-event не уходит.
     /// </summary>
     /// <param name="courseDetail">
     ///     Опционально — заранее загруженный course-lookup (AuthorId уже зарезолвен caller'ом для

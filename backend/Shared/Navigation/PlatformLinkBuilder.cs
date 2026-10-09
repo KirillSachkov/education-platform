@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 
 namespace Shared.Navigation;
 
@@ -107,10 +107,6 @@ public static class PlatformLinkBuilder
                 $"{baseUrl}/telegram/join",
             NotificationTypes.WEEKLY_DIGEST =>
                 $"{baseUrl}/home",
-            NotificationTypes.USER_LEVELED_UP =>
-                $"{baseUrl}/home",
-            NotificationTypes.LEVEL_TEST_INVITE =>
-                $"{baseUrl}/level-test",
             // #704 — «вход теперь по почте»: клик ведёт на страницу входа (копирайт §2).
             NotificationTypes.EMAIL_LOGIN_NOTICE =>
                 $"{baseUrl}/login",

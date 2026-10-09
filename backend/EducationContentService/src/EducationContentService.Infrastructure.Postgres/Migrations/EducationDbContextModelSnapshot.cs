@@ -969,10 +969,6 @@ namespace EducationContentService.Infrastructure.Postgres.Migrations
                         .HasColumnName("created_at")
                         .HasDefaultValueSql("timezone('utc', now())");
 
-                    b.Property<string>("LevelTestConfig")
-                        .HasColumnType("jsonb")
-                        .HasColumnName("level_test_config");
-
                     b.Property<int>("PassingScorePercent")
                         .HasColumnType("integer")
                         .HasColumnName("passing_score_percent");

@@ -23,14 +23,11 @@ using EducationContentService.Contracts.HttpCommunication;
 using Microsoft.Extensions.Caching.Memory;
 using ProgressService.Core.Database;
 using ProgressService.Core.Features.Courses.Queries;
-using ProgressService.Core.Features.LevelTests.AiGrading;
-using ProgressService.Core.Features.LevelTests.UseCases;
 using ProgressService.Core.Features.Materials.Queries;
 using ProgressService.Core.Features.Materials.UseCases;
 using ProgressService.Core.Features.QuizAttempts.UseCases;
 using ProgressService.Infrastructure.Postgres;
 using Respawn;
-using Shared.AI.Skills;
 using StackExchange.Redis;
 using Testcontainers.PostgreSql;
 using Wolverine;
@@ -53,16 +50,6 @@ public class IntegrationTestsWebFactory : WebApplicationFactory<Program>, IAsync
     public MockAccessServiceClient AccessServiceClient { get; } = new();
     public FakeUserGrantWriter UserGrantWriter { get; } = new();
     public ContentAccess.TestSupport.FakeEntitlementChecker EntitlementChecker { get; } = CreateGrantAllChecker();
-
-    /// <summary>Скриптуемый AI seam грейдинга level-test'а (ST-5, #480).</summary>
-    public FakeLevelTestGradeExtractor GradeExtractor { get; } = new();
-
-    /// <summary>
-    ///     Per-test тумблер LevelTestAi:Enabled (handler читает IOptionsSnapshot —
-    ///     значение пересобирается на каждый message-scope). Сбрасывается в true
-    ///     между тестами в <see cref="ResetDatabaseAsync"/>.
-    /// </summary>
-    public bool LevelTestAiEnabled { get; set; } = true;
 
     private static ContentAccess.TestSupport.FakeEntitlementChecker CreateGrantAllChecker()
     {
@@ -112,12 +99,6 @@ public class IntegrationTestsWebFactory : WebApplicationFactory<Program>, IAsync
     {
         builder.UseSetting("ConnectionStrings:Database", ConnectionString);
         builder.UseSetting("ConnectionStrings:RabbitMq", "amqp://localhost:5672");
-        // AddOpenAiCompatible валидирует провайдеров в момент регистрации (AddAi):
-        // тесты идут в Development env → appsettings.Development.json несёт провайдер
-        // aitunnel без ключа — докидываем фейковый ключ через UseSetting (виден
-        // конфигурации раньше, чем ConfigureAppConfiguration). Реальный AI в тестах
-        // заменён FakeLevelTestGradeExtractor'ом.
-        builder.UseSetting("AI:Providers:aitunnel:ApiKey", "test-fake-api-key");
 
         builder.ConfigureAppConfiguration((_, config) =>
         {
@@ -129,10 +110,6 @@ public class IntegrationTestsWebFactory : WebApplicationFactory<Program>, IAsync
                 ["ConnectionStrings:RabbitMq"] = "amqp://localhost:5672",
                 ["ConnectionStrings:Redis"] = "localhost:1,abortConnect=false",
                 ["DevAuth:Disabled"] = "true",
-                // AddOpenAiCompatible валидирует провайдеров на регистрации; тесты идут в
-                // Development env → appsettings.Development.json уже несёт провайдер aitunnel
-                // без ключа — докидываем фейковый ключ (реальный AI в тестах заменён фейком).
-                ["AI:Providers:aitunnel:ApiKey"] = "test-fake-api-key",
             });
         });
 
@@ -176,20 +153,6 @@ public class IntegrationTestsWebFactory : WebApplicationFactory<Program>, IAsync
             services.RemoveAll<IEntitlementChecker>();
             services.AddSingleton<IEntitlementChecker>(EntitlementChecker);
 
-            // AI seam грейдинга level-test'а (ST-5, #480): closed-generic фейк
-            // регистрируется ПОСЛЕ open-generic AddAiSkills из Web → выигрывает
-            // при резолве. Скриптуется per-test (успех / failure / throw).
-            services.RemoveAll<IStructuredExtractor<LevelTestAiGradesResponse>>();
-            services.AddSingleton<IStructuredExtractor<LevelTestAiGradesResponse>>(GradeExtractor);
-
-            // Per-test тумблер Enabled + мгновенные ретраи. Configure-делегат добавлен
-            // после Bind() из AddCore → выполняется последним на каждом options-scope.
-            services.Configure<LevelTestAiOptions>(options =>
-            {
-                options.Enabled = LevelTestAiEnabled;
-                options.RetryDelaySeconds = 0;
-            });
-
             // Domain event spy — singleton so it survives across HTTP request scopes
             var spy = new DomainEventSpy();
             services.AddSingleton(spy);
@@ -231,7 +194,6 @@ public class IntegrationTestsWebFactory : WebApplicationFactory<Program>, IAsync
                     GetCoursePublicStatsEndpoint.ANONYMOUS_READ_RATE_LIMIT_POLICY,
                     RecordAnonymousMaterialViewEndpoint.RATE_LIMIT_POLICY,
                     GetMaterialViewsCountsEndpoint.RATE_LIMIT_POLICY,
-                    SubmitLevelTestAttemptEndpoint.RATE_LIMIT_POLICY,
                     CheckQuizQuestionEndpoint.RATE_LIMIT_POLICY,
                 ];
                 foreach (string policy in policies)
@@ -245,8 +207,6 @@ public class IntegrationTestsWebFactory : WebApplicationFactory<Program>, IAsync
         EducationContentClient.Reset();
         AuthServiceClient.Reset();
         UserGrantWriter.Reset();
-        GradeExtractor.Reset();
-        LevelTestAiEnabled = true;
         // Derive-модель (epic access-derive-model, Phase 1): learning-state / my-enrollment
         // теперь спрашивают entitlement-checker для entitled-but-no-row кейса. Сбрасываем
         // его в дефолтный GrantAll, чтобы DenyAll/DenyResourceType из теста не протекали дальше.

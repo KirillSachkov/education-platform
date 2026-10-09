@@ -1,4 +1,4 @@
-namespace NotificationService.Domain.Notifications;
+﻿namespace NotificationService.Domain.Notifications;
 
 /// <summary>
 /// Тип уведомления / Notification type.
@@ -60,19 +60,15 @@ public enum NotificationType
     /// </summary>
     AiReviewOversizedSkipped = 17,
 
-    /// <summary>
-    /// Повышение gamification-уровня (#555): пользователь набрал XP и перешёл на новый уровень
-    /// (L4→L5 и т.п.). Recipient = сам пользователь. Мотивирующее поздравление; на сайте дополнительно
-    /// всплывает модалка с конфетти (frontend), здесь — durable inbox-запись + Telegram.
-    /// </summary>
+    /// <summary>Retired; value 18 remains reserved for persisted notifications.</summary>
+#pragma warning disable S1133 // Persisted notification numbers are permanent compatibility slots.
+    [Obsolete("Retired; reserved for persisted notification compatibility.")]
     UserLeveledUp = 18,
 
-    /// <summary>
-    /// Приглашение пройти публичный тест на определение уровня (#554) — recipient = пользователь.
-    /// Сервисная email+InApp рассылка ВСЕМ пользователям, запускается админом (кампания).
-    /// Идемпотентна per-user через фиксированный correlation (campaign GUID × userId).
-    /// </summary>
+    /// <summary>Retired; value 19 remains reserved for persisted notifications.</summary>
+    [Obsolete("Retired; reserved for persisted notification compatibility.")]
     LevelTestInvite = 19,
+#pragma warning restore S1133
 
     /// <summary>
     /// Пробный (trial) доступ скоро истекает (#580) — recipient = сам пользователь.

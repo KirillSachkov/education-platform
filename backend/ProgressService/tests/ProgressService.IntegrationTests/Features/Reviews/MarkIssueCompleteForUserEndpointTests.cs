@@ -1,8 +1,7 @@
-using System.Net;
+﻿using System.Net;
 using Microsoft.EntityFrameworkCore;
 using ProgressService.Contracts.Requests;
 using ProgressService.Domain.Enrollments;
-using ProgressService.Domain.Gamification;
 using ProgressService.Domain.IssueSubmissions;
 using ProgressService.Domain.Issues;
 using ProgressService.Domain.Modules;
@@ -14,7 +13,6 @@ namespace ProgressService.IntegrationTests.Features.Reviews;
 /// <summary>
 ///     Ручная приёмка задачи студенту, который НИКОГДА не сдавал работу (#398). Автор/админ/модератор
 ///     отмечает задание выполненным — создаётся синтетический принятый submission и прогоняется
-///     обычный каскад XP/project/module.
 /// </summary>
 [Collection(nameof(IntegrationTestsFixture))]
 public class MarkIssueCompleteForUserEndpointTests : ProgressServiceTestsBase
@@ -25,7 +23,7 @@ public class MarkIssueCompleteForUserEndpointTests : ProgressServiceTestsBase
     }
 
     [Fact]
-    public async Task MarkCompleteForUser_WhenUserNeverSubmitted_ShouldCreateApprovedSubmissionAndAwardXpOnce()
+    public async Task MarkCompleteForUser_WhenUserNeverSubmitted_ShouldCreateApprovedSubmission()
     {
         Guid authorId = Guid.NewGuid();
         Guid studentId = Guid.NewGuid();
@@ -77,19 +75,6 @@ public class MarkIssueCompleteForUserEndpointTests : ProgressServiceTestsBase
         Assert.Equal(ModuleProgressStatus.COMPLETED, moduleProgress.Status);
         Assert.Equal(1, moduleProgress.ItemsCompleted);
 
-        // XP начислен РОВНО один раз (ledger keyed by issueProgress.Id).
-        int xpAwardCount = await ExecuteInDb(dbContext =>
-            dbContext.XpAwards.CountAsync(x =>
-                x.UserId == studentId
-                && x.AwardType == XpAwardType.ISSUE_APPROVED
-                && x.SourceId == issueProgress!.Id));
-        Assert.Equal(1, xpAwardCount);
-
-        UserGamificationStats? stats = await ExecuteInDb(dbContext =>
-            dbContext.UserGamificationStats.FirstOrDefaultAsync(x => x.UserId == studentId));
-        Assert.NotNull(stats);
-        Assert.True(stats.TotalXp > 0);
-
         // L2: integration event issue_submission.approved уходит в outbox для NotificationService.
         Shared.Messaging.IntegrationEvents.Progress.Events.IssueSubmissionApproved approved =
             NoOpOutboxService.Published
@@ -107,7 +92,7 @@ public class MarkIssueCompleteForUserEndpointTests : ProgressServiceTestsBase
     }
 
     [Fact]
-    public async Task MarkCompleteForUser_WhenCalledTwice_ShouldBeIdempotentAndNotDoubleXp()
+    public async Task MarkCompleteForUser_WhenCalledTwice_ShouldBeIdempotent()
     {
         Guid authorId = Guid.NewGuid();
         Guid studentId = Guid.NewGuid();
@@ -130,23 +115,8 @@ public class MarkIssueCompleteForUserEndpointTests : ProgressServiceTestsBase
             dbContext.IssueProgresses.FirstOrDefaultAsync(x => x.IssueId == issueId));
         Assert.NotNull(issueProgressAfterFirst);
 
-        int xpBefore = await ExecuteInDb(dbContext =>
-            dbContext.XpAwards.CountAsync(x =>
-                x.UserId == studentId
-                && x.AwardType == XpAwardType.ISSUE_APPROVED
-                && x.SourceId == issueProgressAfterFirst!.Id));
-        Assert.Equal(1, xpBefore);
-
-        long totalXpBefore = await ExecuteInDb(async dbContext =>
-        {
-            UserGamificationStats? stats = await dbContext.UserGamificationStats
-                .FirstOrDefaultAsync(x => x.UserId == studentId);
-            return stats?.TotalXp ?? 0;
-        });
-
         NoOpOutboxService.Reset();
 
-        // Повторный вызов — задача уже COMPLETED → no-op, XP не дублируется, approve-event не уходит.
         HttpResponseMessage secondResponse = await PostAsJsonAsync(
             $"/progress/courses/{courseId}/issues/{issueId}/mark-complete-for-user",
             new MarkIssueCompleteForUserRequest(studentId));
@@ -156,21 +126,6 @@ public class MarkIssueCompleteForUserEndpointTests : ProgressServiceTestsBase
             dbContext.IssueProgresses.FirstOrDefaultAsync(x => x.IssueId == issueId));
         Assert.NotNull(issueProgressAfterSecond);
         Assert.Equal(IssueProgressStatus.COMPLETED, issueProgressAfterSecond.Status);
-
-        int xpAfter = await ExecuteInDb(dbContext =>
-            dbContext.XpAwards.CountAsync(x =>
-                x.UserId == studentId
-                && x.AwardType == XpAwardType.ISSUE_APPROVED
-                && x.SourceId == issueProgressAfterSecond!.Id));
-        Assert.Equal(1, xpAfter);
-
-        long totalXpAfter = await ExecuteInDb(async dbContext =>
-        {
-            UserGamificationStats? stats = await dbContext.UserGamificationStats
-                .FirstOrDefaultAsync(x => x.UserId == studentId);
-            return stats?.TotalXp ?? 0;
-        });
-        Assert.Equal(totalXpBefore, totalXpAfter);
 
         Assert.Empty(NoOpOutboxService.Published
             .OfType<Shared.Messaging.IntegrationEvents.Progress.Events.IssueSubmissionApproved>());

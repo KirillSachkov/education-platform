@@ -1,8 +1,7 @@
-using System.Net;
+﻿using System.Net;
 using Microsoft.EntityFrameworkCore;
 using ProgressService.Contracts.Requests;
 using ProgressService.Contracts.Responses;
-using ProgressService.Domain.Gamification;
 using ProgressService.Domain.IssueSubmissions;
 using ProgressService.Domain.Issues;
 using ProgressService.Domain.Modules;
@@ -346,7 +345,7 @@ public class ReviewWorkflowEndpointsTests : ProgressServiceTestsBase
     }
 
     [Fact]
-    public async Task ReopenReview_FromApproved_ShouldRevertXpProjectAndModuleProgress()
+    public async Task ReopenReview_FromApproved_ShouldRevertProjectAndModuleProgress()
     {
         Guid studentId = Guid.NewGuid();
         Guid reviewerId = Guid.NewGuid();
@@ -374,14 +373,6 @@ public class ReviewWorkflowEndpointsTests : ProgressServiceTestsBase
             new ApproveIssueRequest("Принято"));
 
         // Сохраняем pre-reopen состояние для дельт.
-        int xpBeforeReopen = await ExecuteInDb(async dbContext =>
-        {
-            UserGamificationStats? stats = await dbContext.UserGamificationStats
-                .FirstOrDefaultAsync(x => x.UserId == studentId);
-            return stats?.TotalXp ?? 0;
-        });
-
-        Assert.True(xpBeforeReopen > 0);
 
         HttpResponseMessage reopenResponse = await PostAsync(
             $"/progress/courses/{courseId}/reviews/issues/{submitIssueResponse.SubmissionId}/reopen");
@@ -399,13 +390,6 @@ public class ReviewWorkflowEndpointsTests : ProgressServiceTestsBase
                 x.ReferenceId == issueId && x.ItemType == ModuleItemProgressType.ISSUE));
         ModuleProgress? moduleProgress = await ExecuteInDb(dbContext =>
             dbContext.ModuleProgresses.FirstOrDefaultAsync(x => x.ModuleId == moduleId));
-        UserGamificationStats? statsAfter = await ExecuteInDb(dbContext =>
-            dbContext.UserGamificationStats.FirstOrDefaultAsync(x => x.UserId == studentId));
-        bool xpAwardExists = await ExecuteInDb(dbContext =>
-            dbContext.XpAwards.AnyAsync(x =>
-                x.UserId == studentId
-                && x.AwardType == XpAwardType.ISSUE_APPROVED
-                && x.SourceId == issueProgress!.Id));
 
         Assert.NotNull(submission);
         Assert.Equal(IssueSubmissionReviewStatus.IN_REVIEW, submission.ReviewStatus);
@@ -429,9 +413,6 @@ public class ReviewWorkflowEndpointsTests : ProgressServiceTestsBase
         Assert.Equal(0, moduleProgress.ItemsCompleted);
         Assert.Equal(ModuleProgressStatus.IN_PROGRESS, moduleProgress.Status);
 
-        Assert.False(xpAwardExists);
-        Assert.NotNull(statsAfter);
-        Assert.True(statsAfter.TotalXp < xpBeforeReopen);
     }
 
     /// <summary>

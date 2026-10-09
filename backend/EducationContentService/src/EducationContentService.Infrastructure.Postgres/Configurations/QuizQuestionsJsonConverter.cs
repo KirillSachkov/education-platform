@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 using EducationContentService.Domain.Quizzes;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
@@ -6,17 +6,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace EducationContentService.Infrastructure.Postgres.Configurations;
 
-/// <summary>
-///     Сериализация <c>quizzes.questions</c> (jsonb) ↔ <see cref="QuizQuestion"/>[].
-///     Явный value converter вместо OwnsMany+ToJson: у JSON-owned сущностей EF Core
-///     свойство <c>Id</c> становится ключом и его значения не персистятся в документ —
-///     а стабильные id вопросов/вариантов обязательны для грейдинга (ST-I). Ключи JSON —
-///     PascalCase (консистентно с <c>issues.internal_materials</c> из EF ToJson());
-///     исключение — level-test поля <c>section</c>/<c>difficulty</c> (#476): camelCase
-///     по контракту эпика (см. spec ST-1), закреплено JsonPropertyName-атрибутами.
-///     Чтение валидирует через доменные фабрики (<c>.Value</c> бросает на битых данных —
-///     тот же паттерн, что у Title-конверсии).
-/// </summary>
+/// <summary>JSONB-конвертер вопросов с устойчивыми идентификаторами и доменной валидацией.
+///     Section/Difficulty сохраняют camelCase; остальные ключи — PascalCase.</summary>
 public static class QuizQuestionsJson
 {
     private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.General);

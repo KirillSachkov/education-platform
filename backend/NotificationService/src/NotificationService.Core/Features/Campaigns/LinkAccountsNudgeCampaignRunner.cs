@@ -1,4 +1,4 @@
-using AuthService.Contracts;
+﻿using AuthService.Contracts;
 using AuthService.Contracts.HttpCommunication;
 using CSharpFunctionalExtensions;
 using Microsoft.Extensions.Logging;
@@ -16,7 +16,7 @@ namespace NotificationService.Core.Features.Campaigns;
 /// админом. Канал только InApp (мягкий продуктовый nudge, deep-link /settings/integrations);
 /// канальные флаги и per-type opt-out юзера применяются стандартно.
 ///
-/// Идемпотентность per-user: фиксированный <see cref="CAMPAIGN_ID"/> даёт детерминированный
+/// Идемпотентность per-user: фиксированный <see cref="_campaignId"/> даёт детерминированный
 /// correlation на пару (campaign × userId) — повторный запуск пропускает уже-уведомлённых.
 /// </summary>
 public interface ILinkAccountsNudgeCampaignRunner
@@ -46,9 +46,9 @@ public sealed class LinkAccountsNudgeCampaignRunner : ILinkAccountsNudgeCampaign
     /// Фиксированный well-known id кампании (#704; отличается от campaign-id
     /// <c>EmailLoginNoticeCampaignRunner</c>'а). Входит в per-user correlation.
     /// </summary>
-    private static readonly Guid CAMPAIGN_ID = new("0197b000-0000-7000-8000-000000001704");
+    private static readonly Guid _campaignId = new("0197b000-0000-7000-8000-000000001704");
 
-    /// <summary>Размер keyset-страницы id пользователей из AuthService (как у level-test кампании).</summary>
+    /// <summary>Размер keyset-страницы id пользователей из AuthService.</summary>
     private const int USERS_PAGE_SIZE = 500;
 
     /// <summary>Чанк диспатча — та же причина, что у дайджеста (peak memory: транзакция + outbox).</summary>
@@ -93,7 +93,7 @@ public sealed class LinkAccountsNudgeCampaignRunner : ILinkAccountsNudgeCampaign
 
             foreach (Guid userId in page.Value.UserIds)
             {
-                chunk.Add(BuildRequest(userId, CorrelationIds.Combine(CAMPAIGN_ID, userId)));
+                chunk.Add(BuildRequest(userId, CorrelationIds.Combine(_campaignId, userId)));
                 queued++;
 
                 if (chunk.Count >= DISPATCH_BATCH_SIZE)

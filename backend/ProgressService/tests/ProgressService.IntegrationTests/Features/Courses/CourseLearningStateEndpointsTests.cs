@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using EducationContentService.Contracts.Quizzes;
 using ProgressService.Contracts.Dtos;
 using ProgressService.Contracts.Requests;
@@ -289,7 +289,6 @@ public class CourseLearningStateEndpointsTests : ProgressServiceTestsBase
                 new QuizAnswerKeyQuestionDto(
                     questionId, "SINGLE_CHOICE", "Вопрос", null, null, [correctOptionId], null),
             ],
-            LevelTestConfig: null,
             AccessType: "PUBLIC"));
     }
 

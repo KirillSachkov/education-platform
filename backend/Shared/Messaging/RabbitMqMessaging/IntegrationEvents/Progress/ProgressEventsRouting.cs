@@ -1,4 +1,4 @@
-namespace Shared.Messaging.IntegrationEvents.Progress;
+﻿namespace Shared.Messaging.IntegrationEvents.Progress;
 
 public static class ProgressEventsRouting
 {
@@ -11,6 +11,5 @@ public static class ProgressEventsRouting
         public static string IssueSubmissionAwaitingReview() => "issue_submission.awaiting_review";
         public static string IssueSubmissionAuthorHelpRequested() => "issue_submission.author_help_requested";
         public static string IssueAuthorQuestionAsked() => "issue.author_question_asked";
-        public static string UserLeveledUp() => "user.leveled_up";
     }
 }

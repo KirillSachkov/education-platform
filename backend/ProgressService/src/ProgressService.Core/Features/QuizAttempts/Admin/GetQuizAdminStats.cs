@@ -1,4 +1,4 @@
-using Core.Abstractions;
+﻿using Core.Abstractions;
 using EducationContentService.Contracts.HttpCommunication;
 using EducationContentService.Contracts.Quizzes;
 using Framework.Endpoints;
@@ -85,15 +85,6 @@ public sealed class GetQuizAdminStatsHandler
 
         QuizAnswerKeyDto answerKey = answerKeyResult.Value;
 
-        // Level-test — у него отдельная админ-аналитика (#537); его per-question
-        // correct-rate сюда пускать нельзя (утечка сигнала воронки оценки) — overview
-        // его уже фильтрует, drill-in должен отвергать явно (#556 review).
-        if (string.Equals(answerKey.Purpose, "LEVEL_TEST", StringComparison.Ordinal))
-        {
-            return ProgressErrors.QuizAdminLevelTestForbidden();
-        }
-
-        // Заголовок теста answer-key не несёт — достаём из summary-проекции.
         string title = quizId.ToString();
         Result<IReadOnlyList<QuizSummaryLookupDto>, Error> summariesResult =
             await _educationContentServiceClient.GetQuizSummariesAsync([quizId], cancellationToken);

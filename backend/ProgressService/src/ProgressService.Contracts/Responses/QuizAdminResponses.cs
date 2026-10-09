@@ -1,11 +1,8 @@
-namespace ProgressService.Contracts.Responses;
+﻿namespace ProgressService.Contracts.Responses;
 
 /// <summary>
-///     Админ-аналитика по всем тестам платформы (#556, AC5). Плоский список квизов
-///     (одна строка на квиз с ≥1 попыткой) + top-line KPI; группировку по курсам
-///     фронт делает client-side по <see cref="QuizAdminOverviewRow.CourseId"/> /
-///     <see cref="QuizAdminOverviewRow.CourseTitle"/>. LEVEL_TEST-квизы исключены —
-///     у воронки своя админ-страница (#537). Зеркало level-test admin-overview по стилю.
+///     Админ-аналитика по всем квизам с попытками: одна строка на квиз и общие KPI.
+///     Фронт группирует строки по CourseId и CourseTitle.
 /// </summary>
 public sealed record QuizAdminOverviewResponse(
     int TotalQuizzes,

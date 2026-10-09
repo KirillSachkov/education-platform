@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
+﻿using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using ProgressService.Domain.Materials;
 
 namespace ProgressService.Infrastructure.Postgres.Configuration;
@@ -36,7 +36,7 @@ public sealed class MaterialViewConfiguration : IEntityTypeConfiguration<Materia
 
         // is_completed — флаг «явно отмечено изученным». Default false (silent track-view).
         // True — пользователь нажал «Отметить изученным», что каскадит module_item_progress
-        // и начисляет XP (см. <c>MaterialViewedEvent</c>). Issue #285.
+        // (см. <c>MaterialViewedEvent</c>). Issue #285.
         builder.Property(x => x.IsCompleted)
             .IsRequired()
             .HasColumnName("is_completed");

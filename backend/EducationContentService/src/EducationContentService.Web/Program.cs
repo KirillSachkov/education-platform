@@ -1,4 +1,4 @@
-using EducationContentService.Core.Messaging;
+﻿using EducationContentService.Core.Messaging;
 using EducationContentService.Web.Configuration;
 using Framework.Endpoints;
 using PlatformBootstrap;
@@ -19,13 +19,6 @@ try
     if (DataMigrationsCli.IsRequested(args))
     {
         await DataMigrationsCli.RunAsync(builder.Configuration);
-        return;
-    }
-
-    if (SeedLevelTestCli.IsRequested(args))
-    {
-        await SeedLevelTestCli.RunAsync(
-            builder.Configuration, builder.Environment, SeedLevelTestCli.HasForceFlag(args));
         return;
     }
 

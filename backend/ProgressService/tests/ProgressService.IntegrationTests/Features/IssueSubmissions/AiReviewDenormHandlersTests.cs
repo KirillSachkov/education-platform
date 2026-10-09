@@ -1,6 +1,5 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using ProgressService.Domain.Enrollments;
-using ProgressService.Domain.Gamification;
 using ProgressService.Domain.IssueSubmissions;
 using ProgressService.Domain.Issues;
 using ProgressService.Domain.Projects;
@@ -52,16 +51,14 @@ public sealed class AiReviewDenormHandlersTests : ProgressServiceTestsBase
     [InlineData("LOOKS_GOOD")]    // студент закрыл замечания → denorm повышается до LOOKS_GOOD
     [InlineData("MINOR_ISSUES")]  // всё ещё есть мелочи → остаётся MINOR
     [InlineData("MAJOR_ISSUES")]  // даже «ухудшение» не отбирает зачёт
-    public async Task IterationCompleted_OnAlreadyApproved_UpdatesDenormOnly_KeepsCompletedAndXp(
+    public async Task IterationCompleted_OnAlreadyApproved_UpdatesDenormOnly_KeepsCompleted(
         string rerunVerdict)
     {
         // #725: студент дорабатывает замечания после MINOR-approve и запускает повторную
         // AI-проверку. Приходит вторая итерация по уже-APPROVED submission — ApplyVerdictGate
-        // срабатывает только из PENDING, поэтому статус/XP не трогаются, обновляется лишь denorm.
         Guid userId = Guid.NewGuid();
         Guid submissionId = await SeedSubmissionAsync(userId);
 
-        // Итерация 1: MINOR_ISSUES → авто-Approve → submission APPROVED, IssueProgress COMPLETED, XP выдан.
         await InvokeMessageAndWaitAsync(new AiReviewIterationCompleted(
             AiReviewId: Guid.NewGuid(),
             IterationId: Guid.NewGuid(),
@@ -72,14 +69,6 @@ public sealed class AiReviewDenormHandlersTests : ProgressServiceTestsBase
             Verdict: "MINOR_ISSUES",
             GitHubReviewId: 100L,
             CompletedAt: DateTimeOffset.UtcNow));
-
-        int xpAwardsAfterApprove = 0;
-        await ExecuteInDb(async db =>
-        {
-            xpAwardsAfterApprove = await db.XpAwards.CountAsync(
-                x => x.UserId == userId && x.AwardType == XpAwardType.ISSUE_APPROVED);
-        });
-        Assert.Equal(1, xpAwardsAfterApprove);
 
         // Итерация 2: доработка (любой вердикт) по уже-APPROVED submission.
         await InvokeMessageAndWaitAsync(new AiReviewIterationCompleted(
@@ -101,12 +90,8 @@ public sealed class AiReviewDenormHandlersTests : ProgressServiceTestsBase
             Assert.Equal(rerunVerdict, s.LatestAiVerdict);
             Assert.Equal(2, s.AiIterationsCount);
 
-            // IssueProgress остаётся COMPLETED (терминал), XP не удвоился.
             IssueProgress progress = await db.IssueProgresses.FirstAsync(p => p.Id == s.IssueProgressId);
             Assert.Equal(IssueProgressStatus.COMPLETED, progress.Status);
-            int xpAwards = await db.XpAwards.CountAsync(
-                x => x.UserId == userId && x.AwardType == XpAwardType.ISSUE_APPROVED);
-            Assert.Equal(1, xpAwards);
         });
     }
 

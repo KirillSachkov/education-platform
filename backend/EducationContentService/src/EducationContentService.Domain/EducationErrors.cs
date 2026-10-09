@@ -1,4 +1,4 @@
-namespace EducationContentService.Domain;
+﻿namespace EducationContentService.Domain;
 
 /// <summary>
 ///     Фабрика доменных ошибок сервиса образовательного контента.
@@ -187,12 +187,6 @@ public static class EducationErrors
 
     public static Error InvalidQuizQuestionDifficulty(string difficulty) =>
         Error.Validation("quiz.question.difficulty.invalid", $"Некорректная сложность вопроса: {difficulty}");
-
-    public static Error QuizLevelTestConfigInvalid(string reason) =>
-        Error.Validation("quiz.level_test_config.invalid", $"Некорректная конфигурация теста уровня: {reason}");
-
-    public static Error LevelTestNotFound() =>
-        Error.NotFound("quiz.level_test.not_found", "Опубликованный тест уровня не найден");
 
     private static string EntityLabel(string entityName) => entityName switch
     {

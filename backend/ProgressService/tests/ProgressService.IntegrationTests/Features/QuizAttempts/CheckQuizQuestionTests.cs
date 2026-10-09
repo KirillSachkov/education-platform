@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using EducationContentService.Contracts.Quizzes;
@@ -17,7 +17,6 @@ public sealed class CheckQuizQuestionTests : ProgressServiceTestsBase
     private const string EXACT_TEXT = "EXACT_TEXT";
     private const string OPEN_TEXT = "OPEN_TEXT";
     private const string MATERIAL_CHECK = "MATERIAL_CHECK";
-    private const string LEVEL_TEST = "LEVEL_TEST";
     private const string ENROLLED = "ENROLLED";
     private const int PASSING_SCORE = 70;
 
@@ -100,8 +99,7 @@ public sealed class CheckQuizQuestionTests : ProgressServiceTestsBase
                     _q1, MULTI_CHOICE, "Вопрос 1", null, null,
                     [_q1OptionA, _q1OptionB], null,
                     [new QuizOptionDto(_q1OptionA, "A"), new QuizOptionDto(_q1OptionB, "B")]),
-            ],
-            LevelTestConfig: null));
+            ]));
 
         AuthenticateAs(Guid.NewGuid(), "platform-participant");
 
@@ -123,8 +121,7 @@ public sealed class CheckQuizQuestionTests : ProgressServiceTestsBase
             quizId,
             MATERIAL_CHECK,
             PASSING_SCORE,
-            [new QuizAnswerKeyQuestionDto(_q1, EXACT_TEXT, "Сколько будет 1+4+9?", null, null, [], "149")],
-            LevelTestConfig: null));
+            [new QuizAnswerKeyQuestionDto(_q1, EXACT_TEXT, "Сколько будет 1+4+9?", null, null, [], "149")]));
 
         AuthenticateAs(Guid.NewGuid(), "platform-participant");
 
@@ -147,8 +144,7 @@ public sealed class CheckQuizQuestionTests : ProgressServiceTestsBase
             quizId,
             MATERIAL_CHECK,
             PASSING_SCORE,
-            [new QuizAnswerKeyQuestionDto(_q1, OPEN_TEXT, "Объясни GC", null, null, [], "Эталонное объяснение")],
-            LevelTestConfig: null));
+            [new QuizAnswerKeyQuestionDto(_q1, OPEN_TEXT, "Объясни GC", null, null, [], "Эталонное объяснение")]));
 
         AuthenticateAs(Guid.NewGuid(), "platform-participant");
 
@@ -161,28 +157,6 @@ public sealed class CheckQuizQuestionTests : ProgressServiceTestsBase
         CheckQuizQuestionResponse result = await ReadWrappedResultAsync<CheckQuizQuestionResponse>(response);
         Assert.Null(result.Correct);
         Assert.Equal("Эталонное объяснение", result.ReferenceAnswer);
-    }
-
-    [Fact]
-    public async Task Check_LevelTestQuiz_Returns400Forbidden()
-    {
-        Guid quizId = Guid.NewGuid();
-        EducationContentClient.AddQuizAnswerKey(new QuizAnswerKeyDto(
-            quizId,
-            LEVEL_TEST,
-            PASSING_SCORE,
-            [new QuizAnswerKeyQuestionDto(_q1, SINGLE_CHOICE, "Вопрос 1", null, null, [_q1OptionA], null)],
-            LevelTestConfig: null));
-
-        AuthenticateAs(Guid.NewGuid(), "platform-participant");
-
-        HttpResponseMessage response = await PostCheckAsync(
-            quizId,
-            _q1,
-            new CheckQuizQuestionRequest([_q1OptionA], null));
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal("quiz.check.level.test.forbidden", await ReadErrorCodeAsync(response));
     }
 
     [Fact]
@@ -257,7 +231,6 @@ public sealed class CheckQuizQuestionTests : ProgressServiceTestsBase
                     [_q1OptionA], null,
                     [new QuizOptionDto(_q1OptionA, "Верный"), new QuizOptionDto(_q1OptionB, "Неверный")]),
             ],
-            LevelTestConfig: null,
             AccessType: accessType));
         return quizId;
     }

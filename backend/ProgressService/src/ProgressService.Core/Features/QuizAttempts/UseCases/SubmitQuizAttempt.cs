@@ -1,4 +1,4 @@
-using ContentAccess;
+﻿using ContentAccess;
 using Core.Abstractions;
 using Core.Database;
 using Core.Validation;
@@ -67,20 +67,11 @@ public sealed class SubmitQuizAttemptEndpoint : IEndpoint
     }
 }
 
-/// <summary>
-///     Сабмит попытки квиза с автогрейдингом (issue #470). Поток: answer-key из ECS
-///     (любой статус квиза — грейдинг переживает unpublish) → reject LEVEL_TEST (у воронки
-///     собственные попытки — /level-test) → Tier-3 entitlement-чек ПО САМОМУ КВИЗУ
-///     (ST-13 #493: <c>ResourceTypes.QUIZ</c>; PUBLIC short-circuit по
-///     <c>answerKey.AccessType</c>; admin bypass внутри checker'а) → грейдинг
-///     (<see cref="QuizAttemptGrader"/>) → persist. Ответы на вопросы, которых нет в
-///     answer-key, отбрасываются (не грейдятся и не сохраняются). Passed-попытка поднимает
-///     <c>QuizAttemptPassedEvent</c> → каскад на module_item_progress
-///     (<c>CompleteQuizModuleItemOnAttemptPassed</c>). Без XP. Ответ — full-reveal разбор.
-/// </summary>
+/// <summary>Проверяет доступ к квизу, оценивает ответы и сохраняет попытку через ITransactionManager.
+///     Успешная попытка завершает Quiz-элемент модуля через доменное событие.
+///     Ответ содержит полный разбор; несовпадающие идентификаторы вопросов дают 409.</summary>
 public sealed class SubmitQuizAttemptHandler : ICommandHandler<QuizAttemptResultResponse, SubmitQuizAttemptCommand>
 {
-    private const string LEVEL_TEST_PURPOSE = "LEVEL_TEST";
     private const string PUBLIC_ACCESS_TYPE = "PUBLIC";
 
     private readonly IValidator<SubmitQuizAttemptCommand> _validator;
@@ -133,15 +124,6 @@ public sealed class SubmitQuizAttemptHandler : ICommandHandler<QuizAttemptResult
 
         QuizAnswerKeyDto answerKey = answerKeyResult.Value;
 
-        // У level-test собственный флоу попыток (LevelTestAttempt, /level-test) — анонимная
-        // воронка с lead-gate'ом. Обычная попытка по нему запрещена, иначе раздвоится прогресс.
-        if (string.Equals(answerKey.Purpose, LEVEL_TEST_PURPOSE, StringComparison.Ordinal))
-        {
-            return ProgressErrors.QuizAttemptLevelTestForbidden();
-        }
-
-        // Tier-3 — по самому квизу (ST-13 #493). PUBLIC short-circuit: открытый квиз не
-        // требует Redis-чека (зеркало PUBLIC-short-circuit'а GetMaterialDetail).
         if (!string.Equals(answerKey.AccessType, PUBLIC_ACCESS_TYPE, StringComparison.Ordinal))
         {
             AccessDecision accessDecision = await _entitlementChecker.CheckAccessAsync(

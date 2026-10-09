@@ -133,7 +133,7 @@ public sealed class IssueProgress : AggregateRoot
 
     /// <summary>
     /// Возвращает IssueProgress из терминального статуса (COMPLETED или REQUESTED_CHANGES) в UNDER_REVIEW.
-    /// Если переход из COMPLETED — поднимает <see cref="IssueProgressReopenedEvent"/> для отката XP,
+    /// Если переход из COMPLETED — поднимает <see cref="IssueProgressReopenedEvent"/> для отката прогресса,
     /// project и module прогресса.
     /// <para>
     /// <b>UNDER_REVIEW допустим как идемпотентный no-op (#383).</b> IssueProgress шарится между всеми
@@ -198,7 +198,7 @@ public sealed class IssueProgress : AggregateRoot
     /// <summary>
     ///     Сбрасывает прогресс задачи в NOT_STARTED — staff-override (#518). Чистит
     ///     <see cref="StartedAt"/> и <see cref="CompletedAt"/>. Если уходим из COMPLETED — поднимает
-    ///     <see cref="IssueProgressReopenedEvent"/> для отката XP / project / module прогресса
+    ///     <see cref="IssueProgressReopenedEvent"/> для отката project / module прогресса
     ///     (тот же откат-каскад, что у <see cref="ReopenReview"/>). Идемпотентно: уже NOT_STARTED →
     ///     no-op (события не дублируются).
     /// </summary>
@@ -234,9 +234,9 @@ public sealed class IssueProgress : AggregateRoot
     ///     </list>
     ///     <para>
     ///     Инвариант событий: <see cref="IssueProgressReopenedEvent"/> поднимается ⇔ уходим из
-    ///     COMPLETED (откат XP / project / module). Вход в COMPLETED через этот метод запрещён — он
+    ///     COMPLETED (откат project / module). Вход в COMPLETED через этот метод запрещён — он
     ///     не поднимает <see cref="IssueProgressApprovedEvent"/> (это делает ForceApprove-путь), и
-    ///     молчаливый переход в COMPLETED оставил бы XP/project/module несинхронизированными.
+    ///     молчаливый переход в COMPLETED оставил бы project/module несинхронизированными.
     ///     </para>
     ///     <para>Идемпотентно: target == current → no-op (событие не дублируется).</para>
     /// </summary>
@@ -245,7 +245,7 @@ public sealed class IssueProgress : AggregateRoot
         if (target == IssueProgressStatus.COMPLETED)
         {
             // COMPLETED идёт через synthetic-submission ForceApprove-путь в use-case'е — этот метод
-            // для него не предназначен (иначе XP/project/module не начислятся).
+            // для него не предназначен (иначе project/module не начислятся).
             return ProgressErrors.InvalidStatusTransition(
                 nameof(IssueProgress),
                 Status.ToString(),

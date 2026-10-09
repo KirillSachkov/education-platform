@@ -1,4 +1,4 @@
-namespace Shared.Navigation;
+﻿namespace Shared.Navigation;
 
 /// <summary>
 /// Stable short-values типов уведомлений, синхронизированные с
@@ -27,8 +27,12 @@ public static class NotificationTypes
     public const short PLAN_GRANT_AUTHOR_SALE = 15;
     public const short WEEKLY_DIGEST = 16;
     public const short AI_REVIEW_OVERSIZED_SKIPPED = 17;
+#pragma warning disable S1133 // Persisted notification numbers are permanent compatibility slots.
+    [Obsolete("Retired; reserved for persisted notification compatibility.")]
     public const short USER_LEVELED_UP = 18;
+    [Obsolete("Retired; reserved for persisted notification compatibility.")]
     public const short LEVEL_TEST_INVITE = 19;
+#pragma warning restore S1133
     public const short TRIAL_EXPIRY_APPROACHING = 20;
     public const short TG_JOIN_REMINDER = 21;
     public const short VIDEO_AUTO_PROCESSING_FAILED = 22;

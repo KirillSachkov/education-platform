@@ -1,4 +1,4 @@
-using ContentAccess;
+﻿using ContentAccess;
 using Core.Abstractions;
 using Core.Validation;
 using FluentValidation;
@@ -16,7 +16,7 @@ namespace ProgressService.Core.Features.Materials.UseCases;
 
 /// <summary>
 ///     Silent track-view: фиксирует факт «пользователь зашёл на страницу материала» —
-///     без cascade на <c>module_item_progress</c>, без XP, без domain event'ов. Питает
+///     без cascade на <c>module_item_progress</c>, без domain event'ов. Питает
 ///     ТОЛЬКО публичный счётчик «N просмотров» (#234) для auth-юзеров. Дёргается
 ///     <c>useTrackMaterialView</c> на mount detail-страницы. Issue #285.
 ///

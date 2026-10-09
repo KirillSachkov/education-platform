@@ -1,4 +1,4 @@
-using System.Data.Common;
+﻿using System.Data.Common;
 using Core.Abstractions;
 using Core.Database;
 using Dapper;
@@ -28,19 +28,11 @@ public sealed class GetQuizAdminOverviewEndpoint : IEndpoint
             .RequirePermissions(PlatformPermissions.Users.VIEW);
 }
 
-/// <summary>
-///     Админ-аналитика по всем тестам (#556, AC5): агрегат <c>quiz_attempts</c> по
-///     <c>quiz_id</c> (число попыток, уникальные юзеры, доля зачётов, средний балл),
-///     обогащённый title/курсом через ECS <see cref="IEducationContentServiceClient.GetQuizSummariesAsync"/>
-///     + <see cref="IEducationContentServiceClient.GetCourseTitlesAsync"/>. LEVEL_TEST-квизы
-///     исключаются (у воронки своя страница, #537), как и квизы без ECS-summary
-///     (hard-deleted). Top-line KPI считаются по тем же отфильтрованным строкам.
-///     Группировку по курсам делает фронт. Read-only Dapper; Tier-1 Users.VIEW.
-/// </summary>
+/// <summary>Агрегирует попытки по квизам и обогащает их данными ECS.
+///     Отсутствующие квизы исключаются; итоговые показатели используют те же строки.</summary>
 public sealed class GetQuizAdminOverviewHandler
     : IQueryHandlerWithResult<QuizAdminOverviewResponse, GetQuizAdminOverviewQuery>
 {
-    private const string LEVEL_TEST = "LEVEL_TEST";
 
     private readonly ITransactionManager _transactionManager;
     private readonly IEducationContentServiceClient _educationContentServiceClient;
@@ -108,8 +100,7 @@ public sealed class GetQuizAdminOverviewHandler
 
         // Оставляем только MATERIAL_CHECK-квизы с известным summary.
         List<AggregateRow> kept = aggregates
-            .Where(a => summaries.TryGetValue(a.QuizId, out QuizSummaryLookupDto? s)
-                && !string.Equals(s.Purpose, LEVEL_TEST, StringComparison.Ordinal))
+            .Where(a => summaries.ContainsKey(a.QuizId))
             .ToList();
 
         if (kept.Count == 0)

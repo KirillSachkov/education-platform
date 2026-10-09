@@ -9,7 +9,6 @@
     <ProjectReference Include="..\..\..\AuthService\src\AuthService.Contracts\AuthService.Contracts.csproj" />
     <ProjectReference
       Include="..\..\..\EducationContentService\src\EducationContentService.Contracts\EducationContentService.Contracts.csproj" />
-    <ProjectReference Include="..\..\..\Shared\AI\AI\AI.csproj" />
     <ProjectReference Include="..\..\..\Shared\Authentication\Authentication.csproj" />
     <ProjectReference Include="..\..\..\Shared\Messaging\RabbitMqMessaging\RabbitMqMessaging.csproj" />
     <ProjectReference Include="..\..\..\Shared\ContentAccess\ContentAccess\ContentAccess.csproj" />

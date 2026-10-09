@@ -1,4 +1,4 @@
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 using ProgressService.Domain.Materials;
 
 namespace ProgressService.Core.Abstractions;
@@ -6,8 +6,8 @@ namespace ProgressService.Core.Abstractions;
 /// <summary>
 ///     Репозиторий user-scoped просмотров материалов (<see cref="MaterialView"/>).
 ///     Ключ: (UserId, MaterialId). Одна строка имеет два состояния (issue #285):
-///     <c>IsCompleted=false</c> — silent track для счётчика «N просмотров», без cascade/XP;
-///     <c>IsCompleted=true</c> — явная отметка «Изучено», cascade на module_item_progress + XP.
+///     <c>IsCompleted=false</c> — silent track для счётчика «N просмотров», без cascade;
+///     <c>IsCompleted=true</c> — явная отметка «Изучено», cascade на module_item_progress.
 /// </summary>
 public interface IMaterialViewRepository
 {
@@ -36,7 +36,7 @@ public interface IMaterialViewRepository
     ///     Идемпотентно создаёт silent view track (<c>is_completed=false</c>). Если запись для
     ///     пары (UserId, MaterialId) уже есть в любом состоянии — no-op, существующая
     ///     <c>is_completed</c> не понижается. Используется по mount detail-страницы материала
-    ///     для счётчика «N просмотров» — без cascade/XP. Issue #285.
+    ///     для счётчика «N просмотров» — без cascade. Issue #285.
     /// </summary>
     /// <returns><c>true</c> если новая строка была вставлена, иначе <c>false</c>.</returns>
     Task<bool> TryInsertTrackAsync(
