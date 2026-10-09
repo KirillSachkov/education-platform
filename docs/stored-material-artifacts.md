@@ -1,8 +1,9 @@
 # Stored material artifacts
 
 MaterialProcessingService no longer runs transcription, chapter generation, text generation,
-AI model administration, usage queries or jobs. Shared/AI remains the AssignmentReviewService
-dependency for review generation, progress events and model usage accounting.
+material AI model administration, usage queries or jobs. Shared/AI remains the AssignmentReviewService
+dependency for review generation, progress events and model usage accounting. The existing
+`/admin/ai-models` route retains AssignmentReview settings; its MaterialProcessing section is removed.
 
 ## Storage and read dependencies
 

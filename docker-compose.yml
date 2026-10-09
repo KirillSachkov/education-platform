@@ -285,7 +285,7 @@ services:
     networks:
       - platform-network
 
-  # Material Processing Service (transcription + AI synopsis + timecodes)
+  # Education Content Service
   education-service-migrations:
     profiles: ["app"]
     build:

@@ -314,6 +314,7 @@ export const routes = {
   adminNotifications: "/admin/notifications",
   adminCampaigns: "/admin/campaigns",
   adminTests: "/admin/tests",
+  adminAiModels: "/admin/ai-models",
   adminPayments: "/admin/payments",
   adminPaymentDetail: (id: string) => `/admin/payments/${id}` as const,
 } as const;

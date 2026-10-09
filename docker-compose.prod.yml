@@ -202,7 +202,7 @@ services:
     # удваивать RSS на больших курсах, фиксированный потолок только мешает.
     restart: always
 
-  # ─── Material Processing Service ───
+  # ─── Telegram Bot Service ───
   telegram-bot-service-migrations:
     container_name: telegram-bot-service-migrations
     image: ${DOCKER_REGISTRY:?DOCKER_REGISTRY must be set}telegram-bot-service:${IMAGE_TAG:?IMAGE_TAG must be set}
