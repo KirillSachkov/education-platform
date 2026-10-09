@@ -60,23 +60,3 @@ datasources:
           matcherRegex: "(?:\"TraceId\":\"|trace_id[=: ]+)([a-f0-9]{16,32})"
           datasourceUid: tempo
           urlDisplayLabel: "View Trace in Tempo"
-
-  # Application Postgres — powers business dashboards that query domain tables
-  # directly (Trainer stats). PROD MUST use a READ-ONLY DB role, NOT the app
-  # superuser. OWNER-ACTION: create a read-only role + store creds in Infisical,
-  # then pass GRAFANA_PG_USER / GRAFANA_PG_PASSWORD into the grafana container
-  # (docker-compose.prod.yml). Until wired, this datasource resolves to empty
-  # creds and stays unauthenticated. See docs/observability.md.
-  - name: education-postgres
-    uid: education-postgres
-    type: postgres
-    access: proxy
-    url: postgres:5432
-    user: $GRAFANA_PG_USER
-    editable: false
-    jsonData:
-      database: education_platform
-      sslmode: disable
-      postgresVersion: 1600
-    secureJsonData:
-      password: $GRAFANA_PG_PASSWORD

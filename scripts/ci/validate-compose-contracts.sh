@@ -37,6 +37,8 @@ DOCKER_REGISTRY=registry.example/ IMAGE_TAG=contract-test POSTGRES_EXPORTER_PASS
   docker compose --profile '*' -f docker-compose.prod.yml config --format json >"$prod_json"
 
 for rendered_compose in "$dev_json" "$prod_json"; do
+  jq -e '.services | has("trainer-service") == false and has("trainer-service-migrations") == false' \
+    "$rendered_compose" >/dev/null
   jq -e '
     .services["comment-service-migrations"].depends_on["education-service-migrations"].condition == "service_completed_successfully"
     and .services["comment-service"].depends_on["education-service-migrations"].condition == "service_completed_successfully"

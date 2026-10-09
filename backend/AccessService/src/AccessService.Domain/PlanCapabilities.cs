@@ -1,4 +1,4 @@
-namespace AccessService.Domain;
+﻿namespace AccessService.Domain;
 
 /// <summary>
 /// Bitmask: какие возможности открывает план. Автор задаёт при создании плана,
@@ -33,11 +33,7 @@ public enum PlanCapabilities
     /// <summary>Помощь с трудоустройством — резюме, mock-собеседования.</summary>
     JOB_SUPPORT = 1 << 5,
 
-    /// <summary>
-    /// Расширенный доступ к тренажёру (Trainer Pro, #614). Отдельный add-on, НЕ входит
-    /// в <see cref="FULL"/> — выдаётся подписочным планом (<see cref="PlanTier.SUBSCRIPTION"/>),
-    /// а не разовой покупкой полного доступа. Открывает SRS-повторы, голосовые мок-собесы и т.п.
-    /// </summary>
+    /// <summary>Historical stored flag. New mutations reject it and entitlement projection masks it.</summary>
     TRAINER_PRO = 1 << 6,
 
     /// <summary>Полный набор возможностей (default для платных планов). Не включает

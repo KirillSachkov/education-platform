@@ -28,7 +28,6 @@ SERVICES = (
     "SearchService",
     "TagService",
     "TelegramBotService",
-    "TrainerService",
 )
 
 
@@ -96,7 +95,7 @@ def main() -> int:
         )
         return 1
 
-    print("OK: GitHub backend selection, all13 integration matrix match csproj deps.")
+    print("OK: GitHub backend selection, active integration matrix match csproj deps.")
     return 0
 
 

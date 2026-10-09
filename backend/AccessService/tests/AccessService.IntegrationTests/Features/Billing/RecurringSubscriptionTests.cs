@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using AccessService.Contracts.Billing;
 using AccessService.Contracts.Plans.Requests;
@@ -27,26 +27,17 @@ public sealed class RecurringSubscriptionTests : AccessServiceTestsBase
     public RecurringSubscriptionTests(IntegrationTestsWebFactory factory) : base(factory) { }
 
     [Fact]
-    public async Task POST_orders_SubscriptionPlan_SendsRecurrentAndCustomerKeyToInit()
+    public async Task POST_orders_LegacySubscriptionCannotInitiateNewPayment()
     {
-        Guid planId = await SeedPublicSubscriptionPlanAsync(slug: "sub-recurrent", priceCents: 99_000);
+        Guid planId = await SeedPublicSubscriptionPlanAsync(slug: "legacy-recurrent", priceCents: 99_000);
+        AuthenticateAs("platform-participant", Guid.NewGuid());
 
-        Guid userId = Guid.NewGuid();
-        AuthenticateAs("platform-participant", userId);
-
-        // #674: SUBSCRIPTION plans are TRAINER-scoped → purchased via the dedicated trainer
-        // endpoint (same CreateOrderHandler, same recurrent Init plumbing). The platform
-        // /access/orders/ endpoint now rejects them.
         HttpResponseMessage response = await AppHttpClient.PostAsJsonAsync(
-            "/access/trainer-pro/orders", new CreateOrderRequest(planId));
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            "/access/orders/", new CreateOrderRequest(planId));
 
-        // Assert on the mocked ITBankClient.InitAsync request — subscription orders must
-        // flag the parent recurrent payment + a stable CustomerKey (the userId string).
-        var initCall = Assert.Single(Factory.TBankClient.InitCalls);
-        Assert.Equal("Y", initCall.Recurrent);
-        Assert.Equal(userId.ToString(), initCall.CustomerKey);
-        Assert.Equal("1", initCall.DATA!["OperationInitiatorType"]);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Empty(Factory.TBankClient.InitCalls);
+        await ExecuteInDbAsync(async db => Assert.Empty(await db.Orders.ToListAsync()));
     }
 
     [Fact]
@@ -178,33 +169,20 @@ public sealed class RecurringSubscriptionTests : AccessServiceTestsBase
         return order.Id;
     }
 
-    /// <summary>Creates + publishes a SUBSCRIPTION plan via the API as the default author.</summary>
+    /// <summary>Seeds a historical subscription row without invoking the retired creation API.</summary>
     private async Task<Guid> SeedPublicSubscriptionPlanAsync(string slug, int priceCents)
     {
-        AuthenticateAs("platform-author");
-
-        CreatePlanRequest request = new(
-            Tier: nameof(PlanTier.SUBSCRIPTION),
-            Slug: slug,
-            DisplayName: "Trainer Pro",
-            ShortDescription: null,
-            LongDescription: null,
-            CoverFileId: null,
-            Features: null,
-            PriceCents: priceCents,
-            Currency: "RUB",
-            CourseIds: [],
-            DisplayOrder: 0,
-            RecurringIntervalDays: IntervalDays);
-
-        HttpResponseMessage create = await AppHttpClient.PostAsJsonAsync("/access/plans/", request);
-        create.EnsureSuccessStatusCode();
-        Guid planId = (await create.Content.ReadFromJsonAsync<Envelope<Guid>>())!.Result;
-
-        HttpResponseMessage publish = await AppHttpClient.PostAsync(
-            $"/access/plans/{planId}/publish", content: null);
-        publish.EnsureSuccessStatusCode();
-        return planId;
+        Plan plan = Plan.Create(CurrentUserId, PlanTier.SUBSCRIPTION, PlanSlug.Of(slug).Value,
+            PlanDisplayName.Of("Legacy subscription").Value, [], null,
+            term: PlanTerm.Recurring(IntervalDays)).Value;
+        plan.UpdatePrice(priceCents, "RUB");
+        plan.Publish();
+        await ExecuteInDbAsync(async db =>
+        {
+            db.Plans.Add(plan);
+            await db.SaveChangesAsync();
+        });
+        return plan.Id;
     }
 
     private async Task<Guid> SeedPublicFullAccessPlanAsync(string slug, int priceCents)

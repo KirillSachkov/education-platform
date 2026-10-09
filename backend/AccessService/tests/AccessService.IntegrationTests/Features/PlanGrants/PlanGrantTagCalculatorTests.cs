@@ -1,19 +1,16 @@
-using AccessService.Core.Features.PlanGrants.IntegrationEvents;
+﻿using AccessService.Core.Features.PlanGrants.IntegrationEvents;
 using AccessService.Domain;
 using ContentAccess;
 
 namespace AccessService.IntegrationTests.Features.PlanGrants;
 
-/// <summary>
-///     Деривация capability-тегов из (Plan, PlanGrant) — авто-PRO для полного доступа (#568).
-///     Чистый unit-тест статического калькулятора, без контейнеров.
-/// </summary>
+/// <summary>Entitlement projection preserves platform access while retiring trainer grants.</summary>
 public sealed class PlanGrantTagCalculatorTests
 {
     private static readonly PlanDisplayName Name = PlanDisplayName.Of("Полный доступ").Value;
 
     [Fact]
-    public void Full_platform_grant_gets_trainer_pro_only_when_flag_on()
+    public void Full_platform_grant_keeps_platform_capabilities_without_retired_tag()
     {
         Plan plan = Plan.Create(
             Guid.NewGuid(),
@@ -27,20 +24,16 @@ public sealed class PlanGrantTagCalculatorTests
 
         string proTag = GrantTags.Capability(nameof(PlanCapabilities.TRAINER_PRO));
 
-        List<string> withPro =
-            [.. PlanGrantTagCalculator.CalculateForGrant(grant, plan, fullPlatformGrantsTrainerPro: true)];
-        List<string> withoutPro =
-            [.. PlanGrantTagCalculator.CalculateForGrant(grant, plan, fullPlatformGrantsTrainerPro: false)];
+        List<string> tags = [.. PlanGrantTagCalculator.CalculateForGrant(grant, plan)];
 
-        // FULL_ALL + флаг → cap:TRAINER_PRO; без флага — нет. plan:all присутствует всегда (full access).
-        Assert.Contains(proTag, withPro);
-        Assert.Contains(GrantTags.PlanAll(), withPro);
-        Assert.DoesNotContain(proTag, withoutPro);
-        Assert.Contains(GrantTags.PlanAll(), withoutPro);
+        Assert.DoesNotContain(proTag, tags);
+        Assert.Contains(GrantTags.PlanAll(), tags);
+        foreach (string name in PlanCapabilitiesMapper.ToStrings(PlanCapabilities.FULL))
+            Assert.Contains(GrantTags.Capability(name), tags);
     }
 
     [Fact]
-    public void Course_grant_never_gets_trainer_pro_from_the_full_platform_flag()
+    public void Course_grant_preserves_course_access_and_masks_persisted_retired_flag()
     {
         Guid courseId = Guid.NewGuid();
         Plan plan = Plan.Create(
@@ -49,16 +42,28 @@ public sealed class PlanGrantTagCalculatorTests
             PlanSlug.Of("one-course").Value,
             Name,
             courseIds: [courseId],
-            requestedCapabilities: null).Value;
+            requestedCapabilities: ["VIEW_MATERIALS", "TRAINER_PRO"]).Value;
         PlanGrant grant = PlanGrant.Create(
             Guid.NewGuid(), plan.Id, PlanGrantSource.ADMIN_GRANT, sourceRef: null);
 
         List<string> tags =
-            [.. PlanGrantTagCalculator.CalculateForGrant(grant, plan, fullPlatformGrantsTrainerPro: true)];
+            [.. PlanGrantTagCalculator.CalculateForGrant(grant, plan)];
 
-        // Авто-PRO — только за полный доступ к ПЛАТФОРМЕ (#568, решение владельца): курс PRO не даёт.
         Assert.DoesNotContain(GrantTags.Capability(nameof(PlanCapabilities.TRAINER_PRO)), tags);
         Assert.Contains(GrantTags.PlanCourse(courseId), tags);
+        Assert.Contains(GrantTags.Capability(nameof(PlanCapabilities.VIEW_MATERIALS)), tags);
+    }
+
+    [Fact]
+    public void Legacy_trainer_plan_yields_no_platform_or_capability_tags()
+    {
+        Plan plan = Plan.Create(
+            Guid.NewGuid(), PlanTier.SUBSCRIPTION, PlanSlug.Of("legacy-trainer").Value,
+            Name, [], ["TRAINER_PRO", "VIEW_MATERIALS"], term: PlanTerm.Recurring(30)).Value;
+        PlanGrant grant = PlanGrant.Create(Guid.NewGuid(), plan.Id, PlanGrantSource.ADMIN_GRANT, null);
+
+        Assert.Empty(PlanGrantTagCalculator.CalculateForGrant(grant, plan));
+        Assert.Empty(PlanGrantTagCalculator.CalculateUnion([grant], new Dictionary<Guid, Plan> { [plan.Id] = plan }));
     }
 
     [Fact]
@@ -75,7 +80,7 @@ public sealed class PlanGrantTagCalculatorTests
             Guid.NewGuid(), plan.Id, PlanGrantSource.ADMIN_GRANT, sourceRef: null);
         grant.Revoke(Guid.NewGuid(), "test");
 
-        Assert.Empty(PlanGrantTagCalculator.CalculateForGrant(grant, plan, fullPlatformGrantsTrainerPro: true));
+        Assert.Empty(PlanGrantTagCalculator.CalculateForGrant(grant, plan));
     }
 
     [Fact]

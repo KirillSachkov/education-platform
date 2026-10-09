@@ -32,7 +32,6 @@ SearchService|${SEARCH_HOST_PORT:-8009}
 AccessService|${ACCESS_HOST_PORT:-8010}
 MaterialProcessingService|${MATERIAL_PROCESSING_HOST_PORT:-8011}
 AssignmentReviewService|${ASSIGNMENT_REVIEW_HOST_PORT:-8012}
-TrainerService|${TRAINER_HOST_PORT:-8013}
 EOF
 
 nginx_port="${NGINX_HOST_PORT:-80}"

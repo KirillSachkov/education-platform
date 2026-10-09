@@ -1,4 +1,4 @@
-using AccessService.Contracts.Plans.Dtos;
+﻿using AccessService.Contracts.Plans.Dtos;
 using AccessService.Core.Database;
 using AccessService.Domain;
 using Core.Abstractions;
@@ -58,8 +58,7 @@ public sealed class GetPlanBySlugHandler
         // EF gotcha: owned-VO equality doesn't translate; pull primitive into local.
         string slugValue = slugResult.Value.Value;
 
-        // Catalog isolation (#674): a TRAINER-scoped offer must not be reachable through the
-        // public platform pricing detail page — only via /access/trainer-pro/*.
+        // Historical retired offers stay isolated from the platform catalog.
         IReadOnlyList<Plan> plans = await _plans.GetManyByAsync(
             p => p.Slug.Value == slugValue
                  && p.IsPublic

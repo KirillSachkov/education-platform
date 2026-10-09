@@ -1,4 +1,4 @@
-using AccessService.Domain;
+﻿using AccessService.Domain;
 using ContentAccess;
 
 namespace AccessService.Core.Features.PlanGrants.IntegrationEvents;
@@ -17,29 +17,20 @@ public static class PlanGrantTagCalculator
     /// </summary>
     public static IEnumerable<string> CalculateForGrant(
         PlanGrant grant,
-        Plan plan,
-        bool fullPlatformGrantsTrainerPro = false)
+        Plan plan)
     {
         if (grant.Status != PlanGrantStatus.ACTIVE
             || !plan.IsActive
-            || plan.ArchivedAt is not null)
+            || plan.ArchivedAt is not null
+            || plan.Scope != PlanScope.PLATFORM)
             yield break;
 
         foreach (string tag in PlanTags(plan))
             yield return tag;
 
-        foreach (string tag in CapabilityTags(plan.Capabilities))
+        foreach (string tag in CapabilityTags(plan.Capabilities & ~PlanCapabilities.TRAINER_PRO))
             yield return tag;
 
-        // Авто-PRO (#568): полный доступ к платформе (FULL_ALL) опционально доливает Trainer Pro,
-        // хотя TRAINER_PRO не входит в FULL (это подписочный add-on). Под флагом
-        // Access:FullPlatformGrantsTrainerPro. Только FULL_ALL — LEARN_ALL (view-only) не считается.
-        if (fullPlatformGrantsTrainerPro
-            && plan.Tier == PlanTier.FULL_ALL
-            && !plan.Capabilities.HasFlag(PlanCapabilities.TRAINER_PRO))
-        {
-            yield return GrantTags.Capability(nameof(PlanCapabilities.TRAINER_PRO));
-        }
     }
 
     /// <summary>
@@ -49,8 +40,7 @@ public static class PlanGrantTagCalculator
     /// </summary>
     public static IReadOnlyList<string> CalculateUnion(
         IReadOnlyList<PlanGrant> grants,
-        IReadOnlyDictionary<Guid, Plan> plansByPlanId,
-        bool fullPlatformGrantsTrainerPro = false)
+        IReadOnlyDictionary<Guid, Plan> plansByPlanId)
     {
         if (grants.Count == 0)
             return [];
@@ -61,7 +51,7 @@ public static class PlanGrantTagCalculator
             if (!plansByPlanId.TryGetValue(grant.PlanId, out Plan? plan))
                 continue; // план удалён — теги не материализуем
 
-            foreach (string tag in CalculateForGrant(grant, plan, fullPlatformGrantsTrainerPro))
+            foreach (string tag in CalculateForGrant(grant, plan))
                 set.Add(tag);
         }
 

@@ -1,4 +1,4 @@
-using AccessService.Contracts.Plans.Requests;
+﻿using AccessService.Contracts.Plans.Requests;
 using AccessService.Core.Database;
 using AccessService.Core.Features.Plans;
 using AccessService.Domain;
@@ -45,6 +45,18 @@ public sealed class CreatePlanValidator : AbstractValidator<CreatePlanCommand>
             .Must(o => Enum.TryParse<PlanOfferType>(o, ignoreCase: true, out _))
             .When(x => !string.IsNullOrWhiteSpace(x.Request.OfferType))
             .WithError(Error.Validation("plan.offer_type.invalid", "Неизвестный формат оффера"));
+
+        RuleFor(x => x.Request.Capabilities)
+            .Must(names => names is null || !names.Any(name =>
+                string.Equals(name, nameof(PlanCapabilities.TRAINER_PRO), StringComparison.OrdinalIgnoreCase)))
+            .WithError(AccessErrors.RetiredOffer());
+        RuleFor(x => x.Request.OfferType)
+            .Must(value => !Enum.TryParse(value, ignoreCase: true, out PlanOfferType offer)
+                || offer != PlanOfferType.TRAINER_PRO)
+            .WithError(AccessErrors.RetiredOffer());
+        RuleFor(x => x.Request.Tier)
+            .Must(value => !Enum.TryParse(value, out PlanTier tier) || tier != PlanTier.SUBSCRIPTION)
+            .WithError(AccessErrors.RetiredOffer());
 
         RuleFor(x => x.Request.Slug).MustBeValueObject(PlanSlug.Of);
         RuleFor(x => x.Request.DisplayName).MustBeValueObject(PlanDisplayName.Of);

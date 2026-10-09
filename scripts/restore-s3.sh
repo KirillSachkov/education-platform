@@ -233,6 +233,7 @@ psql_scalar() {
 DATABASE_EXISTS="$(psql_scalar postgres "SELECT 1 FROM pg_database WHERE datname = '${PG_DATABASE}';")"
 [[ "$DATABASE_EXISTS" == "1" ]] || die "restored database ${PG_DATABASE} was not found"
 
+# Full historical backups retain trainer data until a separately approved retirement.
 APPLICATION_SCHEMAS="'access','assignment_review','auth','comments','education','files','material_processing','notifications','progress','search','tags','telegrambot','trainer'"
 EXPECTED_SCHEMA_COUNT=13
 SCHEMA_COUNT="$(psql_scalar "$PG_DATABASE" "SELECT count(*) FROM pg_namespace WHERE nspname IN (${APPLICATION_SCHEMAS});")"

@@ -4,7 +4,7 @@ from pathlib import Path
 import unittest
 
 from release_model import (
-    REPOSITORY, PUBLIC_REGISTRY, LEGACY_REGISTRY, SERVICES, HEALTH_SERVICES,
+    REPOSITORY, PUBLIC_REGISTRY, LEGACY_REGISTRY, SERVICES, HEALTH_SERVICES, LEGACY_SERVICES, services_for_registry,
     dispatch_inputs, image_manifest, private_roles, strict_json, trusted_build_run, trusted_dispatch,
 )
 
@@ -16,7 +16,7 @@ def manifest(sha=SHA, registry=PUBLIC_REGISTRY):
     return {"schema_version": 1, "source_sha": sha, "images": [
         {"name": name, "source_sha": sha, "tag": registry + "/" + name + ":" + sha,
          "digest": digest, "reference": registry + "/" + name + "@" + digest}
-        for name in SERVICES
+        for name in services_for_registry(registry)
     ]}
 
 
@@ -36,7 +36,7 @@ class ProductionReleaseInputs(unittest.TestCase):
         root = Path(__file__).resolve().parents[3]
         declared = json.loads((root / "scripts/ci/github-ci-paths.json").read_text())["images"]
         self.assertEqual(set(SERVICES), {row["name"] for row in declared})
-        self.assertEqual(len(HEALTH_SERVICES), 13)
+        self.assertEqual(len(HEALTH_SERVICES), 12)
         self.assertNotIn("telegram-bot-service", HEALTH_SERVICES)
 
     def test_known_manual_input_combinations(self):
@@ -61,8 +61,25 @@ class ProductionReleaseInputs(unittest.TestCase):
                 trusted_dispatch({**env, key: value})
 
     def test_complete_canonical_public_and_private_manifests(self):
-        self.assertEqual(len(image_manifest(manifest(), SHA)), 14)
+        self.assertEqual(len(image_manifest(manifest(), SHA)), 13)
         self.assertEqual(len(image_manifest(manifest(registry=LEGACY_REGISTRY), SHA, LEGACY_REGISTRY)), 14)
+
+    def test_source_and_frozen_legacy_topologies_cannot_be_interchanged(self):
+        self.assertIn("trainer-service", LEGACY_SERVICES)
+        self.assertNotIn("trainer-service", SERVICES)
+        with self.assertRaises(ValueError):
+            image_manifest(manifest(registry=LEGACY_REGISTRY), SHA)
+        legacy = manifest(registry=LEGACY_REGISTRY)
+        legacy["images"] = [row for row in legacy["images"] if row["name"] != "trainer-service"]
+        with self.assertRaises(ValueError):
+            image_manifest(legacy, SHA, LEGACY_REGISTRY)
+        public = manifest()
+        extra = manifest()["images"][0].copy()
+        extra.update(name="trainer-service", tag=PUBLIC_REGISTRY + "/trainer-service:" + SHA,
+                     reference=PUBLIC_REGISTRY + "/trainer-service@" + extra["digest"])
+        public["images"].append(extra)
+        with self.assertRaises(ValueError):
+            image_manifest(public, SHA)
 
     def test_missing_duplicate_stale_and_arbitrary_registry_refs_fail(self):
         cases = []

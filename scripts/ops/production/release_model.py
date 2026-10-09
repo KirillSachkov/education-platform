@@ -6,14 +6,24 @@ import re
 REPOSITORY = "KirillSachkov/education-platform"
 PUBLIC_REGISTRY = "ghcr.io/kirillsachkov/education-platform"
 LEGACY_REGISTRY = "ghcr.io/kirillsachkov/education-platform-legacy"
-SERVICES = (
+LEGACY_SERVICES = (
     "auth-service", "education-service", "file-service", "progress-service",
     "comment-service", "tag-service", "search-service", "access-service",
     "material-processing-service", "notification-service", "telegram-bot-service",
     "trainer-service", "assignment-review-service", "frontend",
 )
-MIGRATIONS = tuple(name + "-migrations" for name in SERVICES if name != "frontend")
+# Frozen original private roles retain their historical topology for rollback.
+SERVICES = tuple(name for name in LEGACY_SERVICES if name != "trainer-service")
 HEALTH_SERVICES = tuple(name for name in SERVICES if name != "telegram-bot-service")
+LEGACY_HEALTH_SERVICES = tuple(name for name in LEGACY_SERVICES if name != "telegram-bot-service")
+
+
+def services_for_registry(registry):
+    if registry == PUBLIC_REGISTRY:
+        return SERVICES
+    if registry == LEGACY_REGISTRY:
+        return LEGACY_SERVICES
+    raise ValueError("unknown release registry")
 
 
 def strict_json(text):
@@ -77,17 +87,18 @@ def trusted_dispatch(environment):
 
 def image_manifest(manifest, source_sha, registry=PUBLIC_REGISTRY):
     full_sha(source_sha)
+    services = services_for_registry(registry)
     if not isinstance(manifest, dict) or type(manifest.get("schema_version")) is not int or manifest.get("schema_version") != 1 or manifest.get("source_sha") != source_sha:
         raise ValueError("image manifest identity mismatch")
     images = manifest.get("images")
-    if not isinstance(images, list) or len(images) != 14:
-        raise ValueError("complete fourteen-image manifest required")
+    if not isinstance(images, list) or len(images) != len(services):
+        raise ValueError("complete registry-specific image manifest required")
     result = {}
     for row in images:
         if not isinstance(row, dict):
             raise ValueError("image record must be an object")
         name = row.get("name")
-        if name not in SERVICES or name in result:
+        if name not in services or name in result:
             raise ValueError("unknown or duplicate application image")
         reference = digest_reference(row.get("reference"), registry + "/" + name)
         expected = {
@@ -97,7 +108,7 @@ def image_manifest(manifest, source_sha, registry=PUBLIC_REGISTRY):
         if row != expected:
             raise ValueError("stale or inconsistent image record")
         result[name] = reference
-    if set(result) != set(SERVICES):
+    if set(result) != set(services):
         raise ValueError("missing application image")
     return result
 

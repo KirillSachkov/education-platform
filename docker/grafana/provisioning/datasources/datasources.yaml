@@ -54,23 +54,3 @@ datasources:
           matcherRegex: "(?:\"TraceId\":\"|trace_id[=: ]+)([a-f0-9]{16,32})"
           datasourceUid: tempo
           urlDisplayLabel: "View Trace in Tempo"
-
-  # Application Postgres — powers the business dashboards that query domain
-  # tables directly (Trainer stats). Dev uses a least-privilege READ-ONLY role
-  # (grafana_ro, created by docker/postgres/init-databases.sql), NOT the app
-  # superuser — same $GRAFANA_PG_USER / $GRAFANA_PG_PASSWORD vars as prod. The
-  # grafana container has env_file: .env, so they resolve; sslmode disabled on
-  # the docker net.
-  - name: education-postgres
-    uid: education-postgres
-    type: postgres
-    access: proxy
-    url: postgres:5432
-    user: $GRAFANA_PG_USER
-    editable: true
-    jsonData:
-      database: education_platform
-      sslmode: disable
-      postgresVersion: 1600
-    secureJsonData:
-      password: $GRAFANA_PG_PASSWORD

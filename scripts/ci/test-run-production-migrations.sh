@@ -20,7 +20,7 @@ missing_release="$temp_dir/missing.env"
 printf 'MEDIA_BINDING_PROTOCOL=1\n' > "$current_release"
 trap 'rm -f "$log_file"; rm -rf "$temp_dir"' EXIT
 
-expected_services=$'auth-service-migrations\neducation-service-migrations\nfile-service-migrations\nprogress-service-migrations\ncomment-service-migrations\ntag-service-migrations\nsearch-service-migrations\naccess-service-migrations\nmaterial-processing-service-migrations\nnotification-service-migrations\ntelegram-bot-service-migrations\ntrainer-service-migrations\nassignment-review-service-migrations'
+expected_services=$'auth-service-migrations\neducation-service-migrations\nfile-service-migrations\nprogress-service-migrations\ncomment-service-migrations\ntag-service-migrations\nsearch-service-migrations\naccess-service-migrations\nmaterial-processing-service-migrations\nnotification-service-migrations\ntelegram-bot-service-migrations\nassignment-review-service-migrations'
 
 FAKE_DOCKER_LOG="$log_file" \
 DOCKER_BIN="$FAKE_DOCKER" \
@@ -53,7 +53,7 @@ FAKE_DOCKER_LOG="$log_file" \
 DOCKER_BIN="$FAKE_DOCKER" \
     bash "$SCRIPT_UNDER_TEST" docker-compose.test.yml "$missing_release" >/dev/null
 
-expected_first_cutover=$'compose -f docker-compose.test.yml stop file-service\ncompose -f docker-compose.test.yml run --rm --no-deps --no-TTY auth-service-migrations\ncompose -f docker-compose.test.yml run --rm --no-deps --no-TTY education-service-migrations\ncompose -f docker-compose.test.yml up -d --force-recreate --no-deps --wait --wait-timeout 180 auth-service education-service\ncompose -f docker-compose.test.yml run --rm --no-deps --no-TTY file-service-migrations\ncompose -f docker-compose.test.yml run --rm --no-deps --no-TTY progress-service-migrations\ncompose -f docker-compose.test.yml run --rm --no-deps --no-TTY comment-service-migrations\ncompose -f docker-compose.test.yml run --rm --no-deps --no-TTY tag-service-migrations\ncompose -f docker-compose.test.yml run --rm --no-deps --no-TTY search-service-migrations\ncompose -f docker-compose.test.yml run --rm --no-deps --no-TTY access-service-migrations\ncompose -f docker-compose.test.yml run --rm --no-deps --no-TTY material-processing-service-migrations\ncompose -f docker-compose.test.yml run --rm --no-deps --no-TTY notification-service-migrations\ncompose -f docker-compose.test.yml run --rm --no-deps --no-TTY telegram-bot-service-migrations\ncompose -f docker-compose.test.yml run --rm --no-deps --no-TTY trainer-service-migrations\ncompose -f docker-compose.test.yml run --rm --no-deps --no-TTY assignment-review-service-migrations'
+expected_first_cutover=$'compose -f docker-compose.test.yml stop file-service\ncompose -f docker-compose.test.yml run --rm --no-deps --no-TTY auth-service-migrations\ncompose -f docker-compose.test.yml run --rm --no-deps --no-TTY education-service-migrations\ncompose -f docker-compose.test.yml up -d --force-recreate --no-deps --wait --wait-timeout 180 auth-service education-service\ncompose -f docker-compose.test.yml run --rm --no-deps --no-TTY file-service-migrations\ncompose -f docker-compose.test.yml run --rm --no-deps --no-TTY progress-service-migrations\ncompose -f docker-compose.test.yml run --rm --no-deps --no-TTY comment-service-migrations\ncompose -f docker-compose.test.yml run --rm --no-deps --no-TTY tag-service-migrations\ncompose -f docker-compose.test.yml run --rm --no-deps --no-TTY search-service-migrations\ncompose -f docker-compose.test.yml run --rm --no-deps --no-TTY access-service-migrations\ncompose -f docker-compose.test.yml run --rm --no-deps --no-TTY material-processing-service-migrations\ncompose -f docker-compose.test.yml run --rm --no-deps --no-TTY notification-service-migrations\ncompose -f docker-compose.test.yml run --rm --no-deps --no-TTY telegram-bot-service-migrations\ncompose -f docker-compose.test.yml run --rm --no-deps --no-TTY assignment-review-service-migrations'
 actual_first_cutover="$(<"$log_file")"
 [[ "$actual_first_cutover" == "$expected_first_cutover" ]] ||
     fail "first media-binding cutover order is unsafe"
@@ -70,5 +70,20 @@ expected_failed_cutover=$'compose -f docker-compose.test.yml stop file-service\n
 actual_failed_cutover="$(<"$log_file")"
 [[ "$actual_failed_cutover" == "$expected_failed_cutover" ]] ||
     fail "first cutover continued after the failed Auth migration"
+
+# Frozen legacy roles still use the original complete migration inventory.
+: > "$log_file"
+FAKE_DOCKER_LOG="$log_file" DOCKER_BIN="$FAKE_DOCKER" \
+    bash "$SCRIPT_UNDER_TEST" docker-compose.test.yml "$current_release" legacy >/dev/null
+legacy_services="$(awk '{print $NF}' "$log_file")"
+expected_legacy="${expected_services%assignment-review-service-migrations}"$'trainer-service-migrations\nassignment-review-service-migrations'
+[[ "$legacy_services" == "$expected_legacy" ]] || fail "legacy migration inventory changed"
+
+: > "$log_file"
+if FAKE_DOCKER_LOG="$log_file" DOCKER_BIN="$FAKE_DOCKER" \
+    bash "$SCRIPT_UNDER_TEST" docker-compose.test.yml "$current_release" unknown >/dev/null 2>&1; then
+    fail "unknown topology was accepted"
+fi
+[[ ! -s "$log_file" ]] || fail "unknown topology reached Docker"
 
 printf 'Production migration preflight tests passed.\n'

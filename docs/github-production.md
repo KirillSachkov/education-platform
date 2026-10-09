@@ -26,7 +26,7 @@ when `releases/current.env` and `previous.env` change.
 
 A normal release accepts only a completed successful `push` build of the exact
 SHA on `main`, in this repository's `ci.yml`. Its unique nonexpired
-`image-manifest-<SHA>` artifact must match the archive checksum and all14
+`image-manifest-<SHA>` artifact must match the archive checksum and all declared source images
 canonical image records. Configuration comes from that same source SHA.
 There is no latest-build fallback. Persisted manifests and configuration bodies
 remain available after GitHub artifact expiry.
@@ -78,7 +78,7 @@ installed. Original trials use captured configuration, including existing
 private runtime inputs.
 
 The existing ordered migration runner, media protocol guard and special data
-migration/backfill entrypoints remain authoritative. Start the14 applications
+migration/backfill entrypoints remain authoritative. Start the selected release applications
 with their dependency gates. Recreate only changed configuration consumers;
 file bind mounts otherwise keep the old inode after atomic file replacement.
 
@@ -134,3 +134,16 @@ The workflow transports the reviewed isolated restore helper with its other fixe
 release verification it retains the old helper, installs the reviewed helper with mode0700 and
 records its checksum. `RESTORE_POSTGRES_IMAGE` comes from the approved database digest; neither
 Compose nor standalone restore falls back to the retired registry.
+
+## Source topology and historical roles
+
+The public build inventory excludes TrainerService. The frozen private `current` and
+`previous` roles retain their original fourteen images, including TrainerService, for
+rollback. `release_model.py` validates each registry against its own complete inventory.
+The host adapter selects migrations, startup and health checks from the target registry.
+A source merge does not disable an existing production container or remove its data.
+
+A future trainer shutdown requires a private archive, successful isolated restore,
+a reviewed disable sequence and matching rollback evidence before any schema retirement.
+Committed trainer migrations remain at their original paths as history and have no
+project or image in the active source build.

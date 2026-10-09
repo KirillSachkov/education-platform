@@ -186,11 +186,6 @@
       "context": "backend"
     },
     {
-      "name": "trainer-service",
-      "dockerfile": "backend/TrainerService/Dockerfile",
-      "context": "backend"
-    },
-    {
       "name": "frontend",
       "dockerfile": "frontend/Dockerfile",
       "context": "frontend"

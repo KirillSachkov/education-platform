@@ -1,8 +1,7 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using AccessService.Contracts.Plans.Dtos;
 using AccessService.Contracts.Plans.Requests;
-using AccessService.Contracts.TrainerPro;
 using AccessService.Domain;
 using AccessService.IntegrationTests.Infrastructure;
 using SharedKernel;
@@ -109,8 +108,7 @@ public sealed class GetMyPlansTests : AccessServiceTestsBase
     [Fact]
     public async Task Excludes_trainer_scoped_plans()
     {
-        // #674: the trainer subscription is managed only via /access/trainer-pro/* — it must NOT appear
-        // in the general author plan-management list (alongside being hidden from the public catalog).
+        // Historical trainer plans remain excluded from the platform catalog.
         Guid platformPlanId = await CreatePlanAsync("platform-plan");
         Guid trainerOfferId = await CreateTrainerOfferAsync("trainer-pro-monthly");
 
@@ -127,25 +125,15 @@ public sealed class GetMyPlansTests : AccessServiceTestsBase
 
     private async Task<Guid> CreateTrainerOfferAsync(string slug)
     {
-        CreateTrainerProOfferRequest request = new(
-            Slug: slug,
-            DisplayName: "Trainer Pro",
-            PriceCents: 49_000,
-            RecurringIntervalDays: 30,
-            ShortDescription: null,
-            LongDescription: null,
-            CoverFileId: null,
-            Features: null,
-            Currency: "RUB",
-            IsHighlighted: false,
-            DisplayOrder: null,
-            IsActive: true);
-
-        HttpResponseMessage response = await AppHttpClient.PostAsJsonAsync("/access/admin/trainer-pro/offer", request);
-        response.EnsureSuccessStatusCode();
-        Envelope<Guid>? envelope = await response.Content.ReadFromJsonAsync<Envelope<Guid>>();
-        Assert.NotNull(envelope);
-        return envelope.Result;
+        // Persisted historical rows remain readable without a trainer creation endpoint.
+        Plan plan = Plan.Create(CurrentUserId, PlanTier.SUBSCRIPTION, PlanSlug.Of(slug).Value,
+            PlanDisplayName.Of("Legacy subscription").Value, [], null, term: PlanTerm.Recurring(30)).Value;
+        await ExecuteInDbAsync(async db =>
+        {
+            db.Plans.Add(plan);
+            await db.SaveChangesAsync();
+        });
+        return plan.Id;
     }
 
     [Fact]

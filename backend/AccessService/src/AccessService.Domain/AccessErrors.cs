@@ -1,4 +1,4 @@
-namespace AccessService.Domain;
+﻿namespace AccessService.Domain;
 
 /// <summary>
 /// Domain error factories. Codes follow "{entity}.{condition}" convention.
@@ -6,6 +6,9 @@ namespace AccessService.Domain;
 /// </summary>
 public static class AccessErrors
 {
+    public static Error RetiredOffer() =>
+        Error.Validation("plan.offer.retired", "Этот тип плана больше недоступен");
+
     public static Error PlanSlugConflict(string slug) =>
         Error.Conflict("plan.slug.conflict", $"План со slug '{slug}' уже существует на платформе");
 
@@ -166,20 +169,12 @@ public static class AccessErrors
     public static Error TrialAlreadyUsed() =>
         Error.Validation("order.trial.already_used", "Вы уже использовали пробный месяц этого плана");
 
-    /// <summary>Trainer-scoped offer бьётся в платформенный order-эндпоинт (#674).</summary>
+    /// <summary>Legacy retired offers cannot be purchased through the platform endpoint.</summary>
     public static Error OrderTrainerScopeOnlyOnTrainerEndpoint() =>
         Error.Validation("order.plan.trainer_only",
-            "Подписка тренажёра оформляется на странице тренажёра");
+            "Этот план больше недоступен для покупки");
 
-    /// <summary>Platform-scoped план бьётся в trainer order-эндпоинт (#674).</summary>
-    public static Error OrderPlatformScopeNotOnTrainerEndpoint() =>
-        Error.Validation("order.plan.platform_only",
-            "Этот план оформляется в общем каталоге, а не в тренажёре");
 
-    /// <summary>Trainer admin-операция применена к не-trainer плану (#674).</summary>
-    public static Error TrainerProOfferScopeMismatch() =>
-        Error.Validation("trainer_pro.offer.scope_mismatch",
-            "Этот план не является оффером тренажёра");
 
     public static Error TrialTierInvalid() =>
         Error.Validation("plan.trial.tier_invalid",

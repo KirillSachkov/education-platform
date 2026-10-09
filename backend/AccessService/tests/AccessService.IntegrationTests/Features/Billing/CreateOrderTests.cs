@@ -1,9 +1,8 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using AccessService.Contracts.Billing;
 using AccessService.Contracts.Plans.Requests;
-using AccessService.Contracts.TrainerPro;
 using AccessService.Core.Domain;
 using AccessService.Core.Features.Billing.TBank;
 using AccessService.Core.Features.Billing.TBank.Contracts;
@@ -775,17 +774,18 @@ public sealed class CreateOrderTests : AccessServiceTestsBase
     [Fact]
     public async Task POST_orders_TrainerScopedPlan_Returns400_NoOrder()
     {
-        // #674: the platform order endpoint must reject a TRAINER-scoped offer — it's purchasable
-        // only via /access/trainer-pro/orders. Symmetric to the trainer endpoint rejecting platform plans.
-        AuthenticateAs("platform-author");
-        CreateTrainerProOfferRequest offer = new(
-            Slug: "trainer-via-platform-order",
-            DisplayName: "Тренажёр Pro",
-            PriceCents: 49_000,
-            RecurringIntervalDays: 30);
-        HttpResponseMessage create = await AppHttpClient.PostAsJsonAsync("/access/admin/trainer-pro/offer", offer);
-        create.EnsureSuccessStatusCode();
-        Guid trainerPlanId = (await create.Content.ReadFromJsonAsync<Envelope<Guid>>())!.Result;
+        // Seed an existing historical offer; the creation endpoint has been retired.
+        Plan plan = Plan.Create(CurrentUserId, PlanTier.SUBSCRIPTION,
+            PlanSlug.Of("legacy-platform-order").Value, PlanDisplayName.Of("Legacy subscription").Value,
+            [], null, term: PlanTerm.Recurring(30)).Value;
+        plan.UpdatePrice(49_000, "RUB");
+        plan.Publish();
+        await ExecuteInDbAsync(async db =>
+        {
+            db.Plans.Add(plan);
+            await db.SaveChangesAsync();
+        });
+        Guid trainerPlanId = plan.Id;
 
         AuthenticateAs("platform-participant", Guid.NewGuid());
         HttpResponseMessage response = await AppHttpClient.PostAsJsonAsync(

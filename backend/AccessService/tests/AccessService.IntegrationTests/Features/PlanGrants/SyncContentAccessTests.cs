@@ -1,13 +1,11 @@
-using AccessService.Core.Database;
+﻿using AccessService.Core.Database;
 using AccessService.Core.Features.PlanGrants.IntegrationEvents;
-using AccessService.Core.Features.Plans;
 using AccessService.Domain;
 using AccessService.IntegrationTests.Infrastructure;
 using ContentAccess;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
 using Shared.Messaging.IntegrationEvents.Access.Events;
 
 namespace AccessService.IntegrationTests.Features.PlanGrants;
@@ -16,10 +14,6 @@ namespace AccessService.IntegrationTests.Features.PlanGrants;
 public sealed class SyncContentAccessTests : AccessServiceTestsBase
 {
     public SyncContentAccessTests(IntegrationTestsWebFactory factory) : base(factory) { }
-
-    /// <summary>Опции для конструирования sync-хендлеров. По умолчанию авто-PRO выключен (#568).</summary>
-    private static IOptions<AccessOptions> ProOptions(bool fullPlatformPro = false) =>
-        Options.Create(new AccessOptions { FullPlatformGrantsTrainerPro = fullPlatformPro });
 
     // ───────────── Created handler ─────────────
 
@@ -63,7 +57,7 @@ public sealed class SyncContentAccessTests : AccessServiceTestsBase
     }
 
     [Fact]
-    public async Task Full_all_grant_gets_trainer_pro_tag_when_auto_pro_enabled()
+    public async Task Full_all_grant_does_not_emit_retired_capability()
     {
         await Factory.ResetDatabaseAsync();
         Factory.UserGrants.Reset();
@@ -71,8 +65,7 @@ public sealed class SyncContentAccessTests : AccessServiceTestsBase
         Plan plan = await CreateLifetimePlanAsync(Guid.NewGuid());
         Guid grantId = await CreateGrantAsync(userId, plan.Id, PlanGrantStatus.ACTIVE);
 
-        // Авто-PRO включён (#568): полный доступ к платформе (FULL_ALL) доливает cap:TRAINER_PRO.
-        SyncContentAccessOnPlanGrantCreatedHandler handler = ResolveCreatedHandler(fullPlatformPro: true);
+        SyncContentAccessOnPlanGrantCreatedHandler handler = ResolveCreatedHandler();
         await handler.Handle(new PlanGrantCreated(
             GrantId: grantId,
             UserId: userId,
@@ -86,7 +79,7 @@ public sealed class SyncContentAccessTests : AccessServiceTestsBase
             GrantedAt: DateTimeOffset.UtcNow,
             ExpiresAt: null), CancellationToken.None);
 
-        Assert.Contains(Factory.UserGrants.Granted,
+        Assert.DoesNotContain(Factory.UserGrants.Granted,
             g => g.UserId == userId && g.Tag == GrantTags.Capability(nameof(PlanCapabilities.TRAINER_PRO)));
         Assert.Contains(Factory.UserGrants.Granted,
             g => g.UserId == userId && g.Tag == GrantTags.PlanAll());
@@ -336,19 +329,18 @@ public sealed class SyncContentAccessTests : AccessServiceTestsBase
             NullLogger<SyncContentAccessOnPlanGrantExpiredHandler>.Instance);
     }
 
-    private SyncContentAccessOnPlanGrantCreatedHandler ResolveCreatedHandler(bool fullPlatformPro = false) =>
+    private SyncContentAccessOnPlanGrantCreatedHandler ResolveCreatedHandler() =>
         new(
-            CreateProjection(fullPlatformPro),
+            CreateProjection(),
             NullLogger<SyncContentAccessOnPlanGrantCreatedHandler>.Instance);
 
-    private IUserGrantProjection CreateProjection(bool fullPlatformPro = false)
+    private IUserGrantProjection CreateProjection()
     {
         IServiceScope scope = Factory.Services.CreateScope();
         return new UserGrantProjection(
             scope.ServiceProvider.GetRequiredService<IPlanGrantsRepository>(),
             scope.ServiceProvider.GetRequiredService<IPlansRepository>(),
             Factory.UserGrants,
-            ProOptions(fullPlatformPro),
             TimeProvider.System);
     }
 

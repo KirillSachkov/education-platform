@@ -1,4 +1,4 @@
-using AccessService.Core.Features.PlanGrants.IntegrationEvents;
+﻿using AccessService.Core.Features.PlanGrants.IntegrationEvents;
 using AccessService.Domain;
 using AccessService.Infrastructure.Postgres;
 using ContentAccess;
@@ -91,17 +91,11 @@ public sealed class BackfillRedisFromGrantsCli : IPlatformCli
         int tagsWritten = 0;
         int usersTouched = 0;
 
-        // Авто-PRO (#568): тот же флаг, что у sync-хендлеров — backfill ре-материализует
-        // cap:TRAINER_PRO для FULL_ALL держателей, если включено (Access:FullPlatformGrantsTrainerPro).
-        bool fullPlatformGrantsTrainerPro =
-            configuration.GetValue("Access:FullPlatformGrantsTrainerPro", true);
-
         foreach (IGrouping<Guid, PlanGrant> userGroup in activeGrants.GroupBy(g => g.UserId))
         {
             IReadOnlyList<string> tagsForUser = PlanGrantTagCalculator.CalculateUnion(
                 [.. userGroup],
-                plansByPlanId,
-                fullPlatformGrantsTrainerPro);
+                plansByPlanId);
 
             if (tagsForUser.Count == 0)
             {

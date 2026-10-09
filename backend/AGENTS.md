@@ -43,7 +43,6 @@ cases; shared primitives live under `Shared/`.
 - [NotificationService](NotificationService/AGENTS.md)
 - [ProgressService](ProgressService/AGENTS.md)
 - [TelegramBotService](TelegramBotService/AGENTS.md)
-- [TrainerService](TrainerService/AGENTS.md)
 - [Shared AI](Shared/AI/AGENTS.md)
 
 `SearchService`, `TagService`, and `MaterialProcessingService` are scheduled for removal and have

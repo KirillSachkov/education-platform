@@ -1,4 +1,4 @@
-using AccessService.Contracts.Plans.Dtos;
+﻿using AccessService.Contracts.Plans.Dtos;
 using AccessService.Core.Database;
 using AccessService.Domain;
 using Core.Abstractions;
@@ -43,8 +43,7 @@ public sealed class GetMyPlansHandler : IQueryHandlerWithResult<IReadOnlyList<Pl
         bool canViewAllPlans = _user.IsAdmin;
         Guid userId = _user.UserId;
 
-        // TRAINER-scope plans (the trainer subscription) are managed exclusively via /access/trainer-pro/*
-        // — keep them out of the general author plan-management list too (#674), not just the public catalog.
+        // Historical retired offers stay isolated from the platform catalog.
         IReadOnlyList<Plan> plans = await _plans.GetManyByAsync(
             p => p.Scope == PlanScope.PLATFORM && (canViewAllPlans || p.AuthorId == userId),
             cancellationToken);

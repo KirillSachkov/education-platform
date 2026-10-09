@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using AccessService.Contracts.Billing;
 using AccessService.Core.Database;
 using AccessService.Core.Domain;
@@ -43,8 +43,7 @@ public sealed class CreateOrderEndpoint : IEndpoint
 
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        // Платформенный order-эндпоинт принимает ТОЛЬКО PLATFORM-scoped планы (#674) — trainer-оффер
-        // покупается через /access/trainer-pro/orders (симметричный guard в handler'е по ExpectedScope).
+        // New purchases accept only platform offers.
         app.MapPost("/access/orders/", async Task<EndpointResult<CreateOrderResponse>> (
                 [FromBody] CreateOrderRequest request,
                 [FromServices] CreateOrderHandler handler,
@@ -60,11 +59,8 @@ public sealed class CreateOrderEndpoint : IEndpoint
 }
 
 /// <summary>
-/// Общий идемпотентный конвейер создания заказа, разделяемый платформенным
-/// (<see cref="CreateOrderEndpoint"/>) и тренажёрным (<c>/access/trainer-pro/orders</c>)
-/// эндпоинтами. Единственное различие — <paramref name="expectedScope"/>: платформенный
-/// принимает только PLATFORM-планы, тренажёрный — только TRAINER (#674). Логика order/payment
-/// одна и та же (<see cref="CreateOrderHandler"/>), дублирования нет.
+/// Idempotent platform purchase pipeline. ExpectedScope remains in the persisted
+/// idempotency contract so historical requests cannot be replayed as platform purchases.
 /// </summary>
 public static class CreateOrderPipeline
 {
@@ -244,13 +240,10 @@ public sealed class CreateOrderHandler : ICommandHandler<CreateOrderResponse, Cr
         Plan plan = planResult.Value;
 
         // Symmetric scope guard (#674): platform order endpoint accepts only PLATFORM plans,
-        // trainer-pro endpoint accepts only TRAINER plans. A mismatched plan id is rejected
-        // before any state checks so the caller gets a clear "wrong endpoint" message.
-        if (plan.Scope != command.ExpectedScope)
+        // Retired offers and legacy request scopes cannot initiate new payments.
+        if (plan.Scope != PlanScope.PLATFORM || command.ExpectedScope != PlanScope.PLATFORM)
         {
-            return command.ExpectedScope == PlanScope.PLATFORM
-                ? AccessErrors.OrderTrainerScopeOnlyOnTrainerEndpoint()
-                : AccessErrors.OrderPlatformScopeNotOnTrainerEndpoint();
+            return AccessErrors.OrderTrainerScopeOnlyOnTrainerEndpoint();
         }
 
         if (plan.ArchivedAt is not null)

@@ -1,8 +1,6 @@
-using AccessService.Core.Database;
-using AccessService.Core.Features.Plans;
+﻿using AccessService.Core.Database;
 using AccessService.Domain;
 using ContentAccess;
-using Microsoft.Extensions.Options;
 
 namespace AccessService.Core.Features.PlanGrants.IntegrationEvents;
 
@@ -18,20 +16,17 @@ public sealed class UserGrantProjection : IUserGrantProjection
     private readonly IPlanGrantsRepository _grants;
     private readonly IPlansRepository _plans;
     private readonly IUserGrantWriter _writer;
-    private readonly IOptions<AccessOptions> _options;
     private readonly TimeProvider _timeProvider;
 
     public UserGrantProjection(
         IPlanGrantsRepository grants,
         IPlansRepository plans,
         IUserGrantWriter writer,
-        IOptions<AccessOptions> options,
         TimeProvider timeProvider)
     {
         _grants = grants;
         _plans = plans;
         _writer = writer;
-        _options = options;
         _timeProvider = timeProvider;
     }
 
@@ -66,8 +61,7 @@ public sealed class UserGrantProjection : IUserGrantProjection
         {
             IReadOnlyList<string> tags = PlanGrantTagCalculator.CalculateUnion(
                 grantsByUser[userId].ToList(),
-                plansById,
-                _options.Value.FullPlatformGrantsTrainerPro);
+                plansById);
             await _writer.ReplaceAsync(userId, tags, cancellationToken);
         }
     }
