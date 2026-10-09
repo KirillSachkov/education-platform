@@ -1,4 +1,4 @@
-using System.Net.Http.Json;
+﻿using System.Net.Http.Json;
 using AccessService.Contracts.Plans.Requests;
 using AccessService.Domain;
 using AccessService.IntegrationTests.Infrastructure;
@@ -18,7 +18,7 @@ public sealed class PlanScopePersistenceTests : AccessServiceTestsBase
     public PlanScopePersistenceTests(IntegrationTestsWebFactory factory) : base(factory) { }
 
     [Fact]
-    public async Task Created_subscription_plan_persists_TRAINER_scope()
+    public async Task Historical_subscription_plan_persists_TRAINER_scope()
     {
         Guid planId = await CreateSubscriptionPlanAsync("scope-sub", priceCents: 49_000, intervalDays: 30);
 
@@ -68,23 +68,15 @@ public sealed class PlanScopePersistenceTests : AccessServiceTestsBase
     private async Task<Guid> CreateSubscriptionPlanAsync(string slug, int priceCents, int intervalDays)
     {
         AuthenticateAs("platform-author");
-        CreatePlanRequest request = new(
-            Tier: nameof(PlanTier.SUBSCRIPTION),
-            Slug: slug,
-            DisplayName: "Подписка",
-            ShortDescription: null,
-            LongDescription: null,
-            CoverFileId: null,
-            Features: null,
-            PriceCents: priceCents,
-            Currency: "RUB",
-            CourseIds: [],
-            DisplayOrder: 0,
-            RecurringIntervalDays: intervalDays);
-
-        HttpResponseMessage response = await AppHttpClient.PostAsJsonAsync("/access/plans/", request);
-        response.EnsureSuccessStatusCode();
-        return (await response.Content.ReadFromJsonAsync<Envelope<Guid>>())!.Result;
+        Plan plan = Plan.Create(CurrentUserId, PlanTier.SUBSCRIPTION, PlanSlug.Of(slug).Value,
+            PlanDisplayName.Of("Legacy subscription").Value, [], null, term: PlanTerm.Recurring(intervalDays)).Value;
+        plan.UpdatePrice(priceCents, "RUB");
+        await ExecuteInDbAsync(async db =>
+        {
+            db.Plans.Add(plan);
+            await db.SaveChangesAsync();
+        });
+        return plan.Id;
     }
 
     private async Task<Guid> CreateFullAllPlanAsync(string slug)

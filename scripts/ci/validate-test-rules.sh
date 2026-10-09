@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Validate GitHub backend selection against every service's csproj dependency graph.
-# The optional integration matrix must name all thirteen services exactly once.
+# The optional integration matrix must name every active service exactly once.
 
 set -euo pipefail
 

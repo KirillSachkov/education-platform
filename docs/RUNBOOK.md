@@ -609,7 +609,7 @@ On the first cutover, the production deploy job:
    revision-aware services and waits for both health checks. PostgreSQL, RabbitMQ, and the other
    application containers remain running.
 5. Runs the FileService migration only after the revision-aware Auth/Education services are
-   healthy, then runs the remaining ten migration services sequentially. Any failure stops the
+   healthy, then runs the remaining migration services from the selected release inventory sequentially. Any failure stops the
    deploy immediately.
 6. Starts the complete application revision. Compose re-runs the idempotent migration services
    as dependency gates before their corresponding applications start.
@@ -622,7 +622,7 @@ schema. A failed preflight or compose startup leaves `pending.env` unpromoted fo
 retry.
 
 After both the current and target releases carry `MEDIA_BINDING_PROTOCOL=1`, the special cutover
-is no longer needed: all thirteen migration services run as a fail-fast preflight while the
+is no longer needed: all migration services in the selected release inventory run as a fail-fast preflight while the
 current application revision remains online, followed by the full compose recreation.
 
 ### Rollback boundary
