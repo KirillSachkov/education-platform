@@ -71,7 +71,7 @@ def main() -> int:
     declared_services = re.search(r"^        service: \[([^\]]+)\]$", integration, re.MULTILINE)
     matrix = declared_services.group(1).replace(" ", "").split(",") if declared_services else []
     if len(matrix) != len(SERVICES) or set(matrix) != set(SERVICES):
-        errors.append("GitHub on-demand integration matrix must contain all 13 services exactly")
+        errors.append(f"GitHub on-demand integration matrix must contain all {len(SERVICES)} services exactly")
     for required in ("global.json", ".gitmodules", "backend/Directory.Packages.props", "backend/Directory.Build.props", "backend/backend.slnx", "backend/nuget.config.ci"):
         if not any(selector.matches(required, glob) for glob in backend_paths):
             errors.append(f"GitHub backend checks do not select {required}")

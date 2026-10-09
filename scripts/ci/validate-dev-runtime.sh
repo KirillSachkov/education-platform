@@ -16,9 +16,11 @@ check_url() {
   return 1
 }
 
+service_count=0
 while IFS='|' read -r service port; do
   check_url "$service live" "http://localhost:${port}/health/live"
   check_url "$service ready" "http://localhost:${port}/health/ready"
+  service_count=$((service_count + 1))
 done <<EOF
 EducationContentService|${EDUCATION_HOST_PORT:-8001}
 FileService|${FILE_HOST_PORT:-8002}
@@ -46,4 +48,4 @@ check_url "OIDC discovery through nginx" "${nginx_origin}/.well-known/openid-con
 check_url "anonymous course catalog through nginx" "${nginx_origin}/api/courses/catalog/?limit=20"
 check_url "anonymous platform stats through nginx" "${nginx_origin}/api/courses/platform-stats/"
 
-echo "Dev runtime certification passed: 13 services live+ready and 5 nginx golden paths"
+echo "Dev runtime certification passed: $service_count services live+ready and 5 nginx golden paths"
