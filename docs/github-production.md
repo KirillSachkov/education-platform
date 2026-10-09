@@ -82,7 +82,7 @@ migration/backfill entrypoints remain authoritative. Start the selected release 
 with their dependency gates. Recreate only changed configuration consumers;
 file bind mounts otherwise keep the old inode after atomic file replacement.
 
-Require registry-specific (13 legacy, 12 source) healthy service names, public page/sitemap/OIDC checks, running
+Require healthy services from the selected registry (13 legacy, 12 source), public page/sitemap/OIDC checks, running
 application and PostgreSQL digest identities, and matching configuration.
 Then promote release metadata. Preserve a transition receipt and both old
 records before changing the current/previous pair. No automatic rollback runs.
