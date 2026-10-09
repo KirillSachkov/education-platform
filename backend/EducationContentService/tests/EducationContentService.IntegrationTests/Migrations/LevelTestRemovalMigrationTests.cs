@@ -1,4 +1,4 @@
-using EducationContentService.Domain;
+﻿using EducationContentService.Domain;
 using EducationContentService.Domain.Collections;
 using EducationContentService.Domain.Materials;
 using EducationContentService.Domain.Modules;
