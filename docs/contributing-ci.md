@@ -75,7 +75,7 @@ CI execution does not replace the local integration evidence required for a chan
 
 A trusted push to `KirillSachkov/education-platform` `main` runs all mandatory
 classes. A zero-parent initial push with all-zero `before` uses the empty Git tree
-as its diff base, selects every class and builds all 12 application images.
+as its diff base, selects every class and builds all 10 application images.
 It never uses `HEAD~1`, `origin/dev` or a missing-base formatting skip.
 
 Only that verified initial push may retain byte-identical formatting debt listed
@@ -162,7 +162,7 @@ local script fixtures do not provide this evidence.
    gh run download <main-run-id> --repo KirillSachkov/education-platform \
      --name image-manifest-<GitHub-SHA> --dir /tmp/image-acceptance
    jq -e --arg sha '<GitHub-SHA>' \
-     '.source_sha == $sha and (.images | length == 12) and
+     '.source_sha == $sha and (.images | length == 10) and
       ([.images[].name] | unique | length == 12) and
       all(.images[]; .source_sha == $sha and (.digest | test("^sha256:[0-9a-f]{64}$")))' \
      /tmp/image-acceptance/image-manifest.json
@@ -186,7 +186,7 @@ local script fixtures do not provide this evidence.
    frontend native dependency notices and binary distribution terms separately.
    Do not grant this public repository access to private legacy packages.
 6. If optional integration evidence is requested, dispatch `integration.yml` at
-   the same source SHA and read all 12 suites plus ContentAccess/Redis results.
+   the same source SHA and read all 9 suites plus ContentAccess/Redis results.
    Record this separately from mandatory PR acceptance and local affected tests.
 
 Workflow syntax and token behavior follow [GitHub's documentation](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax).
