@@ -238,18 +238,19 @@ class Selection(unittest.TestCase):
         directory.mkdir(parents=True)
         script = directory / "github-check-migrations.sh"
         shutil.copyfile(ROOT / "scripts/ci/github-check-migrations.sh", script)
-        for path in ("backend/AuthService/src/Db/Migrations/001.cs", "backend/AuthService/src/Db/Migrations/AppModelSnapshot.cs", "backend/AuthService/src/Web/DataMigrations/Seed.cs"):
+        for path in ("backend/AuthService/src/Db/Migrations/001.cs", "backend/AuthService/src/Db/Migrations/001.Designer.cs", "backend/AuthService/src/Db/Migrations/AppModelSnapshot.cs", "backend/AuthService/src/Web/DataMigrations/Seed.cs", "backend/AuthService/tests/IntegrationTests/Migrations/UpgradeTests.cs"):
             self.write(path, "committed\n")
         base = self.save()
         self.write("backend/AuthService/src/Db/Migrations/002.cs", "corrective\n")
         self.write("backend/AuthService/src/Db/Migrations/AppModelSnapshot.cs", "new snapshot\n")
+        self.write("backend/AuthService/tests/IntegrationTests/Migrations/UpgradeTests.cs", "updated upgrade verification\n")
         head = self.save()
         def check():
             return subprocess.run(["bash", str(script)], cwd=self.repo,
                 env={**os.environ, "CI_DIFF_BASE": base, "CI_DIFF_HEAD": self.git("rev-parse", "HEAD")},
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode
         self.assertEqual(0, check())
-        for path in ("backend/AuthService/src/Db/Migrations/001.cs", "backend/AuthService/src/Web/DataMigrations/Seed.cs"):
+        for path in ("backend/AuthService/src/Db/Migrations/001.cs", "backend/AuthService/src/Db/Migrations/001.Designer.cs", "backend/AuthService/src/Web/DataMigrations/Seed.cs"):
             self.write(path, "edited\n")
             self.save()
             self.assertNotEqual(0, check())
