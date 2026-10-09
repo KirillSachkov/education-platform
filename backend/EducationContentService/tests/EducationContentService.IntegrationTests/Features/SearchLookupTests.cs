@@ -96,8 +96,7 @@ public sealed class SearchLookupTests : EducationContentServiceTestsBase
     [Fact]
     public async Task GetMaterialSearchLookup_ArchivedSoleCourse_MarksCourseOrphaned()
     {
-        // Issue #378: материал остаётся PUBLISHED, но его единственный курс архивирован →
-        // is_course_orphaned=true, чтобы SearchService спрятал документ из выдачи.
+        // Published material belongs only to an archived course; lookup consumers see it as orphaned.
         Guid courseId = await CreateArchivedCourseAsync("Archived course");
         Guid materialId = await CreatePublishedMaterialAsync("Orphaned material", "# body", DomainAccessType.REGISTERED);
 
