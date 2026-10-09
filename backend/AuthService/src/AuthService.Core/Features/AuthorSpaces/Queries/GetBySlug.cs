@@ -1,4 +1,4 @@
-using System.Data.Common;
+﻿using System.Data.Common;
 using AuthService.Contracts;
 using AuthService.Contracts.AuthorSpaces;
 using AuthService.Domain.AuthorSpaces;
@@ -92,29 +92,29 @@ public sealed class GetAuthorSpaceBySlugHandler
             flags);
     }
 
-    private static readonly System.Text.Json.JsonSerializerOptions JsonOptions = new()
+    private static readonly System.Text.Json.JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNameCaseInsensitive = true
     };
 
-    private static readonly AuthorSpaceFeatureFlagsDto DefaultFlags = new(false, false, false, true, true, false);
+    private static readonly AuthorSpaceFeatureFlagsDto _defaultFlags = new(false, false, false, true, false);
 
     private AuthorSpaceFeatureFlagsDto MapFlags(string? json)
     {
         if (string.IsNullOrEmpty(json))
-            return DefaultFlags;
+            return _defaultFlags;
 
         try
         {
-            return System.Text.Json.JsonSerializer.Deserialize<AuthorSpaceFeatureFlagsDto>(json, JsonOptions)
-                   ?? DefaultFlags;
+            return System.Text.Json.JsonSerializer.Deserialize<AuthorSpaceFeatureFlagsDto>(json, _jsonOptions)
+                   ?? _defaultFlags;
         }
         catch (System.Text.Json.JsonException ex)
         {
             _logger.LogWarning(
                 ex,
                 "Failed to deserialize AuthorSpace feature flags JSON, returning defaults");
-            return DefaultFlags;
+            return _defaultFlags;
         }
     }
 

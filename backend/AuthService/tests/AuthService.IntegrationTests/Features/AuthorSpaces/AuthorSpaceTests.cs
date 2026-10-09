@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using AuthService.Contracts.AuthorSpaces;
@@ -10,7 +10,7 @@ namespace AuthService.IntegrationTests.Features.AuthorSpaces;
 [Collection(nameof(IntegrationTestFixture))]
 public class AuthorSpaceTests : IntegrationTestsBase
 {
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
+    private static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNameCaseInsensitive = true };
 
     public AuthorSpaceTests(IntegrationTestsWebFactory factory)
         : base(factory)
@@ -152,7 +152,7 @@ public class AuthorSpaceTests : IntegrationTestsBase
         JsonElement root = document.RootElement;
         JsonElement result = root.GetProperty("result");
         JsonElement itemsElement = result.GetProperty("items");
-        List<AuthorSpaceListItem>? items = itemsElement.Deserialize<List<AuthorSpaceListItem>>(JsonOptions);
+        List<AuthorSpaceListItem>? items = itemsElement.Deserialize<List<AuthorSpaceListItem>>(_jsonOptions);
 
         Assert.NotNull(items);
         Assert.Contains(items, x => x.AuthorId == userId);
@@ -176,7 +176,7 @@ public class AuthorSpaceTests : IntegrationTestsBase
         var updateRequest = new UpdateAuthorSpaceRequest(
             "My awesome space",
             null,
-            new AuthorSpaceFeatureFlagsDto(true, true, false, false, true, true));
+            new AuthorSpaceFeatureFlagsDto(true, true, false, false, true));
 
         HttpResponseMessage updateResponse = await HttpClient.PatchAsJsonAsync(
             "/users/me/author-space",
@@ -187,6 +187,7 @@ public class AuthorSpaceTests : IntegrationTestsBase
         // Verify via GET
         HttpResponseMessage getResponse = await HttpClient.GetAsync("/users/me/author-space");
         Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
+        Assert.DoesNotContain("leaderboard", await getResponse.Content.ReadAsStringAsync(), StringComparison.OrdinalIgnoreCase);
 
         AuthorSpaceDetailResponse? dto = await ReadDetailResponseAsync(getResponse);
         Assert.NotNull(dto);
@@ -196,7 +197,6 @@ public class AuthorSpaceTests : IntegrationTestsBase
         Assert.True(dto.FeatureFlags.PrReviews);
         Assert.False(dto.FeatureFlags.AiAssistant);
         Assert.False(dto.FeatureFlags.Roadmaps);
-        Assert.True(dto.FeatureFlags.Leaderboard);
         Assert.True(dto.FeatureFlags.CustomLanding);
     }
 
@@ -252,6 +252,7 @@ public class AuthorSpaceTests : IntegrationTestsBase
         // Verify via GET
         HttpResponseMessage getResponse = await HttpClient.GetAsync("/users/me/author-space");
         Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
+        Assert.DoesNotContain("leaderboard", await getResponse.Content.ReadAsStringAsync(), StringComparison.OrdinalIgnoreCase);
 
         AuthorSpaceDetailResponse? dto = await ReadDetailResponseAsync(getResponse);
         Assert.NotNull(dto);
@@ -339,10 +340,10 @@ public class AuthorSpaceTests : IntegrationTestsBase
         if (root.ValueKind == JsonValueKind.Object &&
             root.TryGetProperty("result", out JsonElement wrappedResult))
         {
-            return wrappedResult.Deserialize<AuthorSpaceDetailResponse>(JsonOptions);
+            return wrappedResult.Deserialize<AuthorSpaceDetailResponse>(_jsonOptions);
         }
 
-        return root.Deserialize<AuthorSpaceDetailResponse>(JsonOptions);
+        return root.Deserialize<AuthorSpaceDetailResponse>(_jsonOptions);
     }
 
     private static async Task<AuthorSpacePublicResponse?> ReadPublicResponseAsync(HttpResponseMessage response)
@@ -357,10 +358,10 @@ public class AuthorSpaceTests : IntegrationTestsBase
         if (root.ValueKind == JsonValueKind.Object &&
             root.TryGetProperty("result", out JsonElement wrappedResult))
         {
-            return wrappedResult.Deserialize<AuthorSpacePublicResponse>(JsonOptions);
+            return wrappedResult.Deserialize<AuthorSpacePublicResponse>(_jsonOptions);
         }
 
-        return root.Deserialize<AuthorSpacePublicResponse>(JsonOptions);
+        return root.Deserialize<AuthorSpacePublicResponse>(_jsonOptions);
     }
 
     private static async Task<List<AuthorSpaceListItem>?> ReadListResponseAsync(HttpResponseMessage response)
@@ -375,9 +376,9 @@ public class AuthorSpaceTests : IntegrationTestsBase
         if (root.ValueKind == JsonValueKind.Object &&
             root.TryGetProperty("result", out JsonElement wrappedResult))
         {
-            return wrappedResult.Deserialize<List<AuthorSpaceListItem>>(JsonOptions);
+            return wrappedResult.Deserialize<List<AuthorSpaceListItem>>(_jsonOptions);
         }
 
-        return root.Deserialize<List<AuthorSpaceListItem>>(JsonOptions);
+        return root.Deserialize<List<AuthorSpaceListItem>>(_jsonOptions);
     }
 }

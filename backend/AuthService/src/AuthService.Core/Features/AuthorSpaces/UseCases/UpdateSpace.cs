@@ -1,4 +1,4 @@
-using AuthService.Contracts.AuthorSpaces;
+﻿using AuthService.Contracts.AuthorSpaces;
 using AuthService.Core.Database;
 using AuthService.Domain.AuthorSpaces;
 using AuthService.Domain.ValueObjects;
@@ -80,7 +80,6 @@ public sealed class UpdateAuthorSpaceHandler : ICommandHandler<Guid, UpdateAutho
                 PrReviews = dto.PrReviews,
                 AiAssistant = dto.AiAssistant,
                 Roadmaps = dto.Roadmaps,
-                Leaderboard = dto.Leaderboard,
                 CustomLanding = dto.CustomLanding,
             }
             : null;

@@ -1,4 +1,4 @@
-using AuthService.Contracts.AuthorSpaces;
+﻿using AuthService.Contracts.AuthorSpaces;
 using AuthService.Core.Database;
 using AuthService.Domain.AuthorSpaces;
 using Core.Abstractions;
@@ -59,7 +59,6 @@ public sealed class GetMyAuthorSpaceHandler
                 flags.PrReviews,
                 flags.AiAssistant,
                 flags.Roadmaps,
-                flags.Leaderboard,
                 flags.CustomLanding),
             space.CreatedAt,
             space.UpdatedAt);

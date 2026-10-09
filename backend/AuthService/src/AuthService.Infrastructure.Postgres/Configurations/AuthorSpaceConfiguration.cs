@@ -1,4 +1,4 @@
-using AuthService.Domain.AuthorSpaces;
+﻿using AuthService.Domain.AuthorSpaces;
 using AuthService.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -49,7 +49,6 @@ public class AuthorSpaceConfiguration : IEntityTypeConfiguration<AuthorSpace>
             b.Property(f => f.PrReviews);
             b.Property(f => f.AiAssistant);
             b.Property(f => f.Roadmaps);
-            b.Property(f => f.Leaderboard);
             b.Property(f => f.CustomLanding);
         });
 
