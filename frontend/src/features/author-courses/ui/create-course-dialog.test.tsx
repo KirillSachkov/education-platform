@@ -21,9 +21,14 @@ describe("course creation", () => {
     fireEvent.change(screen.getByLabelText("URL-slug"), { target: { value: "postgresql" } });
     fireEvent.click(screen.getByRole("button", { name: /^Создать$/ }));
 
-    await waitFor(() => expect(mocks.createCourse).toHaveBeenCalledWith({
-      title: "PostgreSQL", description: "Практика запросов", slug: "postgresql", kind: "COURSE",
-    }));
+    await waitFor(() =>
+      expect(mocks.createCourse).toHaveBeenCalledWith({
+        title: "PostgreSQL",
+        description: "Практика запросов",
+        slug: "postgresql",
+        kind: "COURSE",
+      }),
+    );
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 });
