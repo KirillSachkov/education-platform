@@ -22,13 +22,6 @@ internal sealed class FileServiceClient : BaseHttpClient, IFileServiceClient
         CancellationToken cancellationToken)
         => GetAsync<GetVideoResponse?>($"/internal/videos/{videoId}/", cancellationToken);
 
-    public Task<Result<GetVideoProcessingSourceResponse?, Error>> GetVideoProcessingSourceAsync(
-        Guid videoId,
-        CancellationToken cancellationToken)
-        => GetAsync<GetVideoProcessingSourceResponse?>(
-            $"/internal/videos/{videoId}/processing-source/",
-            cancellationToken);
-
     public async Task<UnitResult<Error>> UpdateChaptersAsync(
         Guid videoId,
         UpdateVideoChaptersRequest request,

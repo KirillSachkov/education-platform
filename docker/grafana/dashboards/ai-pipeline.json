@@ -1,7 +1,7 @@
 {
   "uid": "ai-pipeline",
   "title": "AI Pipeline",
-  "tags": ["ai-pipeline", "platform", "material-processing"],
+  "tags": ["ai-pipeline", "platform"],
   "schemaVersion": 39,
   "version": 1,
   "editable": true,
@@ -137,21 +137,9 @@
       "collapsed": false
     },
     {
-      "id": 12,
-      "type": "stat",
-      "title": "Pending outbox envelopes",
-      "description": "Wolverine outbox: сообщения, которые не успели опубликоваться в RabbitMQ. Если значение растёт — broker недоступен или consumer тормозит.",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 28 },
-      "targets": [
-        { "refId": "A", "expr": "sum(wolverine_outgoing_envelopes_count{service_name=\"materialprocessingservice\"})", "legendFormat": "pending" }
-      ],
-      "fieldConfig": { "defaults": { "unit": "short", "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 50 }, { "color": "red", "value": 200 }] } } }
-    },
-    {
       "id": 13,
       "type": "stat",
-      "title": "Active job rate (timecode + content)",
+      "title": "AI request rate",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 6, "w": 8, "x": 8, "y": 28 },
       "targets": [

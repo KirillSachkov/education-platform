@@ -93,7 +93,7 @@ ASSIGNMENT_REVIEW__GITHUB__PRIVATEKEYPEMBASE64=LS0tLS1CRUdJTi...
 EOF
 ```
 
-`AI__PROVIDERS__AITUNNEL__APIKEY` уже должен быть в `.env` (используется `MaterialProcessingService`).
+`AI__PROVIDERS__AITUNNEL__APIKEY` уже должен быть в `.env` (используется `AssignmentReviewService`).
 
 ---
 

@@ -36,7 +36,7 @@ class ProductionReleaseInputs(unittest.TestCase):
         root = Path(__file__).resolve().parents[3]
         declared = json.loads((root / "scripts/ci/github-ci-paths.json").read_text())["images"]
         self.assertEqual(set(SERVICES), {row["name"] for row in declared})
-        self.assertEqual(len(HEALTH_SERVICES), 10)
+        self.assertEqual(len(HEALTH_SERVICES), 9)
         self.assertNotIn("telegram-bot-service", HEALTH_SERVICES)
 
     def test_known_manual_input_combinations(self):
@@ -61,7 +61,7 @@ class ProductionReleaseInputs(unittest.TestCase):
                 trusted_dispatch({**env, key: value})
 
     def test_complete_canonical_public_and_private_manifests(self):
-        self.assertEqual(len(image_manifest(manifest(), SHA)), 11)
+        self.assertEqual(len(image_manifest(manifest(), SHA)), 10)
         self.assertEqual(len(image_manifest(manifest(registry=LEGACY_REGISTRY), SHA, LEGACY_REGISTRY)), 14)
 
     def test_source_and_frozen_legacy_topologies_cannot_be_interchanged(self):

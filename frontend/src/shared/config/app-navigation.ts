@@ -71,8 +71,6 @@ export const adminNav: NavItem[] = [
   { href: routes.adminPayments, icon: Icons.gift, label: "Платежи" },
   { href: routes.adminCampaigns, icon: Icons.send, label: "Рассылки" },
   { href: routes.adminTests, icon: Icons.chart, label: "Статистика тестов" },
-  { href: routes.adminAiUsage, icon: Icons.ai, label: "AI usage" },
-  { href: routes.adminAiModels, icon: Icons.settings, label: "AI модели" },
 ];
 
 export const accountNav: NavItem[] = [

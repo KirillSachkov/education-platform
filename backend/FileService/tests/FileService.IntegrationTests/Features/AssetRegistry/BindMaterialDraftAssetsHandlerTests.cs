@@ -132,7 +132,6 @@ public sealed class BindMaterialDraftAssetsHandlerTests : FileServiceTestsBase
             ActorCanManageAnyAsset: true));
 
         Assert.Empty(OutboxCollector.OfType<FileAssetBound>());
-        Assert.Empty(OutboxCollector.OfType<VideoReadyForProcessing>());
         await ExecuteInDb(async db =>
         {
             MediaAsset video = await db.MediaAssets.SingleAsync(asset => asset.Id == videoId);

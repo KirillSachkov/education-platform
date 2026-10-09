@@ -46,7 +46,7 @@ Fork PRs receive `contents: read`, no package write permission or deployment
 credentials. Checkout does not persist credentials. The workflows use
 `pull_request`, never `pull_request_target`.
 
-The optional **Integration tests** workflow runs all 12 service suites and the
+The optional **Integration tests** workflow runs all 11 service suites and the
 complete Shared ContentAccess suite, including Redis. Run it with:
 
 ```bash
@@ -75,7 +75,7 @@ CI execution does not replace the local integration evidence required for a chan
 
 A trusted push to `KirillSachkov/education-platform` `main` runs all mandatory
 classes. A zero-parent initial push with all-zero `before` uses the empty Git tree
-as its diff base, selects every class and builds all 13 application images.
+as its diff base, selects every class and builds all 12 application images.
 It never uses `HEAD~1`, `origin/dev` or a missing-base formatting skip.
 
 Only that verified initial push may retain byte-identical formatting debt listed
@@ -100,7 +100,7 @@ Publishing has `packages: write` only in the trusted image job. It has no produc
 environment, deployment step or legacy-package credential. Public package visibility
 is a separate repository-owner setting; a successful push does not prove it.
 
-The final `image-manifest-<SHA>` artifact requires exactly 13 records from the same
+The final `image-manifest-<SHA>` artifact requires exactly 12 records from the same
 SHA. Each contains an immutable digest reference and full-SHA tag. A missing,
 duplicate, malformed or stale record fails collection. Deployment consumers must
 use this manifest, rather than infer completeness from a successful matrix member.
@@ -155,21 +155,21 @@ local script fixtures do not provide this evidence.
 3. Read main branch protection: strict `required-checks` bound to app `15368`,
    administrators enforced, PRs required with zero human approvals, no force push
    or deletion. Confirm the first zero-parent main run selects every class.
-4. On the exact trusted main run, confirm all 13 image jobs and the final manifest
+4. On the exact trusted main run, confirm all 12 image jobs and the final manifest
    pass. Download its bounded manifest and inspect it:
 
    ```bash
    gh run download <main-run-id> --repo KirillSachkov/education-platform \
      --name image-manifest-<GitHub-SHA> --dir /tmp/image-acceptance
    jq -e --arg sha '<GitHub-SHA>' \
-     '.source_sha == $sha and (.images | length == 13) and
-      ([.images[].name] | unique | length == 13) and
+     '.source_sha == $sha and (.images | length == 12) and
+      ([.images[].name] | unique | length == 12) and
       all(.images[]; .source_sha == $sha and (.digest | test("^sha256:[0-9a-f]{64}$")))' \
      /tmp/image-acceptance/image-manifest.json
    ```
 
 5. Read every new GHCR package's visibility and digest metadata with the owner API.
-   Confirm all 13 are public. Independently pull each digest using an empty Docker
+   Confirm all 12 are public. Independently pull each digest using an empty Docker
    credential directory:
 
    ```bash

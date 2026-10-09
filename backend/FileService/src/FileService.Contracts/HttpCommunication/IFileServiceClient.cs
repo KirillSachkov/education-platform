@@ -6,10 +6,6 @@ public interface IFileServiceClient
 {
     Task<Result<GetVideoResponse?, Error>> GetVideoAsync(Guid videoId, CancellationToken cancellationToken);
 
-    Task<Result<GetVideoProcessingSourceResponse?, Error>> GetVideoProcessingSourceAsync(
-        Guid videoId,
-        CancellationToken cancellationToken);
-
     Task<UnitResult<Error>> UpdateChaptersAsync(
         Guid videoId,
         UpdateVideoChaptersRequest request,

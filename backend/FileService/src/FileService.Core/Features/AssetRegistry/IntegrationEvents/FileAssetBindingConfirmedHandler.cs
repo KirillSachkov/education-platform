@@ -67,21 +67,6 @@ public sealed class FileAssetBindingConfirmedHandler
         if (confirmation.IsFailure)
             return;
 
-        if (asset.Kind == AssetKind.VIDEO &&
-            asset.Status == AssetStatus.READY &&
-            asset.UsageType == AssetUsageType.MATERIAL_VIDEO &&
-            asset.TargetEntity is not null &&
-            asset.ConfirmedBindingRevision > asset.DetachedThroughBindingRevision)
-        {
-            await _outbox.PublishAsync(new VideoReadyForProcessing(
-                asset.Id,
-                asset.Version,
-                asset.UsageType.ToApiString(),
-                asset.TargetEntity.Id,
-                asset.TargetEntity.Type,
-                asset.UploadedByUserId));
-        }
-
         UnitResult<Error> save = await _transactionManager.SaveChangesAsync(cancellationToken);
         if (save.IsFailure)
             throw save.Error.AsTransient().ToException();

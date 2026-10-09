@@ -335,7 +335,6 @@ public sealed class BindDraftAssetsTests : FileServiceTestsBase
                 [videoResponse.AssetId]));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Empty(OutboxCollector.OfType<VideoReadyForProcessing>());
         Assert.Empty(OutboxCollector.OfType<FileAssetBound>());
     }
 

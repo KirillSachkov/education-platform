@@ -210,7 +210,7 @@ class RemoteProduction(RemoteFixture):
             self.host.health(1)
         self.assertNotIn("trainer-service", [call.args[0] for call in inspect.call_args_list])
         receipt = self.host.public_receipt()
-        self.assertEqual((receipt["applications"], receipt["health_services"]), (11, 10))
+        self.assertEqual((receipt["applications"], receipt["health_services"]), (10, 9))
 
     def test_running_postgres_must_use_exact_ghcr_reference_and_digest(self):
         self.baseline(); self.host.choose_target()

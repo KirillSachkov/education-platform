@@ -54,7 +54,7 @@ stays private; Actions reports fixed status, operation and service counts.
 
 The host adapter takes an exclusive operation lock. Probe checks configuration,
 binary identities, tools, Compose project, database volume and health for the selected
-registry (13 legacy services, 10 source services), without registry login, pull, export,
+registry (13 legacy services, 9 source services), without registry login, pull, export,
 dump or application changes.
 Telegram belongs to image and migration inventories but not the blocking
 health gate.
@@ -83,7 +83,7 @@ migration/backfill entrypoints remain authoritative. Start the selected release 
 with their dependency gates. Recreate only changed configuration consumers;
 file bind mounts otherwise keep the old inode after atomic file replacement.
 
-Require healthy services from the selected registry (13 legacy, 10 source), public page/sitemap/OIDC checks, running
+Require healthy services from the selected registry (13 legacy, 9 source), public page/sitemap/OIDC checks, running
 application and PostgreSQL digest identities, and matching configuration.
 Then promote release metadata. Preserve a transition receipt and both old
 records before changing the current/previous pair. No automatic rollback runs.
@@ -138,8 +138,8 @@ Compose nor standalone restore falls back to the retired registry.
 
 ## Source topology and historical roles
 
-The public build inventory excludes TrainerService, SearchService and TagService. The frozen private `current` and
-`previous` roles retain their original fourteen images, including TrainerService, SearchService and TagService, for
+The public build inventory excludes TrainerService, SearchService, TagService and MaterialProcessingService. The frozen private `current` and
+`previous` roles retain their original fourteen images, including TrainerService, SearchService, TagService and MaterialProcessingService, for
 rollback. `release_model.py` validates each registry against its own complete inventory.
 The host adapter selects migrations, startup and health checks from the target registry.
 A source merge does not disable an existing production container or remove its data.
@@ -151,3 +151,9 @@ project or image in the active source build. Source environment validation does 
 Typesense key; legacy environment validation still requires its original key.
 
 Search and tag schema retirement follows the [retirement procedure](retired-discovery.md).
+
+Material-processing source retirement preserves committed migrations and stored artifacts.
+A future schema cleanup requires a verified backup, isolated restore and preserved transcript export.
+No source merge runs cleanup or changes the frozen fourteen-image roles.
+The FileService copy migration requires stopped legacy writers before execution. Read the
+[stored artifact dependencies and future gate](stored-material-artifacts.md) before rollout.

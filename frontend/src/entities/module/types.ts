@@ -12,9 +12,6 @@ export interface ModuleItemDto {
   accessType: AccessType | null;
   // Заполняются только в course-builder контексте и только для видео-материалов.
   // В остальных местах (curriculum, module detail) приходят `null` и не рендерятся.
-  hasTranscript?: boolean | null;
-  hasTimecodes?: boolean | null;
-  hasSummary?: boolean | null;
   // Только course-builder: manual ImageId → fallback на Kinescope thumbnail.
   coverUrl?: string | null;
   // Только для item_type='Quiz' (ST-12 #492): число вопросов + id квиза.

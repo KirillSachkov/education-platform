@@ -7,10 +7,7 @@ internal sealed record KinescopeVideoData(
     string Title,
     string Status,
     KinescopePoster? Poster,
-    string? HlsLink,
     double? Duration,
     int? Width,
     int? Height,
-    JsonElement? Chapters,
-    KinescopeVideoAsset[]? Assets,
-    KinescopeAudioTrack[]? AudioTracks);
+    JsonElement? Chapters);

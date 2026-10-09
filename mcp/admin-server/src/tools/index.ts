@@ -58,6 +58,7 @@ import {
   eduCollectionBulkSetItemsAccess,
 } from './collections.js';
 import { eduFileUpload, eduDraftAssetsBind } from './files.js';
+import { eduVideoSubtitlesExport, eduModuleTranscriptsExport } from './transcripts.js';
 import {
   eduProjectDetail,
   eduProjectUpdate,
@@ -184,6 +185,8 @@ export const allTools: ReadonlyArray<ToolDefinition<any, any>> = [
   eduMaterialUpdate,
   eduMaterialArchive,
   eduMaterialPublish,
+  eduVideoSubtitlesExport,
+  eduModuleTranscriptsExport,
   // Collections
   eduCollectionDetail,
   eduCollectionSectionAdd,

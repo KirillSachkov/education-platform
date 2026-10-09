@@ -23,6 +23,4 @@ public sealed class KinescopeOptions
     public string ApiBaseUrl { get; set; } = "https://api.kinescope.io";
 
     public string EmbedBaseUrl { get; set; } = "https://kinescope.io";
-
-    public int ProcessingSourceLifetimeMinutes { get; set; } = 120;
 }

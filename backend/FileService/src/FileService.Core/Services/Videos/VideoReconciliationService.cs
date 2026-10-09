@@ -160,7 +160,6 @@ public sealed class VideoReconciliationService
                         asset,
                         asset.TargetEntity,
                         advanceBindingRevision: false,
-                        publishReadyForPreviouslyConfirmedBinding: true,
                         cancellationToken: cancellationToken);
                     if (binding.IsFailure)
                     {
