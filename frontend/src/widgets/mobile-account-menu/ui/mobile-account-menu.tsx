@@ -68,6 +68,7 @@ export function MobileAccountMenu() {
       items: [
         { href: routes.adminPlans, icon: Icons.crown, label: "Планы доступа" },
         { href: routes.adminUsers, icon: Icons.userSettings, label: "Пользователи" },
+        { href: routes.adminAiModels, icon: Icons.settings, label: "AI модели" },
       ],
     });
   }
