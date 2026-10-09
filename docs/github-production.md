@@ -53,7 +53,7 @@ stays private; Actions reports fixed status, operation and service counts.
 ## Host operation
 
 The host adapter takes an exclusive operation lock. Probe checks configuration,
-binary identities, tools, Compose project, database volume and exact13-service
+binary identities, tools, Compose project, database volume and registry-specific (13 legacy, 12 source)-service
 health without registry login, pull, export, dump or application changes.
 Telegram belongs to image and migration inventories but not the blocking
 health gate.
@@ -82,7 +82,7 @@ migration/backfill entrypoints remain authoritative. Start the selected release 
 with their dependency gates. Recreate only changed configuration consumers;
 file bind mounts otherwise keep the old inode after atomic file replacement.
 
-Require exact13 healthy service names, public page/sitemap/OIDC checks, running
+Require registry-specific (13 legacy, 12 source) healthy service names, public page/sitemap/OIDC checks, running
 application and PostgreSQL digest identities, and matching configuration.
 Then promote release metadata. Preserve a transition receipt and both old
 records before changing the current/previous pair. No automatic rollback runs.
