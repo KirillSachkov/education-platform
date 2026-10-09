@@ -21,7 +21,7 @@ type MenuSection = {
 /**
  * Mobile-only secondary navigation list rendered on /profile. Covers every
  * destination that lives in the desktop sidebar / header user-dropdown so that
- * mobile users can reach Settings, Teaching, Admin, Leaderboard from a single
+ * mobile users can reach Settings, Teaching, Admin from a single
  * tab. Desktop hides this — desktop has the sidebar instead.
  */
 export function MobileAccountMenu() {
@@ -39,7 +39,6 @@ export function MobileAccountMenu() {
         { href: routes.myPlans, icon: Icons.crown, label: "Мои планы" },
         { href: routes.payments, icon: Icons.creditCard, label: "Платежи" },
         { href: routes.settingsIntegrations, icon: Icons.github, label: "Интеграции" },
-        { href: routes.platformLeaderboard, icon: Icons.trophy, label: "Лидерборд" },
       ],
     },
   ];
@@ -51,7 +50,6 @@ export function MobileAccountMenu() {
         { href: routes.authorCourses, icon: Icons.editAlt, label: "Курсы" },
         { href: routes.authorKnowledgeBase, icon: Icons.document, label: "Материалы" },
         { href: routes.authorCollections, icon: Icons.grid, label: "Подборки" },
-        { href: routes.authorRoadmaps, icon: Icons.roadmap, label: "Роадмапы" },
         { href: routes.authorTags, icon: Icons.tag, label: "Управление тегами" },
         { href: routes.authorComments, icon: Icons.message, label: "Комментарии" },
       ],

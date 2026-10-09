@@ -150,13 +150,14 @@ export function CourseSidebar() {
     {
       href: routes.courseKnowledgeBase(courseSlug),
       icon: Icons.library,
-      label: "База знаний",
+      label: "Материалы",
       enrolledOnly: false,
     },
+
     {
-      href: routes.courseRoadmap(courseSlug),
-      icon: Icons.roadmap,
-      label: "Роадмап",
+      href: routes.courseBookmarks(courseSlug),
+      icon: Icons.bookmark,
+      label: "Закладки",
       enrolledOnly: true,
     },
   ];
@@ -169,11 +170,7 @@ export function CourseSidebar() {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton asChild tooltip="На главную" size="sm">
-                <Link
-                  href={routes.home}
-                  className="gap-2"
-                  onClick={closeMobileSidebar}
-                >
+                <Link href={routes.home} className="gap-2" onClick={closeMobileSidebar}>
                   <Icons.back className="size-4 shrink-0" />
                   <span className="text-xs text-sidebar-foreground/50 group-data-[collapsible=icon]:hidden">
                     На главную

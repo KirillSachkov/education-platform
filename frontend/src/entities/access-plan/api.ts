@@ -13,7 +13,6 @@ import type {
   PlanStatsDto,
   PublicPlanDto,
   SetPromotionRequest,
-  TrainerProRevenue,
   UpdatePlanRequest,
   UpgradeQuoteDto,
   UserLookupResultDto,
@@ -215,20 +214,6 @@ export const accessPlanApi = {
     return res.data;
   },
 
-  // Cross-plan Trainer Pro revenue aggregate (#623) — admin trainer dashboard.
-  getTrainerProRevenue: async ({
-    periodDays,
-    signal,
-  }: { periodDays?: number; signal?: AbortSignal } = {}) => {
-    const params: Record<string, number> = {};
-    if (periodDays !== undefined) params.periodDays = periodDays;
-    const res = await apiClient.get<Envelope<TrainerProRevenue>>(
-      "/access/admin/trainer-pro/revenue/",
-      { params, signal },
-    );
-    return res.data;
-  },
-
   // User lookup для admin/author при ручной выдаче grant'а.
   lookupUsers: async (query: string, limit: number, { signal }: { signal?: AbortSignal } = {}) => {
     const params = new URLSearchParams({ q: query, limit: limit.toString() });
@@ -323,14 +308,6 @@ export const planStatsQueryOptions = (planId: string, periodDays: number) =>
   queryOptions({
     queryKey: ["access", "plans", planId, "stats", { periodDays }] as const,
     queryFn: ({ signal }) => accessPlanApi.getPlanStats(planId, { periodDays, signal }),
-    select: (data) => data.result!,
-    staleTime: 30_000,
-  });
-
-export const trainerProRevenueQueryOptions = (periodDays: number) =>
-  queryOptions({
-    queryKey: ["access", "admin", "trainer-pro", "revenue", { periodDays }] as const,
-    queryFn: ({ signal }) => accessPlanApi.getTrainerProRevenue({ periodDays, signal }),
     select: (data) => data.result!,
     staleTime: 30_000,
   });

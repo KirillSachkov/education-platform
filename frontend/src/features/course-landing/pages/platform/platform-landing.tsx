@@ -11,8 +11,6 @@ import {
   FooterSection,
 } from "./components/sections";
 import { PlansShowcase } from "./components/plans-showcase";
-import { KnowledgeBaseLinkSection } from "./components/knowledge-base-link-section";
-import { LevelTestLinkSection } from "./components/level-test-link-section";
 import { FloatingTelegram } from "./components/floating-telegram";
 import { LandingGrowthTracker } from "./components/landing-growth-tracker";
 
@@ -29,8 +27,6 @@ export default async function PlatformLanding() {
 
       <ProgramSection />
 
-      <LevelTestLinkSection />
-
       <div className="border-t border-white/[0.04] bg-[#0E0E11]">
         <StickyScrollLearning />
       </div>
@@ -42,8 +38,6 @@ export default async function PlatformLanding() {
       </div>
 
       <PlansShowcase />
-
-      <KnowledgeBaseLinkSection />
 
       <div className="border-t border-white/[0.04] bg-[#0E0E11]">
         <FaqSection />

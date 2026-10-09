@@ -80,8 +80,7 @@ export function isEnvelopeError(error: unknown): error is EnvelopeError {
 // Проверка ошибки доступа к контенту (content.access.*)
 export function isContentAccessError(error: unknown): error is EnvelopeError {
   return (
-    isEnvelopeError(error) &&
-    error.messages.some((m) => m.code?.startsWith("content.access."))
+    isEnvelopeError(error) && error.messages.some((m) => m.code?.startsWith("content.access."))
   );
 }
 
@@ -92,15 +91,13 @@ export function isForbiddenError(error: unknown): error is ForbiddenError {
 // Unwrap Envelope — returns result or throws EnvelopeError
 export function unwrapEnvelope<T>(envelope: Envelope<T>): T {
   if (envelope.isError || !envelope.result) {
-    throw new EnvelopeError(
-      envelope.error ?? { messages: [], type: ErrorType.FAILURE },
-    );
+    throw new EnvelopeError(envelope.error ?? { messages: [], type: ErrorType.FAILURE });
   }
   return envelope.result;
 }
 
 /**
- * Extract the first backend error code (e.g. `trainer.pro.required`) from an
+ * Extract the first backend error code (e.g. `access.denied`) from an
  * EnvelopeError, or `null` for non-envelope errors. Lets callers branch on the
  * stable machine-readable code without re-implementing envelope unwrapping.
  */

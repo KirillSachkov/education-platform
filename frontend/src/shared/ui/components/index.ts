@@ -1,5 +1,4 @@
 export { CircularProgress } from "./circular-progress";
-export { TopicMasteryRing } from "./topic-mastery-ring";
 export { TintedPanel } from "./tinted-panel";
 export { ContentImage } from "./content-image";
 export {
@@ -11,7 +10,6 @@ export {
 export { StatusBadge } from "./status-badge";
 export { LockCallout } from "./lock-callout";
 export { LockIconBadge } from "./lock-icon-badge";
-export { LockedContentPlaceholder } from "./locked-content-placeholder";
 export { ProgressBar } from "./progress-bar";
 export { DiscussionSection } from "./discussion-section";
 export { NotFoundFallback } from "./not-found-fallback";

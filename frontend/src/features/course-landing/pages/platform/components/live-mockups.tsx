@@ -12,9 +12,6 @@ import {
   CheckCircle2,
   Loader2,
   ExternalLink,
-  Trophy,
-  Flame,
-  Star,
   Reply,
   Heart,
   ListChecks,
@@ -334,24 +331,6 @@ function MockupPlatform({ isActive }: { isActive: boolean }) {
   const reduced = useReducedMotion();
   const animate = isActive && !reduced;
 
-  const achievements = [
-    {
-      icon: <Flame className="h-3.5 w-3.5" />,
-      label: "7 дней подряд",
-      color: "text-orange-400 bg-orange-400/10",
-    },
-    {
-      icon: <Star className="h-3.5 w-3.5" />,
-      label: "Топ-5 недели",
-      color: "text-yellow-400 bg-yellow-400/10",
-    },
-    {
-      icon: <Trophy className="h-3.5 w-3.5" />,
-      label: "10 ревью",
-      color: "text-[#6BADA5] bg-[#6BADA5]/10",
-    },
-  ];
-
   return (
     <div className="space-y-3 p-4">
       <div className="flex items-center gap-2 text-xs text-white/40">
@@ -378,8 +357,8 @@ function MockupPlatform({ isActive }: { isActive: boolean }) {
       {/* Stats grid */}
       <div className="grid grid-cols-3 gap-2 text-center">
         {[
-          { val: "12", label: "уровень" },
-          { val: "4 820", label: "XP" },
+          { val: "2", label: "модуля" },
+          { val: "12", label: "Уроков" },
           { val: "38", label: "заданий" },
         ].map((s, i) => (
           <motion.div
@@ -390,22 +369,6 @@ function MockupPlatform({ isActive }: { isActive: boolean }) {
           >
             <p className="text-lg font-bold text-[#6BADA5]">{s.val}</p>
             <p className="text-[10px] text-white/30">{s.label}</p>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Achievements */}
-      <div className="flex flex-wrap gap-1.5">
-        {achievements.map((a, i) => (
-          <motion.div
-            key={a.label}
-            className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-medium ${a.color}`}
-            initial={reduced ? undefined : { opacity: 0, scale: 0.8 }}
-            animate={animate ? { opacity: 1, scale: 1 } : undefined}
-            transition={{ delay: 0.8 + i * 0.15, type: "spring", stiffness: 400, damping: 20 }}
-          >
-            {a.icon}
-            {a.label}
           </motion.div>
         ))}
       </div>

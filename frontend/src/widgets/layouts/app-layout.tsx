@@ -1,12 +1,10 @@
 "use client";
 
-import { LevelUpCelebration } from "@/features/level-up-celebration";
 import { NotificationBell } from "@/features/notifications";
 import { useMyProfile } from "@/features/profile-manage";
 import { TelegramLinkPromptRow } from "@/features/telegram-link";
 import { fullLogout, ROLES, useRoles } from "@/shared/auth";
 import { routes } from "@/shared/config/routes";
-import { cn } from "@/shared/lib/css";
 import { useCourseContext } from "@/shared/providers/course-id-provider";
 import { SeasonalHeaderDecor, UserAvatar } from "@/shared/ui/components";
 import { Icons } from "@/shared/ui/icons";
@@ -36,24 +34,15 @@ import {
   User,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
-import dynamic from "next/dynamic";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-
-const GlobalSearch = dynamic(() =>
-  import("@/features/global-search").then((module) => module.GlobalSearch),
-);
 
 export function AppLayout({
   children,
   sidebar,
-  accent,
   defaultSidebarOpen = true,
 }: Readonly<{
   children: React.ReactNode;
   sidebar?: React.ReactNode;
-  /** `"trainer"` тонирует весь shell в фиолетовую тему раздела «Тренажёр» (#623). */
-  accent?: "trainer";
   /**
    * Persisted sidebar open/collapsed state, read server-side from the cookie
    * (`readSidebarDefaultOpen`). Threaded through so the choice survives
@@ -69,16 +58,6 @@ export function AppLayout({
   const canTeach = isAtLeast(ROLES.AUTHOR);
   const canAdmin = isAtLeast(ROLES.ADMIN);
   const courseContext = useCourseContext();
-  const pathname = usePathname();
-  // Тренажёр — отдельный раздел (#623): хедер-таб подсвечивается на /trainer/*.
-  const isTrainerActive = pathname.startsWith("/trainer");
-  // Глобальный поиск живёт ТОЛЬКО на страницах базы знаний (#623): платформенная
-  // (/knowledge-base) и курсовая (/courses/<slug>/knowledge-base) + их под-страницы.
-  // Везде ещё хедер без поиска — место освобождено под таб «Тренажёр» и будущие разделы.
-  const showHeaderSearch =
-    pathname === routes.knowledgeBase ||
-    pathname.startsWith(`${routes.knowledgeBase}/`) ||
-    /^\/courses\/[^/]+\/knowledge-base(\/|$)/.test(pathname);
   // Course pages link to the course-scoped bookmarks; everywhere else — the
   // global saved page (#510). Auth-gated below: anonymous users have no bookmarks.
   const bookmarksHref = courseContext
@@ -86,13 +65,7 @@ export function AppLayout({
     : routes.saved;
 
   return (
-    <SidebarProvider
-      defaultOpen={defaultSidebarOpen}
-      className={cn(accent === "trainer" && "theme-trainer")}
-    >
-      {/* Празднование повышения уровня (#555) — dialog-портал, монтируется один раз
-          на весь авторизованный shell; для анонимов query disabled → no-op. */}
-      <LevelUpCelebration />
+    <SidebarProvider defaultOpen={defaultSidebarOpen}>
       {sidebar ?? <AppSidebar />}
       <SidebarInset>
         {/* pt-[safe-area-inset-top] опускает плавающий хедер ниже чёлки/статус-бара
@@ -103,37 +76,12 @@ export function AppLayout({
           <header className="relative z-50 flex h-14 shrink-0 items-center gap-3 px-3 md:px-5 bg-surface border-b border-border/50 sm:rounded-2xl sm:border min-w-0 overflow-hidden md:overflow-visible">
             <SeasonalHeaderDecor />
             <div className="relative z-10 flex min-w-0 flex-1 items-center gap-2">
-              {/* Контекстная кнопка-таб (#623): в разделе тренажёра — «Платформа»
-                  (teal платформы, --platform-primary) обратно на /home; вне его —
-                  «⚡ Тренажёр» (фиолетовый) на /trainer. */}
-              {isTrainerActive ? (
-                <Button
-                  variant="ghost"
-                  asChild
-                  className="hidden h-9 shrink-0 gap-2 rounded-xl px-3 font-medium text-[var(--platform-primary)] hover:bg-[var(--platform-primary)]/10 hover:text-[var(--platform-primary)] md:inline-flex"
-                >
-                  <Link href={routes.home}>
-                    <Icons.compass className="size-4" />
-                    Платформа
-                  </Link>
-                </Button>
-              ) : (
-                <Button
-                  variant="ghost"
-                  asChild
-                  className="hidden h-9 shrink-0 gap-2 rounded-xl px-3 font-medium text-violet-600 hover:bg-violet-500/12 hover:text-violet-600 md:inline-flex dark:text-violet-300"
-                >
-                  <Link href={routes.trainer}>
-                    <Icons.energy className="size-4" />
-                    Тренажёр
-                  </Link>
-                </Button>
-              )}
-              {showHeaderSearch && (
-                <div className="min-w-0 max-w-4xl flex-1">
-                  <GlobalSearch />
-                </div>
-              )}
+              <Link
+                href={routes.home}
+                className="text-sm font-semibold min-h-11 inline-flex items-center"
+              >
+                Моё обучение
+              </Link>
             </div>
 
             <div className="relative z-10 ml-auto flex items-center gap-2">

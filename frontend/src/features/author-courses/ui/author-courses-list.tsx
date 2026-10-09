@@ -66,9 +66,9 @@ export function AuthorCoursesList() {
     ? "Управляйте курсами всех авторов платформы. В карточках указан владелец курса."
     : "Управляйте своими курсами — перетащите карточку, чтобы изменить порядок";
 
-  const handleDragEnd = (event: Parameters<
-    NonNullable<React.ComponentProps<typeof DragDropProvider>["onDragEnd"]>
-  >[0]) => {
+  const handleDragEnd = (
+    event: Parameters<NonNullable<React.ComponentProps<typeof DragDropProvider>["onDragEnd"]>>[0],
+  ) => {
     if (event.canceled) return;
     const { source } = event.operation;
     if (!isSortable(source)) return;
@@ -83,8 +83,7 @@ export function AuthorCoursesList() {
     // so it doesn't appear as its own neighbour at the target position.
     const remaining = courses.filter((c) => c.id !== movedCourse.id);
     const afterSortKey = newIndex > 0 ? remaining[newIndex - 1]?.sortKey : undefined;
-    const beforeSortKey =
-      newIndex < remaining.length ? remaining[newIndex]?.sortKey : undefined;
+    const beforeSortKey = newIndex < remaining.length ? remaining[newIndex]?.sortKey : undefined;
 
     void moveCourse({ courseId: movedCourse.id, afterSortKey, beforeSortKey });
   };
@@ -100,8 +99,7 @@ export function AuthorCoursesList() {
 
     const remaining = courses.filter((c) => c.id !== movedCourse.id);
     const afterSortKey = newIndex > 0 ? remaining[newIndex - 1]?.sortKey : undefined;
-    const beforeSortKey =
-      newIndex < remaining.length ? remaining[newIndex]?.sortKey : undefined;
+    const beforeSortKey = newIndex < remaining.length ? remaining[newIndex]?.sortKey : undefined;
 
     void moveCourse({ courseId: movedCourse.id, afterSortKey, beforeSortKey });
   };
@@ -111,9 +109,7 @@ export function AuthorCoursesList() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold">{title}</h1>
-          <p className="text-sm text-muted-foreground">
-            {description}
-          </p>
+          <p className="text-sm text-muted-foreground">{description}</p>
         </div>
         <Button
           className="w-full sm:w-auto bg-gradient-primary text-primary-foreground border-0 hover:opacity-90"
@@ -145,9 +141,7 @@ export function AuthorCoursesList() {
       {!isLoading && !error && courses.length === 0 && (
         <div className="text-center py-12 text-muted-foreground">
           <p>{canViewPlatformCourses ? "На платформе пока нет курсов" : "У вас пока нет курсов"}</p>
-          <p className="text-sm mt-1">
-            Нажмите &laquo;Создать курс&raquo;, чтобы начать
-          </p>
+          <p className="text-sm mt-1">Нажмите &laquo;Создать курс&raquo;, чтобы начать</p>
         </div>
       )}
 
@@ -177,16 +171,11 @@ export function AuthorCoursesList() {
 
       {hasNextPage && (
         <div ref={cursorRef} className="flex justify-center py-4">
-          {isFetchingNextPage && (
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-          )}
+          {isFetchingNextPage && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
         </div>
       )}
 
-      <CreateCourseDialog
-        open={createDialogOpen}
-        onOpenChange={setCreateDialogOpen}
-      />
+      <CreateCourseDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} />
 
       {editCourse && (
         <EditCourseDialog
@@ -285,14 +274,11 @@ function SortableCourseCard({
                 <AuthorCredit
                   name={course.authorDisplayName ?? shortId(course.authorId)}
                   avatarUrl={course.authorAvatarUrl}
-                  href={routes.userProfile(course.authorId)}
                 />
               )}
             </div>
             <h3 className="text-sm font-semibold mb-1">{course.title}</h3>
-            <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
-              {course.description}
-            </p>
+            <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{course.description}</p>
             <p className="text-xs text-muted-foreground">
               {formatShortDateWithTime(course.createdAt)}
             </p>
@@ -300,22 +286,12 @@ function SortableCourseCard({
         </div>
 
         <div className="border-t px-5 py-2.5 flex items-center gap-1 flex-wrap">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-xs"
-            asChild
-          >
+          <Button variant="ghost" size="sm" className="text-xs" asChild>
             <Link href={routes.authorCourseBuilder(course.slug)} prefetch={false}>
               <FolderKanban size={13} /> Управление
             </Link>
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-xs"
-            onClick={onEdit}
-          >
+          <Button variant="ghost" size="sm" className="text-xs" onClick={onEdit}>
             <Pencil size={13} /> Редактировать
           </Button>
           {course.status === "PUBLISHED" ? (
@@ -326,8 +302,13 @@ function SortableCourseCard({
               onClick={onArchive}
               disabled={isArchivePending}
             >
-              {isArchivePending ? <Loader2 className="animate-spin" size={13} /> : <Archive size={13} />}{" "}
-              <span className="hidden sm:inline">Архивировать</span><span className="sm:hidden">Архив</span>
+              {isArchivePending ? (
+                <Loader2 className="animate-spin" size={13} />
+              ) : (
+                <Archive size={13} />
+              )}{" "}
+              <span className="hidden sm:inline">Архивировать</span>
+              <span className="sm:hidden">Архив</span>
             </Button>
           ) : course.status === "ARCHIVED" ? (
             <Button
@@ -337,7 +318,12 @@ function SortableCourseCard({
               onClick={onRestore}
               disabled={isRestorePending}
             >
-              {isRestorePending ? <Loader2 className="animate-spin" size={13} /> : <Play size={13} />} Восстановить
+              {isRestorePending ? (
+                <Loader2 className="animate-spin" size={13} />
+              ) : (
+                <Play size={13} />
+              )}{" "}
+              Восстановить
             </Button>
           ) : (
             <Button
@@ -347,7 +333,12 @@ function SortableCourseCard({
               onClick={onPublish}
               disabled={isPublishPending}
             >
-              {isPublishPending ? <Loader2 className="animate-spin" size={13} /> : <Play size={13} />} Опубликовать
+              {isPublishPending ? (
+                <Loader2 className="animate-spin" size={13} />
+              ) : (
+                <Play size={13} />
+              )}{" "}
+              Опубликовать
             </Button>
           )}
           <DeleteCourseDialog courseId={course.id} />

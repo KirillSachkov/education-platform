@@ -2,10 +2,8 @@
 
 import { API_ORIGIN } from "@/shared/api";
 import { buildContentImageSrcSet } from "@/shared/lib/image-src";
-import { routes } from "@/shared/config/routes";
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/ui/kit/avatar";
 import { cn } from "@/shared/lib/css";
-import Link from "next/link";
 
 function getInitials(name?: string | null): string {
   if (!name) return "?";
@@ -26,11 +24,11 @@ interface UserAvatarProps {
   name?: string | null | undefined;
   avatarId?: string | null | undefined;
   className?: string;
-  /** When provided, the avatar becomes a link to the user's public profile */
+  /** Legacy identifier accepted by existing callers. */
   userId?: string | null;
 }
 
-export function UserAvatar({ name, avatarId, className, userId }: UserAvatarProps) {
+export function UserAvatar({ name, avatarId, className }: UserAvatarProps) {
   const url = getAvatarUrl(avatarId);
   const srcSet = buildContentImageSrcSet(url);
   const initials = getInitials(name);
@@ -43,18 +41,6 @@ export function UserAvatar({ name, avatarId, className, userId }: UserAvatarProp
       </AvatarFallback>
     </Avatar>
   );
-
-  if (userId) {
-    return (
-      <Link
-        href={routes.userProfile(userId)}
-        onClick={(e) => e.stopPropagation()}
-        className="shrink-0 rounded-full ring-0 hover:ring-2 hover:ring-primary/40 transition-shadow"
-      >
-        {avatar}
-      </Link>
-    );
-  }
 
   return avatar;
 }

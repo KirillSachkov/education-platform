@@ -17,7 +17,7 @@ export const aspNetCoreLandingContent: SeoLandingContent = {
     "Превратите знание C# в умение строить production-backend: веб-API, базы данных, аутентификацию, " +
     "очереди и микросервисы. С разбором архитектурных решений и AI-ревью каждого pull request.",
   heroCtaPrimary: { label: "Открыть курс .NET", href: FLAGSHIP },
-  heroCtaSecondary: { label: "Смотреть все курсы", href: routes.courses },
+  heroCtaSecondary: { label: "Смотреть все курсы", href: routes.pricing },
 
   sections: [
     {
@@ -114,9 +114,9 @@ export const aspNetCoreLandingContent: SeoLandingContent = {
   finalCtaHeading: "Соберите production-backend на ASP.NET Core",
   finalCtaSub:
     "Полный путь по .NET включает ASP.NET Core, базы данных, микросервисы и DevOps — с AI-ревью PR и " +
-    "ответами автора на вопросы. Не уверены в уровне? Начните с теста.",
+    "ответами автора на вопросы. Посмотрите программу и выберите подходящий курс.",
   finalCtaPrimary: { label: "Открыть курс .NET", href: FLAGSHIP },
-  finalCtaSecondary: { label: "Пройти тест уровня", href: routes.levelTest },
+  finalCtaSecondary: { label: "Посмотреть программу", href: routes.pricing },
 
   related: [
     { title: "Курс C# с нуля", href: routes.seoCsharp },

@@ -21,7 +21,7 @@ type TopTab = {
 /**
  * Mobile-only sticky tab bar under the course header. Mirrors the desktop
  * `CourseSidebar` nav so students can jump between Обзор / Программа /
- * Задания / Тесты / База знаний / Роадмап without opening any drawer.
+ * Задания / Тесты / Материалы / Закладки without opening any drawer.
  *
  * Hidden on `md+` — desktop has the sidebar.
  *
@@ -42,12 +42,8 @@ export function CourseTopTabs() {
     { href: routes.courseProgram(courseSlug), label: "Программа" },
     { href: routes.courseAssignments(courseSlug), label: "Задания" },
     { href: routes.courseTests(courseSlug), label: "Тесты" },
-    { href: routes.courseKnowledgeBase(courseSlug), label: "База знаний" },
-    {
-      href: routes.courseRoadmap(courseSlug),
-      label: "Роадмап",
-      enrolledOnly: true,
-    },
+    { href: routes.courseKnowledgeBase(courseSlug), label: "Материалы" },
+    { href: routes.courseBookmarks(courseSlug), label: "Закладки", enrolledOnly: true },
   ];
 
   const visible = tabs.filter((t) => !t.enrolledOnly || access.hasActiveEnrollment);

@@ -10,7 +10,6 @@ export {
   planStatsQueryOptions,
   publicPlanBySlugQueryOptions,
   publicPlansQueryOptions,
-  trainerProRevenueQueryOptions,
   upgradeQuoteQueryOptions,
   userLookupQueryOptions,
 } from "./api";
@@ -39,7 +38,6 @@ export type {
   PublicPlanCourseDto,
   PublicPlanDto,
   SetPromotionRequest,
-  TrainerProRevenue,
   UpdatePlanRequest,
   UpgradeCreditSourceDto,
   UpgradeQuoteDto,
@@ -59,7 +57,6 @@ export {
   isTrialPlan,
   isActiveTrialGrant,
   hasFullAccessGrant,
-  hasTrainerProGrant,
 } from "./lib";
 export { PLAN_PRESETS, detectPreset } from "./presets";
 export type { PlanPreset, PlanPresetSpec } from "./presets";

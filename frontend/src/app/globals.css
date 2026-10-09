@@ -329,39 +329,6 @@
   --blockquote-text: oklch(0.56 0.008 260);
 }
 
-/* Раздел «Тренажёр» — фиолетовая тема (#623). Класс вешается на корень shell'а
-   (SidebarProvider) в AppLayout при accent="trainer" → сайдбар, primary, ring и
-   accent-состояния становятся фиолетовыми: тренажёр читается как отдельная часть
-   платформы. Платформенный teal остаётся доступен через --platform-primary
-   (его .theme-trainer не трогает) — для кнопки «Платформа» в хедере. */
-.theme-trainer {
-  --primary: #7c3aed;
-  --primary-foreground: #ffffff;
-  --ring: #7c3aed;
-  --accent: #ede9fe;
-  --accent-foreground: #5b21b6;
-  --sidebar: #ebe9f2;
-  --sidebar-primary: #7c3aed;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #ede9fe;
-  --sidebar-accent-foreground: #5b21b6;
-  --sidebar-ring: #7c3aed;
-}
-
-.dark .theme-trainer {
-  --primary: #a78bfa;
-  --primary-foreground: #ffffff;
-  --ring: #a78bfa;
-  --accent: rgba(167, 139, 250, 0.14);
-  --accent-foreground: rgba(255, 255, 255, 0.95);
-  --sidebar: #16131b;
-  --sidebar-primary: #a78bfa;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: rgba(167, 139, 250, 0.14);
-  --sidebar-accent-foreground: rgba(255, 255, 255, 0.95);
-  --sidebar-ring: #a78bfa;
-}
-
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -968,8 +935,8 @@
     t-check-bob var(--check-bob-dur) var(--check-ease-bob) forwards;
 }
 .t-success-check[data-state="in"] svg path {
-  animation: t-check-draw var(--check-path-dur) var(--check-ease-path)
-    var(--check-path-delay, 0ms) forwards;
+  animation: t-check-draw var(--check-path-dur) var(--check-ease-path) var(--check-path-delay, 0ms)
+    forwards;
 }
 @keyframes t-check-fade {
   from {
@@ -1141,79 +1108,6 @@
   }
 }
 
-/* ════════════════════════════════════════════════════════════════════
-   Trainer design system (#568) — material cards + mount cascade.
-   Single source for the trainer's "material card" surface (hairline
-   border + faint top sheen, composes with any bg / status tint) and the
-   cascade-in used on /trainer/stats and across the hub.
-
-   Entrance is mount-only via @starting-style (NOT @keyframes +
-   animation-fill-mode: both — that pattern stuck cards transparent on
-   re-render, #377). @starting-style fires once on first render and rests
-   at the final state, so re-renders never re-trigger it. Reduced-motion
-   guard included (see frontend-fsd convention).
-   ════════════════════════════════════════════════════════════════════ */
-:root {
-  --t-fill-dur: 700ms; /* mastery ring / progress-bar fill */
-  --t-enter-dur: 420ms; /* card cascade-in */
-  --t-enter-rise: 10px;
-  --t-enter-stagger: 45ms;
-  --t-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-/* Material card: hairline border + radius + faint status-tinted top sheen.
-   Deliberately does NOT set background — compose with `bg-card` or the
-   status surface from getTopicStatusSurface() so tints don't fight. Tint the
-   sheen via --t-tint (defaults to a neutral foreground wash). */
-.t-card {
-  position: relative;
-  isolation: isolate;
-  border: 1px solid color-mix(in oklch, var(--border) 65%, transparent);
-  border-radius: var(--radius-lg);
-}
-.t-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  background: linear-gradient(
-    180deg,
-    color-mix(in oklch, var(--t-tint, var(--foreground)) 5%, transparent),
-    transparent 55%
-  );
-  pointer-events: none;
-}
-
-/* Cascade-in entrance. Add `t-enter` to each item and set --t-i to its index
-   for a staggered rise. Mount-only (see block header) — safe on lists. */
-.t-enter {
-  opacity: 1;
-  translate: 0 0;
-  transition:
-    opacity var(--t-enter-dur) var(--t-ease-out),
-    translate var(--t-enter-dur) var(--t-ease-out);
-  transition-delay: calc(var(--t-i, 0) * var(--t-enter-stagger));
-}
-@starting-style {
-  .t-enter {
-    opacity: 0;
-    translate: 0 var(--t-enter-rise);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .t-enter {
-    transition-duration: 1ms;
-    transition-delay: 0ms;
-    translate: none;
-  }
-  @starting-style {
-    .t-enter {
-      translate: none;
-    }
-  }
-}
-
 /* ── Price swap (#595) — lightweight fade+lift when the pricing hero swaps the
    active term (Навсегда ⇄ На месяц). Re-mounted via `key={term}` so the
    keyframe replays on each toggle. Reduced-motion shows the new price instantly. */
@@ -1233,30 +1127,5 @@
 @media (prefers-reduced-motion: reduce) {
   .price-swap {
     animation: none !important;
-  }
-}
-
-/* ── Timer urgency pulse (#614 E) — last ≤15s of a mock-interview countdown.
-   Functional cue (time almost up), NOT decoration. Animates opacity only
-   (compositor-thread, no layout). Looping `infinite` is intentional and safe:
-   it is steady-state on a live element (no @starting-style / animation-fill-mode
-   that stuck cards transparent in #377), and the runner stops rendering the
-   timer once the session is complete. Reduced-motion drops the pulse entirely —
-   the red colour tier already conveys urgency without motion. */
-@keyframes t-timer-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.55;
-  }
-}
-.t-timer-pulse {
-  animation: t-timer-pulse 1s ease-in-out infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .t-timer-pulse {
-    animation: none;
   }
 }

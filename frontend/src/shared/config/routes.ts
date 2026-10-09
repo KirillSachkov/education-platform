@@ -86,19 +86,19 @@ export function decodeFromContext(raw: string | null): DecodedFromContext | null
     case "space":
       return { href: routes.home, label: "На главную" };
     case "space-kb":
-      return { href: routes.knowledgeBase, label: "К базе знаний" };
+      return { href: routes.home, label: "К моему обучению" };
     case "course":
       return rest[1]
         ? {
             href: routes.courseKnowledgeBase(rest[1]),
-            label: "К базе знаний курса",
+            label: "К материалам курса",
           }
         : null;
     case "course-kb":
       return rest[1]
         ? {
             href: routes.courseKnowledgeBase(rest[1]),
-            label: "К базе знаний курса",
+            label: "К материалам курса",
           }
         : null;
     case "collection": {
@@ -121,7 +121,7 @@ export function decodeFromContext(raw: string | null): DecodedFromContext | null
             href: routes.courseBookmarks(courseSlug),
             label: "К закладкам",
           }
-        : { href: routes.home, label: "К закладкам" };
+        : { href: routes.saved, label: "К закладкам" };
     }
     default:
       return null;
@@ -130,7 +130,7 @@ export function decodeFromContext(raw: string | null): DecodedFromContext | null
 
 export const routes = {
   /**
-   * Authenticated dashboard. Bottom-nav «Главная» tab on mobile and the
+   * Authenticated dashboard. Bottom-nav «Моё обучение» tab on mobile and the
    * post-login destination. The public landing page lives at {@link routes.landing}.
    */
   home: "/home",
@@ -154,10 +154,9 @@ export const routes = {
 
   // --- Courses (single-tenant flat URLs, Phase 5) ---
   /**
-   * Authenticated «Курсы» page — bottom-nav «Курсы» tab. Anonymous visitors
-   * see the catalog (server-side enrollment-aware composition).
+   * Personal courses live on «Моё обучение». /courses is a legacy redirect.
    */
-  myCourses: "/courses",
+  myCourses: "/home",
   courses: "/courses",
   courseOverview: (courseSlug: string) => `/courses/${courseSlug}` as const,
   courseMaterial: (
@@ -185,8 +184,6 @@ export const routes = {
   courseTests: (courseSlug: string) => `/courses/${courseSlug}/tests` as const,
   courseLessons: (courseSlug: string) => `/courses/${courseSlug}/lessons` as const,
   courseProgram: (courseSlug: string) => `/courses/${courseSlug}/program` as const,
-  courseProgress: (courseSlug: string) => `/courses/${courseSlug}/progress` as const,
-  courseRoadmap: (courseSlug: string) => `/courses/${courseSlug}/roadmap` as const,
   courseKnowledgeBase: (courseSlug: string) => `/courses/${courseSlug}/knowledge-base` as const,
   /** Detail page of a single course-scoped collection; the list view is part of the knowledge base. */
   courseCollectionDetail: (courseSlug: string, collectionId: string) =>
@@ -214,50 +211,6 @@ export const routes = {
 
   // --- Saved (global bookmarks across all courses) ---
   saved: "/saved" as const,
-
-  // --- My progress (streak, activity grid, XP) ---
-  progress: "/progress" as const,
-
-  // --- Certificates (public verification page; the list lives on /progress) ---
-  certificates: (certificateId: string) => `/certificates/${certificateId}` as const,
-
-  // --- Roadmaps ---
-  roadmaps: "/roadmaps",
-  publicRoadmap: (slug: string) => `/roadmaps/${slug}` as const,
-
-  // --- Leaderboard ---
-  leaderboard: "/leaderboard" as const,
-  platformLeaderboard: "/leaderboard" as const,
-
-  // --- Level test (lead funnel, #481) ---
-  levelTest: "/level-test" as const,
-  levelTestResult: (attemptId: string) => `/level-test/result/${attemptId}` as const,
-
-  // --- Trainer (interview-prep hub, #568) ---
-  trainer: "/trainer" as const,
-  /** Глубокая ссылка на вкладку хаба (?tab=study|mock|progress|mistakes|bookmarks). */
-  trainerTab: (tab: string) => `/trainer?tab=${tab}` as const,
-  trainerTopic: (slug: string) => `/trainer/topics/${slug}` as const,
-  /** Обучение конкретной темы внутри хаба (вкладка «Обучение» + scope на тему). */
-  trainerStudyTopic: (topicId: string) => `/trainer?tab=study&topic=${topicId}` as const,
-  /** Тест конкретной темы — под-режим «Тест» внутри вкладки «Обучение» (#568, слияние). */
-  trainerTestTopic: (topicId: string) =>
-    `/trainer?tab=study&sub=test&topic=${topicId}` as const,
-  trainerSession: (sessionId: string) => `/trainer/session/${sessionId}` as const,
-  /** Прогресс — вкладка хаба (старый роут /trainer/progress редиректит сюда). */
-  trainerProgress: "/trainer?tab=progress" as const,
-  /** Подробная статистика — отдельная страница-дашборд (#568). */
-  trainerStats: "/trainer/stats" as const,
-  /**
-   * Подписка на тренажёр (#623) — отдельная страница в пространстве тренажёра.
-   * Тренажёр продаётся здесь, НЕ в платформенном /pricing; биллинг — AccessService.
-   */
-  trainerPro: "/trainer/pro" as const,
-  /**
-   * Админка тренажёра в его собственном пространстве (#623): фиолетовая тема +
-   * `TrainerSidebar`, гейт на ADMIN. Старый `/admin/trainer` редиректит сюда.
-   */
-  trainerAdmin: "/trainer/admin" as const,
 
   // --- SEO keyword landings (#530) — public, intent-split content pages,
   //     self-canonical, top-level latin slugs (NOT under /courses/* to avoid the
@@ -287,7 +240,6 @@ export const routes = {
   myPlans: "/my-plans" as const,
 
   // --- User & profile ---
-  userProfile: (userId: string) => `/users/${userId}` as const,
   profile: "/profile",
   notifications: "/notifications",
   settings: "/settings",
@@ -351,18 +303,9 @@ export const routes = {
   authorReview: "/author/review",
   authorCatalogModeration: "/author/catalog-moderation" as const,
   authorComments: "/author/comments" as const,
-  authorCourseRoadmap: (courseSlug: string) => `/author/courses/${courseSlug}/roadmap` as const,
-  authorRoadmaps: "/author/roadmaps",
-  authorRoadmapEditor: (roadmapId: string) => `/author/roadmaps/${roadmapId}` as const,
-  authorLevelTest: "/author/level-test" as const,
   authorQuizzes: "/author/quizzes" as const,
   /** Библиотека квизов с авто-раскрытым редактором конкретного квиза. */
   authorQuizEdit: (quizId: string) => `/author/quizzes?quiz=${quizId}` as const,
-  /** Конструктор мок-собесов тренажёра (кураторские подборки вопросов, #585). */
-  authorMockInterviews: "/author/mock-interviews" as const,
-  /** Управление контентом тренажёра — темы + банки вопросов (admin-only, #623). */
-  authorTrainer: "/author/trainer" as const,
-
   // --- Admin ---
   onboardingProfile: "/onboarding/profile",
   adminOverview: "/admin/overview",
@@ -374,9 +317,7 @@ export const routes = {
   adminCampaigns: "/admin/campaigns",
   adminSearch: "/admin/search",
   adminAiUsage: "/admin/ai-usage",
-  adminLevelTest: "/admin/level-test",
   adminTests: "/admin/tests",
-  adminTrainer: "/admin/trainer",
   adminAiModels: "/admin/ai-models",
   adminPayments: "/admin/payments",
   adminPaymentDetail: (id: string) => `/admin/payments/${id}` as const,

@@ -14,9 +14,10 @@
  * - `TRAINER_PRO` — подписка на тренажёр собеседований (Trainer Pro, #614). Форсится
  *   бэкендом для `PlanTier.SUBSCRIPTION`; рендерится отдельной секцией на pricing.
  */
-export const OFFER_TYPES = ["FULL_ACCESS", "COURSE", "INTENSIVE", "MARATHON", "TRAINER_PRO"] as const;
+export const OFFER_TYPES = ["FULL_ACCESS", "COURSE", "INTENSIVE", "MARATHON"] as const;
 
-export type PlanOfferType = (typeof OFFER_TYPES)[number];
+/** Legacy value remains readable for existing grants; it is not offered for sale. */
+export type PlanOfferType = (typeof OFFER_TYPES)[number] | "TRAINER_PRO";
 
 export const OFFER_TYPE_LABELS: Record<PlanOfferType, string> = {
   FULL_ACCESS: "Полный доступ",
@@ -63,7 +64,9 @@ export const OFFER_TYPE_VISUALS: Record<
  * Хелпер для каталожного бейджа offer-type: `{ label, class }` либо `null`
  * (для COURSE — обычный платный курс без отдельного бейджа).
  */
-export function getOfferTypeBadge(offerType: PlanOfferType): { label: string; class: string } | null {
+export function getOfferTypeBadge(
+  offerType: PlanOfferType,
+): { label: string; class: string } | null {
   const visual = OFFER_TYPE_VISUALS[offerType];
   return visual ? { label: visual.badgeLabel, class: visual.badgeClass } : null;
 }

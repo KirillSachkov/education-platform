@@ -20,11 +20,14 @@ export default function robots(): MetadataRoute.Robots {
           "/settings/",
           "/notifications",
           "/home",
-          // NB: NOT "/courses" — that path is the PUBLIC catalog + course landing
-          // pages (primary commercial SEO targets, advertised in sitemap.ts). It is
-          // also `routes.myCourses`, but the authenticated "Мои курсы" view shares
-          // the path and renders the public catalog for crawlers. Disallowing it
-          // deindexes every course page (regression: added in #283, fixed in #449).
+          "/saved",
+          "/progress",
+          "/leaderboard",
+          "/trainer",
+          "/level-test",
+          "/roadmaps",
+          "/certificates",
+          "/users/",
           "/n/",
           "/bot-link/",
           "/invite/",

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { BookmarksList } from "@/features/bookmarks-list";
-import { TrainerBookmarksSection } from "@/features/trainer-bookmarks";
 
 export const metadata: Metadata = {
   title: "Сохранённое",
@@ -25,7 +24,6 @@ export default function SavedPage() {
         </p>
       </header>
       <BookmarksList />
-      <TrainerBookmarksSection />
     </div>
   );
 }

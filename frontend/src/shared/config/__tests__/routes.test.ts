@@ -16,7 +16,7 @@ describe("routes", () => {
     });
 
     it("has correct myCourses route", () => {
-      expect(routes.myCourses).toBe("/courses");
+      expect(routes.myCourses).toBe("/home");
     });
 
     it("has correct forgotPassword route", () => {

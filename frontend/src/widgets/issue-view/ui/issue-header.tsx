@@ -9,12 +9,7 @@ interface IssueHeaderProps {
   action?: ReactNode;
 }
 
-export function IssueHeader({
-  title,
-  projectTitle,
-  maxScore,
-  action,
-}: IssueHeaderProps) {
+export function IssueHeader({ title, projectTitle, action }: IssueHeaderProps) {
   return (
     <div className="mb-6 space-y-3">
       <div className="flex items-start justify-between gap-3">
@@ -32,15 +27,7 @@ export function IssueHeader({
         {action ? <div className="shrink-0">{action}</div> : null}
       </div>
       <div className="flex items-center gap-3 flex-wrap">
-        <span className="text-sm text-muted-foreground">
-          Проект: {projectTitle}
-        </span>
-        {typeof maxScore === "number" && (
-          <span className="inline-flex items-center gap-1 rounded-md bg-gold-dim px-2 py-0.5 text-xs font-semibold text-gold">
-            <Icons.xp size={12} strokeWidth={2} />
-            {maxScore} XP
-          </span>
-        )}
+        <span className="text-sm text-muted-foreground">Проект: {projectTitle}</span>
       </div>
     </div>
   );

@@ -1,18 +1,14 @@
 "use client";
 
-import { type ReactNode, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { catalogQueryOptions, CourseCatalogCard } from "@/entities/course";
-import { lastActiveCourseQueryOptions } from "@/entities/enrollment";
+import { useQuery } from "@tanstack/react-query";
+import { lastActiveCourseQueryOptions, type UserCourseProgressDto } from "@/entities/enrollment";
 import { trackGrowthEvent } from "@/shared/analytics";
-import { formatRelativeDate } from "@/shared/lib/date";
 import { formatRuPlural, RU_PLURALS } from "@/shared/lib/pluralize";
 import { cn } from "@/shared/lib/css";
 import { routes } from "@/shared/config/routes";
-import { type CourseKind, getCourseKindBadge } from "@/shared/config/course-kind";
-import { CourseKindFilter } from "@/shared/ui/components/course-kind-filter";
-import { AnimatedNumber } from "@/shared/ui/components/animated-number";
+import { getCourseKindBadge } from "@/shared/config/course-kind";
 import { ContentImage } from "@/shared/ui/components";
 import { Icons } from "@/shared/ui/icons";
 import { Button } from "@/shared/ui/kit/button";
@@ -20,37 +16,16 @@ import { Badge } from "@/shared/ui/kit/badge";
 import { Card, CardContent } from "@/shared/ui/kit/card";
 import { Skeleton } from "@/shared/ui/kit/skeleton";
 import { ErrorCard } from "@/shared/ui/kit/error-card";
-import { useMyXpProgress } from "@/entities/user-progress";
-import { useLeaderboard } from "@/entities/leaderboard";
 import { courseProgressCardKey } from "../lib/course-progress-card-key";
+import { resolveContinueHref } from "../lib/resolve-continue-href";
 import { groupLearningCoursesByKind } from "../model/learning-course-groups";
 import { useSpaceMyCourseProgress } from "../model/use-space-my-course-progress";
-import { RecentDiscussions } from "./recent-discussions";
-import type { LastActiveCourseDto, UserCourseProgressDto } from "@/entities/enrollment";
+import { MyCoursesEmptyState } from "./my-courses-empty-state";
 
 const COURSE_INITIAL_VISIBLE = 10;
 const COURSE_EXPAND_STEP = 4;
 
-export function AuthenticatedHome({
-  pinsSlot,
-  statsSlot,
-}: {
-  /**
-   * Slot для секции закреплённых материалов (`features/home-pins`). Композируется
-   * на уровне страницы (`home-client.tsx`), чтобы `features/student-learning` не
-   * импортировал `features/home-pins` напрямую (FSD: no cross-slice imports).
-   * Рендерится сразу под прогрессом (`LevelStatsCard`) и над курсами — это
-   * «с чего начать», поэтому стоит высоко (см. frontend/CLAUDE.md home composition).
-   */
-  pinsSlot?: ReactNode;
-  /**
-   * Slot для блока персональной статистики (`widgets/home-stats`, #684) — стрик,
-   * heatmap активности, KPI, промо тренажёра. Тоже композируется на уровне
-   * страницы (FSD: feature не импортирует widget). Рендерится под `LevelStatsCard`,
-   * продолжая «вашу статистику» прогресса.
-   */
-  statsSlot?: ReactNode;
-}) {
+export function AuthenticatedHome() {
   const {
     items: courses,
     totalCount,
@@ -61,31 +36,17 @@ export function AuthenticatedHome({
     error,
     refetch,
   } = useSpaceMyCourseProgress(12);
-
-  const showCoursesSection = !isLoading && courses.length > 0;
-
-  const completedCourses = courses.filter((c) => c.progressPercent === 100).length;
-
-  // Совсем новый юзер без записей — вместо пустого «Запишитесь на курс» показываем
-  // каталог, чтобы сразу было откуда начать. lastActiveCourse дедупится с
-  // ContinueLearningCard (тот же queryKey), лишнего запроса нет.
-  const { data: lastActiveCourse, isLoading: isLastCourseLoading } = useQuery(
-    lastActiveCourseQueryOptions(),
-  );
-  const hasNoCourses =
-    !isLoading && !isLastCourseLoading && courses.length === 0 && !lastActiveCourse;
-
   return (
     <div className="space-y-6 sm:space-y-8">
-      {!hasNoCourses && <ContinueLearningCard />}
-
-      <LevelStatsCard totalCourses={totalCount} completedCourses={completedCourses} />
-
-      {statsSlot}
-
-      {pinsSlot}
-
-      {showCoursesSection ? (
+      <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Моё обучение</h1>
+      <ContinueLearningCard />
+      {isLoading ? (
+        <Skeleton className="h-24 rounded-xl" />
+      ) : error ? (
+        <ErrorCard error={error} onRetry={() => void refetch()} />
+      ) : courses.length === 0 ? (
+        <MyCoursesEmptyState />
+      ) : (
         <MyCoursesSection
           courses={courses}
           totalCount={totalCount}
@@ -93,53 +54,8 @@ export function AuthenticatedHome({
           fetchNextPage={() => void fetchNextPage()}
           isFetchingNextPage={isFetchingNextPage}
         />
-      ) : isLoading ? (
-        <Skeleton className="h-24 rounded-xl" />
-      ) : error ? (
-        <ErrorCard error={error} onRetry={() => void refetch()} />
-      ) : hasNoCourses ? (
-        <HomeCatalogSection />
-      ) : null}
-
-      <RecentDiscussions />
-    </div>
-  );
-}
-
-/**
- * Каталог на главной для юзера без записанных курсов — заменяет пустое
- * «Запишитесь на курс». Топ-8 курсов + ссылка на полный каталог.
- */
-function HomeCatalogSection() {
-  const { data, isLoading } = useInfiniteQuery(catalogQueryOptions({ limit: 8 }));
-  const courses = (data?.items ?? []).slice(0, 8);
-
-  return (
-    <section className="space-y-2 sm:space-y-3">
-      <SectionHeader
-        title="Каталог курсов"
-        description="Выберите курс, чтобы начать обучение"
-        actionHref={routes.courses}
-        actionLabel="Весь каталог"
-      />
-      {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-          {[0, 1, 2].map((i) => (
-            <Skeleton key={i} className="h-64 rounded-xl" />
-          ))}
-        </div>
-      ) : courses.length === 0 ? (
-        <p className="rounded-md border border-dashed bg-muted/30 px-4 py-8 text-center text-sm text-muted-foreground">
-          Пока нет доступных курсов
-        </p>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-          {courses.map((course, index) => (
-            <CourseCatalogCard key={course.id} course={course} priority={index < 2} />
-          ))}
-        </div>
       )}
-    </section>
+    </div>
   );
 }
 
@@ -177,7 +93,7 @@ function MyCoursesSection({
 
   return (
     <section className="space-y-2 sm:space-y-3">
-      <SectionHeader title="Моё обучение" meta={formatRuPlural(totalCount, RU_PLURALS.course)} />
+      <SectionHeader title="Ваши курсы" meta={formatRuPlural(totalCount, RU_PLURALS.course)} />
       {regularCourses.length > 0 && (
         <div className="space-y-2 sm:space-y-3">
           <h3 className="text-sm font-semibold text-muted-foreground">Курсы</h3>
@@ -267,17 +183,6 @@ function SectionHeader({
   );
 }
 
-function CourseMetaLine({ course }: { course: { lastActivityAt: string | null } }) {
-  const lastActivity = course.lastActivityAt;
-  if (!lastActivity) return null;
-
-  return (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] sm:text-[11px] text-muted-foreground pt-0.5">
-      <span>Активность {formatRelativeDate(lastActivity)}</span>
-    </div>
-  );
-}
-
 function CourseProgressCard({ course }: { course: UserCourseProgressDto }) {
   const isCompleted = course.progressPercent === 100;
   return (
@@ -361,7 +266,6 @@ function CourseProgressCard({ course }: { course: UserCourseProgressDto }) {
                 </span>
               )}
             </div>
-            <CourseMetaLine course={course} />
           </div>
         </CardContent>
       </Card>
@@ -369,123 +273,16 @@ function CourseProgressCard({ course }: { course: UserCourseProgressDto }) {
   );
 }
 
-export function GuestHome() {
-  return (
-    <div className="space-y-6 sm:space-y-8">
-      <GuestCoursesSection />
-    </div>
-  );
-}
-
-function GuestCoursesSection() {
-  const INITIAL_COUNT = 6;
-  const STEP = 6;
-  const [visibleCount, setVisibleCount] = useState(INITIAL_COUNT);
-  const [kind, setKind] = useState<CourseKind | "all">("all");
-  const { data, isLoading, error, refetch } = useInfiniteQuery(
-    catalogQueryOptions({
-      limit: 100,
-      kind: kind === "all" ? undefined : kind,
-    }),
-  );
-  const courses = data?.items ?? [];
-
-  if (isLoading) {
-    return (
-      <section className="space-y-2 sm:space-y-3">
-        <SectionHeader title="Курсы" description="Все курсы платформы" />
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          {[0, 1, 2].map((i) => (
-            <Skeleton key={i} className="h-64 rounded-xl" />
-          ))}
-        </div>
-      </section>
-    );
-  }
-
-  if (error) {
-    return (
-      <section className="space-y-2 sm:space-y-3">
-        <SectionHeader title="Курсы" description="Все курсы платформы" />
-        <ErrorCard error={error} onRetry={() => void refetch()} />
-      </section>
-    );
-  }
-
-  // Раздел показываем всегда (даже если у автора пока нет курсов) — пустое
-  // состояние рендерится ниже. Так home-страница держит единый набор секций.
-  const visible = courses.slice(0, visibleCount);
-  const hasMore = courses.length > visibleCount;
-  const remaining = courses.length - visibleCount;
-
-  return (
-    <section className="space-y-2 sm:space-y-3">
-      <SectionHeader
-        title="Курсы"
-        description="Один путь по .NET: Фундамент → Software Engineer. Бесплатные материалы — без оплаты."
-      />
-      <div className="overflow-x-auto">
-        <CourseKindFilter value={kind} onChange={setKind} />
-      </div>
-      {courses.length === 0 ? (
-        <p className="rounded-md border border-dashed bg-muted/30 px-4 py-8 text-center text-sm text-muted-foreground">
-          {kind === "all" ? "Курсов пока нет" : "По выбранному типу ничего не нашлось"}
-        </p>
-      ) : (
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          {visible.map((course, index) => (
-            <CourseCatalogCard key={course.id} course={course} priority={index < 2} />
-          ))}
-        </div>
-      )}
-      {hasMore && (
-        <div className="flex justify-center pt-1">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setVisibleCount((n) => n + STEP)}
-            className="gap-1.5"
-          >
-            Показать ещё
-            <span className="text-muted-foreground tabular-nums">
-              {remaining < STEP ? formatRuPlural(remaining, RU_PLURALS.course) : `+${STEP}`}
-            </span>
-            <Icons.chevronRight className="size-3.5 rotate-90" />
-          </Button>
-        </div>
-      )}
-    </section>
-  );
-}
-
-function resolveContinueHref(course: LastActiveCourseDto): string {
-  const { lastPosition, courseSlug } = course;
-  if (!lastPosition) return routes.courseOverview(courseSlug);
-  if (lastPosition.entityType === "MATERIAL") {
-    return routes.courseMaterial(courseSlug, lastPosition.entityId);
-  }
-  return routes.courseIssue(courseSlug, lastPosition.entityId);
-}
-
 function ContinueLearningCard() {
-  const { data: lastCourse, isLoading } = useQuery(lastActiveCourseQueryOptions());
+  const { data: lastCourse, isLoading, error, refetch } = useQuery(lastActiveCourseQueryOptions());
 
   if (isLoading) {
     return <Skeleton className="h-28 sm:h-36 md:h-44 rounded-2xl" />;
   }
 
-  if (!lastCourse) {
-    return (
-      <Card className="border-dashed">
-        <CardContent className="p-8 sm:p-10 flex flex-col items-center justify-center gap-3 text-center">
-          <div className="size-12 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
-            <Icons.course className="size-6 text-primary" />
-          </div>
-          <p className="text-sm text-muted-foreground">Запишитесь на курс, чтобы начать обучение</p>
-        </CardContent>
-      </Card>
-    );
-  }
+  if (error) return <ErrorCard error={error} onRetry={() => void refetch()} />;
+
+  if (!lastCourse) return null;
 
   const continueHref = resolveContinueHref(lastCourse);
   const progressPercent = lastCourse.progressPercent;
@@ -578,13 +375,12 @@ function ContinueLearningCard() {
                   style={{ width: `${progressPercent}%` }}
                 />
               </div>
-              <CourseMetaLine course={lastCourse} />
             </div>
 
             <Button
               asChild
               size="sm"
-              className="group/cta self-start mt-1 h-8 sm:h-9 px-3 text-xs sm:text-sm font-semibold rounded-lg shadow-sm shadow-primary/20 hover:shadow-md hover:shadow-primary/30 transition-shadow"
+              className="group/cta self-start mt-1 min-h-11 px-3 text-xs sm:text-sm font-semibold rounded-lg shadow-sm shadow-primary/20 hover:shadow-md hover:shadow-primary/30 transition-shadow"
             >
               <Link
                 href={continueHref}
@@ -612,97 +408,6 @@ function ContinueLearningCard() {
                 <Icons.arrowRight className="size-3.5 sm:size-4 group-hover/cta:translate-x-0.5 transition-transform" />
               </Link>
             </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function LevelStatsCard({
-  totalCourses,
-  completedCourses,
-}: {
-  totalCourses: number;
-  completedCourses: number;
-}) {
-  const xp = useMyXpProgress();
-  // 1-item page is the cheapest way to populate `currentUser` (the caller's
-  // rank) via the existing leaderboard contract — the row itself is ignored.
-  const { data: leaderboard } = useLeaderboard({ pageSize: 1 });
-
-  if (xp.isLoading) {
-    return <Skeleton className="h-16 sm:h-20 rounded-xl" />;
-  }
-  if (xp.error) return null;
-
-  const xpToNext = xp.xpToNextLevel;
-  const rank = leaderboard?.currentUser?.rank;
-
-  return (
-    <Card className="relative overflow-hidden border-border/60 py-0">
-      <CardContent className="relative p-3 sm:p-4">
-        <div className="flex items-center gap-3 sm:gap-4">
-          {/* Level orb */}
-          <div className="relative shrink-0">
-            <div className="size-12 sm:size-14 rounded-full bg-gradient-to-br from-gold/30 via-gold/15 to-transparent border border-gold/30 flex items-center justify-center text-gold font-bold text-base sm:text-lg shadow-md shadow-gold/10">
-              <AnimatedNumber value={xp.currentLevel} />
-            </div>
-          </div>
-
-          {/* XP block */}
-          <div className="min-w-0 flex-1 flex flex-col gap-1">
-            <div className="flex items-baseline justify-between gap-2 min-w-0">
-              <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                Уровень {xp.currentLevel}
-              </span>
-              <span className="text-[10px] sm:text-xs text-muted-foreground tabular-nums shrink-0">
-                <AnimatedNumber value={xp.totalXp} />
-                {xpToNext != null && (
-                  <>
-                    <span className="text-border mx-0.5">/</span>
-                    {xp.nextLevelXpThreshold.toLocaleString()}
-                  </>
-                )}
-                <span className="text-gold font-semibold ml-1">XP</span>
-              </span>
-            </div>
-            <div className="relative h-1 sm:h-1.5 rounded-full bg-secondary/70 overflow-hidden">
-              <div
-                className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-gold/70 via-gold to-gold/90 transition-[width] duration-1000"
-                style={{ width: `${Math.min(100, xp.progressPercent)}%` }}
-              />
-            </div>
-            {xpToNext != null && xpToNext > 0 && (
-              <span className="text-[10px] sm:text-[11px] text-muted-foreground/80 tabular-nums">
-                До {xp.nextLevel ?? xp.currentLevel + 1} уровня — {xpToNext.toLocaleString()} XP
-              </span>
-            )}
-          </div>
-
-          {/* Right stats — rank (all sizes, links to leaderboard) + courses (desktop) */}
-          <div className="flex items-center gap-3 sm:gap-4 shrink-0 pl-3 sm:pl-4 border-l border-border/40">
-            {rank != null && (
-              <Link
-                href={routes.platformLeaderboard}
-                prefetch={false}
-                className="flex flex-col items-end gap-0.5 transition-opacity hover:opacity-80"
-              >
-                <span className="text-[10px] sm:text-xs text-muted-foreground">Рейтинг</span>
-                <span className="inline-flex items-center gap-1 text-sm font-semibold tabular-nums">
-                  <Icons.trophy className="size-3.5 text-gold" aria-hidden />#
-                  <AnimatedNumber value={rank} />
-                </span>
-              </Link>
-            )}
-            <div className="hidden sm:flex flex-col items-end gap-0.5 text-right">
-              <span className="text-xs text-muted-foreground">Курсов</span>
-              <span className="text-sm font-semibold tabular-nums">
-                {completedCourses}
-                <span className="text-muted-foreground/60 mx-0.5">/</span>
-                {totalCourses}
-              </span>
-            </div>
           </div>
         </div>
       </CardContent>

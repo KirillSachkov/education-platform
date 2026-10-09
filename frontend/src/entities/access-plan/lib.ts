@@ -37,17 +37,6 @@ export function hasFullAccessGrant(grants: PlanGrantDto[]): boolean {
 }
 
 /**
- * У юзера уже есть Trainer Pro (#614) — активный грант на план, capabilities которого
- * включают `TRAINER_PRO` (его выдаёт подписочный SUBSCRIPTION-план). Питает гейт
- * subscribe-CTA на `/trainer`: PRO-холдеру баннер «оформить подписку» не показываем.
- */
-export function hasTrainerProGrant(grants: PlanGrantDto[]): boolean {
-  return grants.some(
-    (g) => g.status === "ACTIVE" && g.plan != null && g.plan.capabilities.includes("TRAINER_PRO"),
-  );
-}
-
-/**
  * Покрывает ли план данный курс. План покрывает курс если:
  * - это `FULL_ALL` (весь контент платформы), ИЛИ
  * - курс есть в `includedCourses` (backend-список, точный), ИЛИ
