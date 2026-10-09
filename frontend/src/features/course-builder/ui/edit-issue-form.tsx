@@ -3,8 +3,6 @@
 import { toast } from "sonner";
 import { type IssueDetailDto } from "@/entities/issue";
 import { bindMarkdownAssets, useMarkdownFileUpload, useMarkdownImageUpload } from "@/entities/file";
-import { TagsField } from "@/entities/tag";
-import { EntityTypes } from "@/shared/config/entity-types";
 import dynamic from "next/dynamic";
 
 const MarkdownEditor = dynamic(
@@ -175,10 +173,6 @@ export function EditIssueForm({
           </div>
         </div>
 
-        <div className="px-6 pb-4">
-          <TagsField key={issueId} entityId={issueId} entityType={EntityTypes.ISSUE} />
-        </div>
-
         <div className="px-6 pb-4 space-y-3">
           <Label className="text-sm font-medium">Способ сдачи</Label>
           <Controller
@@ -187,9 +181,7 @@ export function EditIssueForm({
             render={({ field }) => (
               <RadioGroup
                 value={field.value}
-                onValueChange={(value) =>
-                  field.onChange(value as IssueFormData["submissionMode"])
-                }
+                onValueChange={(value) => field.onChange(value as IssueFormData["submissionMode"])}
                 className="grid gap-2 sm:grid-cols-2"
               >
                 <Label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border/60 p-3 text-sm">
@@ -226,9 +218,7 @@ export function EditIssueForm({
                 placeholder="Например: запусти тесты, проверь сценарий вручную, сравни результат с чеклистом."
               />
               {errors.selfCheckInstructions && (
-                <p className="text-sm text-destructive">
-                  {errors.selfCheckInstructions.message}
-                </p>
+                <p className="text-sm text-destructive">{errors.selfCheckInstructions.message}</p>
               )}
             </div>
           )}

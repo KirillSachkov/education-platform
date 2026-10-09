@@ -2,8 +2,6 @@
 
 import type { CourseBuilderDto } from "@/entities/course";
 import { useToggleIsNew } from "@/entities/course";
-import { TagsField } from "@/entities/tag";
-import { EntityTypes } from "@/shared/config/entity-types";
 import { Button } from "@/shared/ui/kit/button";
 import { Card } from "@/shared/ui/kit/card";
 import { Input } from "@/shared/ui/kit/input";
@@ -88,16 +86,6 @@ export function CourseSettings({ courseId, course }: CourseSettingsProps) {
             disabled={toggleIsNew.isPending}
           />
         </div>
-      </Card>
-
-      <Card className="p-6 mt-4 space-y-4">
-        <div>
-          <h3 className="text-sm font-medium">Теги курса</h3>
-          <p className="text-xs text-muted-foreground mt-1">
-            Используются в каталоге и привязке контента
-          </p>
-        </div>
-        <TagsField key={courseId} entityId={courseId} entityType={EntityTypes.COURSE} />
       </Card>
 
       <div className="mt-4">

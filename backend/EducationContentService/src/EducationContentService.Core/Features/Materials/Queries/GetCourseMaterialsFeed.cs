@@ -21,7 +21,6 @@ public sealed record GetCourseMaterialsFeedQuery(
     string? Cursor,
     int Limit,
     string? Kind,
-    IReadOnlyList<Guid>? TagIds,
     string? Search,
     string? AccessFilter) : IQuery;
 
@@ -35,7 +34,6 @@ public sealed class GetCourseMaterialsFeedEndpoint : IEndpoint
                     [FromQuery] string? cursor,
                     [FromQuery] int? limit,
                     [FromQuery] string? kind,
-                    [FromQuery(Name = "tagIds")] Guid[]? tagIds,
                     [FromQuery] string? search,
                     [FromQuery] string? accessFilter,
                     [FromServices] GetCourseMaterialsFeedHandler handler,
@@ -46,7 +44,6 @@ public sealed class GetCourseMaterialsFeedEndpoint : IEndpoint
                         cursor,
                         limit is null or 0 ? 15 : limit.Value,
                         kind,
-                        tagIds is { Length: > 0 } ? tagIds : null,
                         string.IsNullOrWhiteSpace(search) ? null : search.Trim(),
                         accessFilter),
                     cancellationToken))
@@ -99,8 +96,7 @@ public sealed class GetCourseMaterialsFeedHandler
             CursorId = cursor?.LastId,
             Limit = limit + 1,
             KindFilter = string.IsNullOrWhiteSpace(query.Kind) ? null : query.Kind,
-            TagIds = query.TagIds?.ToArray(),
-            SearchTerm = query.Search,
+            SearchTerm = string.IsNullOrWhiteSpace(query.Search) ? null : query.Search.Trim(),
             AllowedAccessTypes = allowedAccessTypes,
         };
 
@@ -142,13 +138,7 @@ public sealed class GetCourseMaterialsFeedHandler
                               AND m.status = 'PUBLISHED'
                               AND m.published_at IS NOT NULL
                               AND (@KindFilter IS NULL OR m.kind = @KindFilter)
-                              AND (@TagIds::uuid[] IS NULL OR EXISTS (
-                                SELECT 1 FROM tags.entity_tags et
-                                WHERE et.entity_type = 'Material'
-                                  AND et.entity_id = m.id
-                                  AND et.tag_id = ANY(@TagIds)
-                              ))
-                              AND (@SearchTerm IS NULL OR m.title ILIKE '%' || @SearchTerm || '%')
+                              AND (@SearchTerm IS NULL OR strpos(lower(m.title), lower(@SearchTerm)) > 0)
                               AND (@AllowedAccessTypes::text[] IS NULL OR m.access_type = ANY(@AllowedAccessTypes))
                               AND (@CursorPublishedAt IS NULL OR (m.published_at, m.id) < (@CursorPublishedAt, @CursorId))
                             ORDER BY m.published_at DESC, m.id DESC

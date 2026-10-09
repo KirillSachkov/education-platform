@@ -10,7 +10,6 @@ using EducationContentService.Contracts.Ownership;
 using EducationContentService.Contracts.ProgressLookup;
 using EducationContentService.Contracts.Projects;
 using EducationContentService.Contracts.Quizzes;
-using EducationContentService.Contracts.SearchExport;
 using EducationContentService.Contracts.SearchLookup;
 using SharedKernel;
 
@@ -111,24 +110,6 @@ public sealed class FakeEducationContentServiceClient : IEducationContentService
         => throw new NotImplementedException();
 
     public Task<Result<CourseMaterialIdsDto, Error>> GetCourseMaterialIdsAsync(Guid courseId, CancellationToken cancellationToken)
-        => throw new NotImplementedException();
-
-    public Task<Result<CursorResponse<SearchExportEntityDto>, Error>> ExportAllSearchEntitiesAsync(string? cursor, int limit, CancellationToken cancellationToken)
-        => throw new NotImplementedException();
-
-    public Task<Result<CursorResponse<SearchExportEntityDto>, Error>> ExportCourseSearchEntitiesAsync(string? cursor, int limit, CancellationToken cancellationToken)
-        => throw new NotImplementedException();
-
-    public Task<Result<CursorResponse<SearchExportEntityDto>, Error>> ExportModuleSearchEntitiesAsync(string? cursor, int limit, CancellationToken cancellationToken)
-        => throw new NotImplementedException();
-
-    public Task<Result<CursorResponse<SearchExportEntityDto>, Error>> ExportProjectSearchEntitiesAsync(string? cursor, int limit, CancellationToken cancellationToken)
-        => throw new NotImplementedException();
-
-    public Task<Result<CursorResponse<SearchExportEntityDto>, Error>> ExportMaterialSearchEntitiesAsync(string? cursor, int limit, CancellationToken cancellationToken)
-        => throw new NotImplementedException();
-
-    public Task<Result<CursorResponse<SearchExportEntityDto>, Error>> ExportIssueSearchEntitiesAsync(string? cursor, int limit, CancellationToken cancellationToken)
         => throw new NotImplementedException();
 
     public Task<Result<CourseDto, Error>> GetCourseLookupAsync(Guid courseId, CancellationToken cancellationToken)

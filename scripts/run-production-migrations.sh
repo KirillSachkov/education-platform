@@ -17,8 +17,6 @@ migration_services=(
     file-service-migrations
     progress-service-migrations
     comment-service-migrations
-    tag-service-migrations
-    search-service-migrations
     access-service-migrations
     material-processing-service-migrations
     notification-service-migrations
@@ -29,8 +27,6 @@ migration_services=(
 remaining_cutover_services=(
     progress-service-migrations
     comment-service-migrations
-    tag-service-migrations
-    search-service-migrations
     access-service-migrations
     material-processing-service-migrations
     notification-service-migrations

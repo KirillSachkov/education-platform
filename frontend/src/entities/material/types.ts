@@ -8,11 +8,6 @@ export type MaterialScope = "mine" | "public" | "private";
 
 export type MaterialId = string;
 
-/** Короткий share-код материала: `{origin}/s/{code}` → 302 → `/knowledge-base/{id}` (#507; цель исправлена с `/learn/{id}` в #586). */
-export interface MaterialShortLinkDto {
-  code: string;
-}
-
 export interface MaterialVideoDto {
   externalVideoId: string | null;
   thumbnailUrl: string | null;
@@ -100,13 +95,6 @@ export interface MaterialFeedItemDto {
    */
   authorDisplayName?: string | null;
   authorAvatarUrl?: string | null;
-}
-
-export interface CourseMaterialTagDto {
-  id: string;
-  title: string;
-  slug: string;
-  kind: "canon";
 }
 
 export type MaterialFeedScope = "all" | "enrolled";

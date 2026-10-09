@@ -1,15 +1,10 @@
 "use client";
-
-import { tagsApi, TagsField } from "@/entities/tag";
-import { EntityTypes } from "@/shared/config/entity-types";
 import { Input } from "@/shared/ui/kit/input";
 import { Label } from "@/shared/ui/kit/label";
 import { Textarea } from "@/shared/ui/kit/textarea";
 import { FormDialog } from "@/shared/ui/components";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
 import { courseFormSchema, type CourseFormData } from "../model/schemas";
 import { useCreateCourse } from "../model/use-create-course";
 
@@ -36,7 +31,6 @@ const KIND_OPTIONS: { value: CourseFormData["kind"]; label: string; hint: string
 
 export function CreateCourseDialog({ open, onOpenChange }: Props) {
   const { createCourse } = useCreateCourse();
-  const [tags, setTags] = useState<string[]>([]);
 
   const {
     register,
@@ -54,35 +48,18 @@ export function CreateCourseDialog({ open, onOpenChange }: Props) {
 
   const handleClose = () => {
     reset(defaultValues);
-    setTags([]);
     onOpenChange(false);
   };
 
-  // Fire-and-forget: закрываем форму сразу. Цепочка create → addTags
-  // работает в фоне; тосты приходят из useCreateCourse.
   const onSubmit = (data: CourseFormData) => {
-    const tagsToAttach = tags;
     handleClose();
     void (async () => {
-      const result = await createCourse({
+      await createCourse({
         title: data.title,
         description: data.description,
         slug: data.slug,
         kind: data.kind,
       }).catch(() => undefined);
-
-      if (tagsToAttach.length > 0 && result?.result) {
-        await tagsApi
-          .addTagsToEntity({
-            entityType: EntityTypes.COURSE,
-            entityId: result.result,
-            tagTitles: tagsToAttach,
-            tagIds: [],
-          })
-          .catch(() => {
-            toast.error("Ошибка привязки тегов");
-          });
-      }
     })();
   };
 
@@ -119,14 +96,8 @@ export function CreateCourseDialog({ open, onOpenChange }: Props) {
 
       <div className="space-y-2">
         <Label htmlFor="title">Название</Label>
-        <Input
-          id="title"
-          {...register("title")}
-          placeholder="Введите название курса"
-        />
-        {errors.title && (
-          <p className="text-sm text-destructive">{errors.title.message}</p>
-        )}
+        <Input id="title" {...register("title")} placeholder="Введите название курса" />
+        {errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
       </div>
 
       <div className="space-y-2">
@@ -138,9 +109,7 @@ export function CreateCourseDialog({ open, onOpenChange }: Props) {
           rows={3}
         />
         {errors.description && (
-          <p className="text-sm text-destructive">
-            {errors.description.message}
-          </p>
+          <p className="text-sm text-destructive">{errors.description.message}</p>
         )}
       </div>
 
@@ -151,14 +120,7 @@ export function CreateCourseDialog({ open, onOpenChange }: Props) {
           Латинские буквы, цифры и дефисы. Будет в URL: /courses/
           {"{slug}"}
         </p>
-        {errors.slug && (
-          <p className="text-sm text-destructive">{errors.slug.message}</p>
-        )}
-      </div>
-
-      <div className="space-y-2">
-        <Label>Теги</Label>
-        <TagsField value={tags} onChange={setTags} />
+        {errors.slug && <p className="text-sm text-destructive">{errors.slug.message}</p>}
       </div>
     </FormDialog>
   );

@@ -151,11 +151,6 @@
       "context": "backend"
     },
     {
-      "name": "tag-service",
-      "dockerfile": "backend/TagService/Dockerfile",
-      "context": "backend"
-    },
-    {
       "name": "notification-service",
       "dockerfile": "backend/NotificationService/Dockerfile",
       "context": "backend"
@@ -163,11 +158,6 @@
     {
       "name": "telegram-bot-service",
       "dockerfile": "backend/TelegramBotService/Dockerfile",
-      "context": "backend"
-    },
-    {
-      "name": "search-service",
-      "dockerfile": "backend/SearchService/Dockerfile",
       "context": "backend"
     },
     {

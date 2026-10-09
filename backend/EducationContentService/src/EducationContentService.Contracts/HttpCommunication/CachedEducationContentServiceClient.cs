@@ -7,7 +7,6 @@ using EducationContentService.Contracts.Ownership;
 using EducationContentService.Contracts.ProgressLookup;
 using EducationContentService.Contracts.Projects;
 using EducationContentService.Contracts.Quizzes;
-using EducationContentService.Contracts.SearchExport;
 using EducationContentService.Contracts.SearchLookup;
 using Microsoft.Extensions.Caching.Hybrid;
 
@@ -170,30 +169,6 @@ public sealed class CachedEducationContentServiceClient : IEducationContentServi
     public Task<Result<ProjectSearchLookupDto, Error>> GetProjectSearchLookupAsync(
         Guid projectId, CancellationToken cancellationToken)
         => _inner.GetProjectSearchLookupAsync(projectId, cancellationToken);
-
-    public Task<Result<CursorResponse<SearchExportEntityDto>, Error>> ExportAllSearchEntitiesAsync(
-        string? cursor, int limit, CancellationToken cancellationToken)
-        => _inner.ExportAllSearchEntitiesAsync(cursor, limit, cancellationToken);
-
-    public Task<Result<CursorResponse<SearchExportEntityDto>, Error>> ExportCourseSearchEntitiesAsync(
-        string? cursor, int limit, CancellationToken cancellationToken)
-        => _inner.ExportCourseSearchEntitiesAsync(cursor, limit, cancellationToken);
-
-    public Task<Result<CursorResponse<SearchExportEntityDto>, Error>> ExportModuleSearchEntitiesAsync(
-        string? cursor, int limit, CancellationToken cancellationToken)
-        => _inner.ExportModuleSearchEntitiesAsync(cursor, limit, cancellationToken);
-
-    public Task<Result<CursorResponse<SearchExportEntityDto>, Error>> ExportProjectSearchEntitiesAsync(
-        string? cursor, int limit, CancellationToken cancellationToken)
-        => _inner.ExportProjectSearchEntitiesAsync(cursor, limit, cancellationToken);
-
-    public Task<Result<CursorResponse<SearchExportEntityDto>, Error>> ExportMaterialSearchEntitiesAsync(
-        string? cursor, int limit, CancellationToken cancellationToken)
-        => _inner.ExportMaterialSearchEntitiesAsync(cursor, limit, cancellationToken);
-
-    public Task<Result<CursorResponse<SearchExportEntityDto>, Error>> ExportIssueSearchEntitiesAsync(
-        string? cursor, int limit, CancellationToken cancellationToken)
-        => _inner.ExportIssueSearchEntitiesAsync(cursor, limit, cancellationToken);
 
     public Task<Result<IReadOnlyCollection<CourseProgressBlueprintDto>, Error>> GetCourseProgressBlueprintsAsync(
         GetCourseProgressBlueprintsRequest request, CancellationToken cancellationToken)

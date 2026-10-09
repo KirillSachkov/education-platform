@@ -2,8 +2,6 @@
 
 import type { BuilderSectionDto, CourseBuilderDto } from "@/entities/course";
 import type { ModuleItemDto } from "@/entities/module";
-import { tagsApi } from "@/entities/tag";
-import { EntityTypes } from "@/shared/config/entity-types";
 import { Button } from "@/shared/ui/kit/button";
 import {
   Command,
@@ -20,7 +18,6 @@ import { DragDropProvider } from "@dnd-kit/react";
 import { isSortable } from "@dnd-kit/react/sortable";
 import { BookOpen, Check, ChevronsUpDown, Compass, Plus, X } from "lucide-react";
 import { useRef, useState } from "react";
-import { toast } from "sonner";
 import { MaterialPickerDialog } from "@/entities/material";
 import { QuizPickerDialog } from "@/entities/quiz";
 import { useAttachIssueToModule } from "../model/use-attach-issue-to-module";
@@ -374,22 +371,10 @@ export function ModuleList({
         onSubmit={(data) => {
           // Цепочка работает в фоне; форма уже закрыта диалогом.
           void (async () => {
-            const result = (await onCreateModule({
+            await onCreateModule({
               title: data.title,
               description: data.description,
-            }).catch(() => undefined)) as { result?: string } | undefined;
-            if (data.tags.length > 0 && result?.result) {
-              await tagsApi
-                .addTagsToEntity({
-                  entityType: EntityTypes.MODULE,
-                  entityId: result.result,
-                  tagTitles: data.tags,
-                  tagIds: [],
-                })
-                .catch(() => {
-                  toast.error("Ошибка привязки тегов");
-                });
-            }
+            }).catch(() => undefined);
           })();
         }}
       />

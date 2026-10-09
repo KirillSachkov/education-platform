@@ -19,8 +19,6 @@ MIGRATION_SERVICES=(
   file-service-migrations
   progress-service-migrations
   auth-service-migrations
-  tag-service-migrations
-  search-service-migrations
 )
 
 usage() {
@@ -49,7 +47,6 @@ Commands:
   up-fe           Start infra + app + frontend profiles
   migrate         Run all backend migration containers (requires infra)
   gen-fe-env      Generate frontend/.env.local from .env
-  reindex-search  Trigger full Typesense reindex (client_credentials JWT + outbox)
   down            Stop all profiles and remove orphan containers
   backup          Full pg_dumpall backup (gzipped). Optional name suffix.
   restore         Restore from a backup file (.sql.gz or .sql)
@@ -130,64 +127,6 @@ list_backups() {
   ls -lh "$BACKUP_DIR"/backup_*.sql.gz | awk '{print "  " $NF " (" $5 ", " $6 " " $7 " " $8 ")"}'
 }
 
-reindex_search() {
-  # Получает SERVICE JWT через client_credentials (OIDC service-to-service client)
-  # и дёргает SearchService /internal/reindex. Handler публикует FullSearchReindexRequested
-  # в outbox, Wolverine fan-out'ит на 5 child messages (Courses/Modules/Projects/Materials/Issues),
-  # каждый handler cursor-пагинацией выкачивает из EducationContent и upsert'ит в Typesense
-  # под новым reindex_generation. По завершении alias переключается (blue-green).
-  local env_file="$ROOT_DIR/.env"
-  local client_id="service-to-service"
-  local client_secret
-  client_secret=$(grep -E '^OPENIDDICT__SERVICETOSERVICE__SECRET=' "$env_file" | cut -d= -f2- | tr -d ' ')
-
-  if [[ -z "$client_secret" ]]; then
-    echo "ERROR: OPENIDDICT__SERVICETOSERVICE__SECRET not set in .env"
-    exit 1
-  fi
-
-  echo "Requesting service token via OIDC client_credentials…"
-  local nginx_port="${NGINX_HOST_PORT:-80}"
-  local nginx_url="http://localhost"
-  [[ "$nginx_port" != "80" ]] && nginx_url="http://localhost:${nginx_port}"
-  local token
-  token=$(curl -sS -X POST "${nginx_url}/connect/token" \
-    -H 'Content-Type: application/x-www-form-urlencoded' \
-    -d 'grant_type=client_credentials' \
-    -d "client_id=${client_id}" \
-    -d "client_secret=${client_secret}" \
-    -d 'scope=service' \
-    | tr -d '\n' \
-    | sed -nE 's/.*"access_token"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/p')
-
-  if [[ -z "$token" ]]; then
-    echo "ERROR: failed to obtain access_token. Is auth-service up?"
-    exit 1
-  fi
-
-  echo "Triggering full reindex on SearchService…"
-  local response
-  # SearchService прокидывается на хост по умолчанию на 8009 (см. SEARCH_HOST_PORT в .env).
-  response=$(curl -sS -w '\n%{http_code}' -X POST "http://localhost:${SEARCH_HOST_PORT:-8009}/internal/reindex" \
-    -H "Authorization: Bearer $token" \
-    -H 'Content-Type: application/json' \
-    -d '{}')
-
-  local body="${response%$'\n'*}"
-  local http_code="${response##*$'\n'}"
-
-  if [[ "$http_code" != 2* ]]; then
-    echo "ERROR: reindex request failed (HTTP $http_code)"
-    echo "$body"
-    exit 1
-  fi
-
-  echo "Reindex enqueued successfully."
-  echo "$body"
-  echo ""
-  echo "Watch progress: scripts/dev.sh logs search-service"
-}
-
 generate_frontend_env() {
   local env_file="$ROOT_DIR/.env"
   local out="$ROOT_DIR/frontend/.env.local"
@@ -256,9 +195,6 @@ case "${1:-}" in
     ;;
   gen-fe-env)
     generate_frontend_env
-    ;;
-  reindex-search)
-    reindex_search
     ;;
   down)
     "${COMPOSE[@]}" --profile infra --profile app --profile frontend --profile obs down --remove-orphans

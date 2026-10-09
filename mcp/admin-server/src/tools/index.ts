@@ -92,7 +92,6 @@ import {
   eduProjectReviewCoverage,
   eduCourseReviewCoverage,
 } from './ai-review.js';
-import { tagsList, tagsMerge, tagsRename, tagsDelete } from './tags.js';
 import {
   homePinsList,
   homePinsAdd,
@@ -228,10 +227,6 @@ export const allTools: ReadonlyArray<ToolDefinition<any, any>> = [
   eduProjectReviewCoverage,
   eduCourseReviewCoverage,
   // Tags: curate / dedupe the tag vocabulary (list / merge / rename / delete)
-  tagsList,
-  tagsMerge,
-  tagsRename,
-  tagsDelete,
   // Plan home pins + onboarding bulk-reset (epic #397)
   homePinsList,
   homePinsAdd,

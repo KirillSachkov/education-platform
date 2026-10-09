@@ -1,4 +1,4 @@
-# TagService migration history
+# SearchService migration history
 
 The service is retired from the solution, images, Compose and CI. This directory retains only
 committed database migrations and their snapshot to preserve immutable history. No project builds

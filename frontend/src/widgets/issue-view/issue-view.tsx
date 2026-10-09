@@ -28,7 +28,6 @@ import {
 } from "@/features/course-learning";
 import { ReviewConnectionGate, useReviewAppConnection } from "@/features/connect-review-app";
 import { useMyProfile } from "@/features/profile-manage";
-import { SearchableTagsField } from "@/entities/tag";
 import { CommentSection } from "@/features/comments";
 import { isContentAccessError, isForbiddenError } from "@/shared/api";
 import {
@@ -281,13 +280,6 @@ export function IssueView({ courseId, issueId }: IssueViewProps) {
             action={
               <BookmarkToggleButton courseId={courseId} entityType="Issue" entityId={issueId} />
             }
-          />
-
-          <SearchableTagsField
-            entityId={issueId}
-            entityType={EntityTypes.ISSUE}
-            readOnly
-            className="mb-4"
           />
 
           {/* Action + AI review — one unified flow right after header */}

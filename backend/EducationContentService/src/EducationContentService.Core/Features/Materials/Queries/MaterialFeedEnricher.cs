@@ -85,9 +85,9 @@ internal static class MaterialFeedEnricher
                 imageUrlMap.TryGetValue(m.ImageId.Value, out thumb);
             thumb ??= video?.ThumbnailUrl;
 
-            bool isAccessible = true;
+            bool isAccessible = accessMap.TryGetValue(m.Id, out AccessDecision? decision) && decision.IsGranted;
             string? lockReason = null;
-            if (accessMap.TryGetValue(m.Id, out AccessDecision? decision) && !decision.IsGranted)
+            if (!isAccessible)
             {
                 isAccessible = false;
                 lockReason = DeriveLockReason(m, userData, trialOrStandardCourses);

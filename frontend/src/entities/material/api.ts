@@ -2,7 +2,6 @@ import { apiClient, type Envelope } from "@/shared/api";
 import type { CursorResponse } from "@/shared/api/cursor-response";
 import { infiniteQueryOptions, keepPreviousData, queryOptions } from "@tanstack/react-query";
 import type {
-  CourseMaterialTagDto,
   CreateDraftMaterialRequest,
   CreateMaterialRequest,
   GetMaterialsRequest,
@@ -14,20 +13,16 @@ import type {
   MaterialId,
   MaterialKind,
   MaterialScope,
-  MaterialShortLinkDto,
   MaterialSummaryDto,
   UpdateMaterialRequest,
 } from "./types";
 
 export const materialsApi = {
-  getMaterials: async (
-    request: GetMaterialsRequest,
-    { signal }: { signal?: AbortSignal } = {},
-  ) => {
-    const res = await apiClient.get<Envelope<CursorResponse<MaterialSummaryDto>>>(
-      "/materials/",
-      { params: request, signal },
-    );
+  getMaterials: async (request: GetMaterialsRequest, { signal }: { signal?: AbortSignal } = {}) => {
+    const res = await apiClient.get<Envelope<CursorResponse<MaterialSummaryDto>>>("/materials/", {
+      params: request,
+      signal,
+    });
     return res.data;
   },
 
@@ -88,23 +83,13 @@ export const materialsApi = {
     return res.data.result!;
   },
 
-  createMaterial: async (
-    request: CreateMaterialRequest,
-  ): Promise<MaterialId> => {
-    const res = await apiClient.post<Envelope<MaterialId>>(
-      "/materials/",
-      request,
-    );
+  createMaterial: async (request: CreateMaterialRequest): Promise<MaterialId> => {
+    const res = await apiClient.post<Envelope<MaterialId>>("/materials/", request);
     return res.data.result!;
   },
 
-  createDraftMaterial: async (
-    request: CreateDraftMaterialRequest = {},
-  ): Promise<MaterialId> => {
-    const res = await apiClient.post<Envelope<MaterialId>>(
-      "/materials/draft/",
-      request,
-    );
+  createDraftMaterial: async (request: CreateDraftMaterialRequest = {}): Promise<MaterialId> => {
+    const res = await apiClient.post<Envelope<MaterialId>>("/materials/draft/", request);
     return res.data.result!;
   },
 
@@ -115,10 +100,7 @@ export const materialsApi = {
     materialId: MaterialId;
     request: UpdateMaterialRequest;
   }): Promise<MaterialId> => {
-    const res = await apiClient.patch<Envelope<MaterialId>>(
-      `/materials/${materialId}/`,
-      request,
-    );
+    const res = await apiClient.patch<Envelope<MaterialId>>(`/materials/${materialId}/`, request);
     return res.data.result!;
   },
 
@@ -126,45 +108,25 @@ export const materialsApi = {
     materialId: MaterialId,
     options?: { notifySubscribers?: boolean },
   ): Promise<MaterialId> => {
-    const res = await apiClient.post<Envelope<MaterialId>>(
-      `/materials/${materialId}/publish/`,
-      { notifySubscribers: options?.notifySubscribers ?? true },
-    );
+    const res = await apiClient.post<Envelope<MaterialId>>(`/materials/${materialId}/publish/`, {
+      notifySubscribers: options?.notifySubscribers ?? true,
+    });
     return res.data.result!;
   },
 
-  sendMaterialToDraft: async (
-    materialId: MaterialId,
-  ): Promise<MaterialId> => {
-    const res = await apiClient.post<Envelope<MaterialId>>(
-      `/materials/${materialId}/draft/`,
-    );
+  sendMaterialToDraft: async (materialId: MaterialId): Promise<MaterialId> => {
+    const res = await apiClient.post<Envelope<MaterialId>>(`/materials/${materialId}/draft/`);
     return res.data.result!;
   },
 
   archiveMaterial: async (materialId: MaterialId): Promise<MaterialId> => {
-    const res = await apiClient.post<Envelope<MaterialId>>(
-      `/materials/${materialId}/archive/`,
-    );
+    const res = await apiClient.post<Envelope<MaterialId>>(`/materials/${materialId}/archive/`);
     return res.data.result!;
   },
 
   deleteMaterial: async (materialId: MaterialId): Promise<MaterialId> => {
-    const res = await apiClient.delete<Envelope<MaterialId>>(
-      `/materials/${materialId}/`,
-    );
+    const res = await apiClient.delete<Envelope<MaterialId>>(`/materials/${materialId}/`);
     return res.data.result!;
-  },
-
-  /**
-   * Get-or-create стабильного короткого share-кода материала (#507).
-   * POST идемпотентен — повторный вызов возвращает тот же код.
-   */
-  getOrCreateShortLink: async (materialId: MaterialId): Promise<string> => {
-    const res = await apiClient.post<Envelope<MaterialShortLinkDto>>(
-      `/short-links/materials/${materialId}/`,
-    );
-    return res.data.result!.code;
   },
 
   getAuthorMaterialsFeed: async (
@@ -175,7 +137,6 @@ export const materialsApi = {
       kind,
       scope = "all",
       search,
-      tagIds,
       signal,
     }: {
       cursor?: string;
@@ -183,14 +144,13 @@ export const materialsApi = {
       kind?: MaterialKind;
       scope?: MaterialFeedScope;
       search?: string;
-      tagIds?: string[];
       signal?: AbortSignal;
     } = {},
   ) => {
     const res = await apiClient.get<Envelope<CursorResponse<MaterialFeedItemDto>>>(
       `/authors/${authorId}/materials/feed/`,
       {
-        params: { cursor, limit, kind, scope, search, tagIds },
+        params: { cursor, limit, kind, scope, search },
         paramsSerializer: { indexes: null },
         signal,
       },
@@ -204,14 +164,12 @@ export const materialsApi = {
       cursor,
       limit = 15,
       kind,
-      tagIds,
       search,
       signal,
     }: {
       cursor?: string;
       limit?: number;
       kind?: MaterialKind;
-      tagIds?: string[];
       search?: string;
       signal?: AbortSignal;
     } = {},
@@ -219,18 +177,10 @@ export const materialsApi = {
     const res = await apiClient.get<Envelope<CursorResponse<MaterialFeedItemDto>>>(
       `/courses/${courseId}/materials/feed/`,
       {
-        params: { cursor, limit, kind, tagIds, search },
+        params: { cursor, limit, kind, search },
         paramsSerializer: { indexes: null },
         signal,
       },
-    );
-    return res.data;
-  },
-
-  getCourseMaterialTags: async (courseId: string, { signal }: { signal?: AbortSignal } = {}) => {
-    const res = await apiClient.get<Envelope<CourseMaterialTagDto[]>>(
-      `/courses/${courseId}/materials/tags/`,
-      { signal },
     );
     return res.data;
   },
@@ -319,35 +269,16 @@ export const materialsCardMetaQueryOptions = (materialIds: MaterialId[]) => {
 export const materialDetailQueryOptions = (materialId: MaterialId) =>
   queryOptions({
     queryKey: [materialsQueryOptions.baseKey, materialId, "detail"] as const,
-    queryFn: ({ signal }) =>
-      materialsApi.getMaterialDetail(materialId, { signal }),
+    queryFn: ({ signal }) => materialsApi.getMaterialDetail(materialId, { signal }),
     // Держим предыдущий материал на экране пока грузится новый — навигация
     // между уроками в sidebar выглядит мгновенной, без flash на спиннер.
     placeholderData: keepPreviousData,
     enabled: !!materialId,
   });
 
-/**
- * Короткий share-код материала (#507). Код стабилен per material, поэтому
- * кешируем навечно — повторные клики «Поделиться» не дёргают API.
- * `retry: false` — при 429/500 кнопка сразу фолбэчится на длинный URL,
- * не выжидая ретраи внутри клика.
- */
-export const materialShortLinkQueryOptions = (materialId: MaterialId) =>
-  queryOptions({
-    queryKey: [materialsQueryOptions.baseKey, materialId, "short-link"] as const,
-    queryFn: () => materialsApi.getOrCreateShortLink(materialId),
-    staleTime: Infinity,
-    retry: false,
-  });
-
 export const authorMaterialsQueryOptions = (
   authorId: string,
-  {
-    limit = 12,
-    kind,
-    search,
-  }: { limit?: number; kind?: MaterialKind; search?: string } = {},
+  { limit = 12, kind, search }: { limit?: number; kind?: MaterialKind; search?: string } = {},
 ) =>
   infiniteQueryOptions({
     queryKey: [
@@ -385,20 +316,11 @@ export const courseMaterialIdsQueryOptions = (courseId: string) =>
   queryOptions({
     queryKey: [materialsQueryOptions.baseKey, "course", courseId, "ids"] as const,
     queryFn: async ({ signal }) => {
-      const res = await apiClient.get<Envelope<string[]>>(
-        `/courses/${courseId}/materials/ids/`,
-        { signal },
-      );
+      const res = await apiClient.get<Envelope<string[]>>(`/courses/${courseId}/materials/ids/`, {
+        signal,
+      });
       return res.data.result ?? [];
     },
-    enabled: !!courseId,
-  });
-
-export const courseMaterialTagsQueryOptions = (courseId: string) =>
-  queryOptions({
-    queryKey: [materialsQueryOptions.baseKey, "course", courseId, "tags"] as const,
-    queryFn: ({ signal }) => materialsApi.getCourseMaterialTags(courseId, { signal }),
-    select: (data) => data.result ?? [],
     enabled: !!courseId,
   });
 
@@ -409,16 +331,13 @@ export const authorMaterialsFeedQueryOptions = (
     kind,
     scope = "all",
     search,
-    tagIds,
   }: {
     limit?: number;
     kind?: MaterialKind;
     scope?: MaterialFeedScope;
     search?: string;
-    tagIds?: string[];
   } = {},
 ) => {
-  const normalizedTagIds = tagIds && tagIds.length > 0 ? [...tagIds].sort() : undefined;
   return infiniteQueryOptions({
     queryKey: [
       materialsQueryOptions.baseKey,
@@ -430,7 +349,6 @@ export const authorMaterialsFeedQueryOptions = (
         kind: kind ?? null,
         scope,
         search: search ?? null,
-        tagIds: normalizedTagIds ?? null,
       },
     ] as const,
     queryFn: ({ pageParam, signal }) =>
@@ -440,7 +358,6 @@ export const authorMaterialsFeedQueryOptions = (
         kind,
         scope,
         search,
-        tagIds: normalizedTagIds,
         signal,
       }),
     initialPageParam: undefined as string | undefined,
@@ -457,16 +374,13 @@ export const courseMaterialsFeedQueryOptions = (
   {
     limit = 15,
     kind,
-    tagIds,
     search,
   }: {
     limit?: number;
     kind?: MaterialKind;
-    tagIds?: string[];
     search?: string;
   } = {},
 ) => {
-  const normalizedTagIds = tagIds && tagIds.length > 0 ? [...tagIds].sort() : undefined;
   return infiniteQueryOptions({
     queryKey: [
       materialsQueryOptions.baseKey,
@@ -476,7 +390,6 @@ export const courseMaterialsFeedQueryOptions = (
       {
         limit,
         kind: kind ?? null,
-        tagIds: normalizedTagIds ?? null,
         search: search ?? null,
       },
     ] as const,
@@ -485,12 +398,10 @@ export const courseMaterialsFeedQueryOptions = (
         cursor: pageParam,
         limit,
         kind,
-        tagIds: normalizedTagIds,
         search,
         signal,
       }),
     initialPageParam: undefined as string | undefined,
-    placeholderData: keepPreviousData,
     getNextPageParam: (lastPage) => lastPage.result?.nextCursor ?? undefined,
     enabled: !!courseId,
     select: (data) => ({
@@ -501,11 +412,7 @@ export const courseMaterialsFeedQueryOptions = (
 
 export const courseMaterialsInfiniteOptions = (
   courseId: string,
-  {
-    limit = 20,
-    kind,
-    search,
-  }: { limit?: number; kind?: MaterialKind; search?: string } = {},
+  { limit = 20, kind, search }: { limit?: number; kind?: MaterialKind; search?: string } = {},
 ) =>
   infiniteQueryOptions({
     queryKey: [

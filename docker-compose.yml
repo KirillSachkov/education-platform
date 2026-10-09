@@ -61,61 +61,6 @@ services:
     networks:
       - platform-network
 
-  # Tag Service
-  tag-service-migrations:
-    profiles: ["app"]
-    build:
-      context: ./backend
-      dockerfile: TagService/Dockerfile
-      secrets:
-        - nuget_config
-    entrypoint: ["/bin/sh", "-c", "dotnet TagService.Web.dll reconcile-migration-history && ./efbundle --connection \"$$CONNECTIONSTRINGS__DATABASE\""]
-    env_file:
-      - .env
-    environment:
-      CONNECTIONSTRINGS__DATABASE: ${TAG_DB_CONNECTION}
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: "no"
-    networks:
-      - platform-network
-
-  tag-service:
-    profiles: ["app"]
-    build:
-      context: ./backend
-      dockerfile: TagService/Dockerfile
-      secrets:
-        - nuget_config
-    ports:
-      - "${TAG_HOST_PORT:-8007}:8007"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-      tag-service-migrations:
-        condition: service_completed_successfully
-    env_file:
-      - .env
-    environment:
-      ASPNETCORE_ENVIRONMENT: Docker
-      ASPNETCORE_URLS: http://+:8007
-      OTEL_SERVICE_NAME: TagService
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
-      CONNECTIONSTRINGS__DATABASE: ${TAG_DB_CONNECTION}
-    healthcheck:
-      test: ["CMD", "dotnet", "healthcheck/healthcheck.dll", "8007"]
-      interval: 10s
-      timeout: 3s
-      retries: 3
-      start_period: 30s
-    restart: always
-    networks:
-      - platform-network
-
-  # Notification Service
   notification-service-migrations:
     profiles: ["app"]
     build:
@@ -231,70 +176,6 @@ services:
     networks:
       - platform-network
 
-  # Search Service (Typesense-backed)
-  search-service-migrations:
-    profiles: ["app"]
-    build:
-      context: ./backend
-      dockerfile: SearchService/Dockerfile
-      secrets:
-        - nuget_config
-    entrypoint: ["/bin/sh", "-c", "./efbundle --connection \"$$CONNECTIONSTRINGS__DATABASE\""]
-    env_file:
-      - .env
-    environment:
-      CONNECTIONSTRINGS__DATABASE: ${SEARCH_DB_CONNECTION}
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: "no"
-    networks:
-      - platform-network
-
-  search-service:
-    profiles: ["app"]
-    build:
-      context: ./backend
-      dockerfile: SearchService/Dockerfile
-      secrets:
-        - nuget_config
-    ports:
-      - "${SEARCH_HOST_PORT:-8009}:8009"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-      redis:
-        condition: service_started
-      typesense:
-        condition: service_started
-      education-service:
-        condition: service_healthy
-      tag-service:
-        condition: service_healthy
-      search-service-migrations:
-        condition: service_completed_successfully
-    env_file:
-      - .env
-    environment:
-      ASPNETCORE_ENVIRONMENT: Docker
-      ASPNETCORE_URLS: http://+:8009
-      OTEL_SERVICE_NAME: SearchService
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
-      CONNECTIONSTRINGS__DATABASE: ${SEARCH_DB_CONNECTION}
-      TYPESENSEOPTIONS__APIKEY: ${TYPESENSE_API_KEY}
-    healthcheck:
-      test: ["CMD", "dotnet", "healthcheck/healthcheck.dll", "8009"]
-      interval: 10s
-      timeout: 3s
-      retries: 3
-      start_period: 30s
-    restart: always
-    networks:
-      - platform-network
-
-  # Access Service
   access-service-migrations:
     profiles: ["app"]
     build:
@@ -754,11 +635,7 @@ services:
         condition: service_healthy
       comment-service:
         condition: service_healthy
-      tag-service:
-        condition: service_healthy
       notification-service:
-        condition: service_healthy
-      search-service:
         condition: service_healthy
       access-service:
         condition: service_healthy
@@ -829,21 +706,6 @@ services:
     volumes:
       - redis_data:/data
     restart: always
-    networks:
-      - platform-network
-
-  typesense:
-    profiles: ["infra"]
-    image: typesense/typesense:30.1
-    restart: always
-    ports:
-      - "${TYPESENSE_HOST_PORT:-8108}:8108"
-    environment:
-      - TYPESENSE_DATA_DIR=/data
-      - TYPESENSE_API_KEY=${TYPESENSE_API_KEY}
-      - TYPESENSE_CORS_DOMAINS=http://localhost:8006
-    volumes:
-      - typesense_data:/data
     networks:
       - platform-network
 
@@ -1037,7 +899,6 @@ volumes:
   minio_data:
   rabbitmq_data:
   redis_data:
-  typesense_data:
   loki_data:
   prometheus_data:
   tempo_data:

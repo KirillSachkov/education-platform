@@ -14,10 +14,8 @@ import {
   getAdjacentCollectionMaterials,
 } from "@/entities/collection";
 import { userProgressQueryOptions } from "@/entities/user-progress";
-import { SearchableTagsField } from "@/entities/tag";
 import { CommentSection } from "@/features/comments";
 import { useMarkMaterialViewed, useUnmarkMaterialViewed } from "@/features/course-learning";
-import { MaterialNotesBlock } from "@/features/material-notes";
 import { MaterialQuizBlock } from "@/features/quiz-runner";
 import { MaterialAuthorActions } from "@/features/materials-manage";
 import { useTrackMaterialView } from "@/features/track-material-view";
@@ -464,12 +462,6 @@ export function MaterialView({
           )}
 
           {/* Компактные теги под видео (см. course-material-view: единый паттерн). */}
-          <SearchableTagsField
-            entityId={materialId}
-            entityType={EntityTypes.MATERIAL}
-            readOnly
-            className="mb-8 gap-1.5 [&>button]:px-2 [&>button]:py-0.5 [&>button]:text-[11px] [&>span]:px-2 [&>span]:py-0.5 [&>span]:text-[11px]"
-          />
 
           {headings.length > 0 && (
             <Card className="mb-8 gap-4 border-border/70 bg-card/80 p-5 xl:hidden">
@@ -562,13 +554,6 @@ export function MaterialView({
 
           {isLearning && isAuthenticated && (
             <MaterialQuizBlock
-              materialId={materialId}
-              className="mt-10 border-t border-border/60 pt-6"
-            />
-          )}
-
-          {isLearning && isAuthenticated && (
-            <MaterialNotesBlock
               materialId={materialId}
               className="mt-10 border-t border-border/60 pt-6"
             />

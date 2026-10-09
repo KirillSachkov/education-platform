@@ -9,7 +9,7 @@ public readonly record struct AccessLockResult(bool IsAccessible, string? LockRe
 
 /// <summary>
 /// Декодирует набор required_access_tags + user grants в <see cref="AccessLockResult"/>.
-/// Единый источник правды для MaterialFeedEnricher и SearchService.
+/// Единый источник правды для MaterialFeedEnricher.
 /// </summary>
 public static class LockReasonResolver
 {
@@ -17,7 +17,7 @@ public static class LockReasonResolver
     /// Определяет, доступен ли ресурс, и если нет — по какой причине.
     /// </summary>
     /// <param name="requiredAccessTags">
-    ///   Теги доступа ресурса (из <c>required_access_tags</c> в Typesense или из
+    ///   Теги доступа ресурса (из
     ///   <c>ContentAccessTagBuilder</c> в EducationContentService).
     ///   Пустой список = PUBLIC (доступен всем).
     /// </param>

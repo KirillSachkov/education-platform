@@ -4,8 +4,6 @@ import type { BuilderSectionDto } from "@/entities/course";
 import { bindMarkdownAssets, useMarkdownFileUpload, useMarkdownImageUpload } from "@/entities/file";
 import { issueDetailQueryOptions } from "@/entities/issue";
 import { projectsQueryOptions } from "@/entities/project";
-import { tagsApi, TagsField } from "@/entities/tag";
-import { EntityTypes } from "@/shared/config/entity-types";
 import { Button } from "@/shared/ui/kit/button";
 import { Input } from "@/shared/ui/kit/input";
 import { Label } from "@/shared/ui/kit/label";
@@ -25,7 +23,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { FolderKanban, Loader2, Plus } from "lucide-react";
 import { ENTITY_ICONS } from "@/shared/config/entity-icons";
 import { useState } from "react";
-import { toast } from "sonner";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { useCreateIssue } from "../model/use-create-issue";
 import { issueSchema, issueDefaultValues, type IssueFormData } from "../model/schemas";
@@ -203,19 +200,6 @@ export function ProjectList({
                 console.error("Failed to bind project markdown assets", err);
               });
             }
-
-            if (data.tags.length > 0) {
-              await tagsApi
-                .addTagsToEntity({
-                  entityType: EntityTypes.PROJECT,
-                  entityId: projectId,
-                  tagTitles: data.tags,
-                  tagIds: [],
-                })
-                .catch(() => {
-                  toast.error("Ошибка привязки тегов");
-                });
-            }
           })();
         }}
       />
@@ -354,7 +338,6 @@ function IssueSheetCreateContent({
 }) {
   const queryClient = useQueryClient();
   const { createIssue } = useCreateIssue(projectId);
-  const [tags, setTags] = useState<string[]>([]);
 
   // Stable draftId for the lifetime of this component instance.
   // useState with initializer guarantees a single value per mount;
@@ -374,7 +357,7 @@ function IssueSheetCreateContent({
   });
   const watchedSubmissionMode = useWatch({ control, name: "submissionMode" });
 
-  // Закрываем sheet сразу. Цепочка create → bind assets → tags → invalidate
+  // Закрываем sheet сразу. Цепочка create → bind assets → invalidate
   // продолжает работать в фоне; toast'ы из useCreateIssue показывают результат.
   // Транзишен в edit-mode заменён на закрытие — юзер увидит карточку в списке
   // и зайдёт в неё кликом, если нужно дописать.
@@ -401,19 +384,6 @@ function IssueSheetCreateContent({
         }).catch((err) => {
           console.error("Failed to bind markdown assets", err);
         });
-      }
-
-      if (tags.length > 0) {
-        await tagsApi
-          .addTagsToEntity({
-            entityType: EntityTypes.ISSUE,
-            entityId: issueId,
-            tagTitles: tags,
-            tagIds: [],
-          })
-          .catch(() => {
-            toast.error("Ошибка привязки тегов");
-          });
       }
 
       await queryClient.invalidateQueries({
@@ -469,11 +439,6 @@ function IssueSheetCreateContent({
         </div>
       </div>
 
-      <div className="shrink-0 px-6 pt-3">
-        <Label className="text-sm font-medium mb-1.5 block">Теги</Label>
-        <TagsField value={tags} onChange={setTags} />
-      </div>
-
       <div className="shrink-0 px-6 pt-4 space-y-3">
         <Label className="text-sm font-medium">Способ сдачи</Label>
         <Controller
@@ -519,9 +484,7 @@ function IssueSheetCreateContent({
               placeholder="Например: запусти тесты, проверь сценарий вручную, сравни результат с чеклистом."
             />
             {errors.selfCheckInstructions && (
-              <p className="text-sm text-destructive">
-                {errors.selfCheckInstructions.message}
-              </p>
+              <p className="text-sm text-destructive">{errors.selfCheckInstructions.message}</p>
             )}
           </div>
         )}
