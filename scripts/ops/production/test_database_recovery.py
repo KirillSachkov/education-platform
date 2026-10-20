@@ -52,7 +52,7 @@ class RestoreStartup(unittest.TestCase):
                     def poll(self): return 0
 
                 database = DatabaseRecovery(command, root, "fixture-image", "fixture", "fixture_db", "fixture")
-                def query(sql):
+                def query(sql, container=None):
                     if "quote_ident" in sql: return '"fixture"'
                     if "pg_database_size" in sql: return "0"
                     return "unchanged-role-fingerprint"
