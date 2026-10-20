@@ -37,7 +37,7 @@ public class IntegrationTestsWebFactory : WebApplicationFactory<Program>, IAsync
         .WithPassword("postgres")
         .Build();
 
-    private readonly MinioContainer _minioContainer = new MinioBuilder("minio/minio")
+    private readonly MinioContainer _minioContainer = new MinioBuilder("ghcr.io/coollabsio/minio@sha256:69b55a1c1c5dc285ce04db96689f5b2102317fc77a50680a1874ca6efd1c87f9")
         .WithUsername("minioadmin")
         .WithPassword("minioadmin")
         .Build();
