@@ -143,7 +143,12 @@ def apply(root, config, accepted_hash):
             verify_offsite(item, environment)
     for image in plan["images"]:
         # No force: Docker also refuses references newly used by a container.
-        command(["docker", "image", "rm", *image["references"]])
+        tags = [value for value in image["references"] if "@" not in value]
+        tagged_repositories = {repository(value) for value in tags}
+        # Removing the final tag of a repository also removes its digest alias.
+        references = tags + [value for value in image["references"]
+                             if "@" in value and repository(value) not in tagged_repositories]
+        command(["docker", "image", "rm", *references])
     for item in plan["local_archives"]:
         path = Path(item["path"])
         metadata = path.lstat()

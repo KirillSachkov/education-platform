@@ -14,6 +14,7 @@ import urllib.request
 import zipfile
 
 import github_production as transport
+from release_model import MAINTENANCE_SCRIPTS
 from test_release_model import SHA, manifest, roles
 
 
@@ -89,6 +90,7 @@ class ProductionTransport(unittest.TestCase):
                     "scripts/ops/production/backup_runtime.py": "# backup\n",
                     "scripts/ops/production/environment_file.py": "# reader\n",
                     "scripts/ops/production/daily_backup.py": "# daily\n"}
+        required.update({name: "# selected maintenance input\n" for name in MAINTENANCE_SCRIPTS})
         for bad in [None, "duplicate", "symlink", "missing", "oversized"]:
             output = io.BytesIO()
             with zipfile.ZipFile(output, "w") as result:

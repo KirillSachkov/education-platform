@@ -45,6 +45,8 @@
     ],
     "compose": [
       ".github/**/*",
+      "docker/logrotate/**/*",
+      "docker/journald/**/*",
       "docker-compose.prod.yml",
       "docker-compose.yml",
       "nginx.prod.conf",

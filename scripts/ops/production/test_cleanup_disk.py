@@ -87,6 +87,7 @@ class DiskRetention(unittest.TestCase):
             cleanup_disk.apply(self.root, self.config, plan["plan_sha256"])
         mutations = [command for command in self.calls if "rm" in command]
         self.assertEqual(len(mutations), 2)
+        self.assertIn(["docker", "image", "rm", PUBLIC_REGISTRY + "/frontend:old"], mutations)
         self.assertTrue(all(command[:3] == ["docker", "image", "rm"] and "--force" not in command for command in mutations))
 
     def archive(self):
@@ -135,3 +136,13 @@ class DiskRetention(unittest.TestCase):
         with patch.object(cleanup_disk, "command", side_effect=storage): cleanup_disk.verify_offsite(item, env)
         changed = copy.deepcopy(item); changed["sha256"] = "0" * 64
         with patch.object(cleanup_disk, "command", side_effect=storage), self.assertRaises(ValueError): cleanup_disk.verify_offsite(changed, env)
+
+    def test_cli_defaults_to_dry_run_and_requires_hash_for_explicit_apply(self):
+        config = self.root / "cleanup.json"; config.write_text(json.dumps(self.config)); config.chmod(0o600)
+        arguments = ["cleanup_disk.py", "--root", str(self.root), "--config", str(config)]
+        with patch.object(cleanup_disk, "command", side_effect=self.command), patch("sys.argv", arguments), patch("builtins.print") as output:
+            cleanup_disk.main()
+            self.assertEqual(json.loads(output.call_args.args[0])["mode"], "dry-run")
+        with patch.object(cleanup_disk, "command", side_effect=self.command), patch("sys.argv", arguments + ["--apply"]):
+            with self.assertRaises(SystemExit): cleanup_disk.main()
+        self.assertFalse(any("rm" in command for command in self.calls))
