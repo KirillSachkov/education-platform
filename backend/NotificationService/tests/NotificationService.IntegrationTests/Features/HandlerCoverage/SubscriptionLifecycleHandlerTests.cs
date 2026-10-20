@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using NotificationService.Domain.Notifications;
 using NotificationService.IntegrationTests.Infrastructure;
@@ -29,7 +29,7 @@ public sealed class SubscriptionLifecycleHandlerTests : NotificationServiceTests
     }
 
     [Fact]
-    public async Task RetryScheduled_UsesEventRetryAndGraceDates_WithActionableCopy()
+    public async Task HistoricalRetryEvent_PreservesGraceDate_WithoutPromisingAnotherCharge()
     {
         Guid userId = Guid.NewGuid();
         DateTimeOffset failedAt = new(2026, 8, 9, 12, 0, 0, TimeSpan.Zero);
@@ -49,10 +49,9 @@ public sealed class SubscriptionLifecycleHandlerTests : NotificationServiceTests
         Notification notification = await SingleForAsync(userId);
         Assert.Equal(NotificationType.SubscriptionRenewalProblem, notification.Type);
         AssertAllChannels(notification);
-        Assert.Contains(Format(nextRetryAt), notification.Body, StringComparison.Ordinal);
+        Assert.DoesNotContain(Format(nextRetryAt), notification.Body, StringComparison.Ordinal);
         Assert.Contains(Format(graceEndsAt), notification.Body, StringComparison.Ordinal);
-        Assert.Contains("карту", notification.Body, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("баланс", notification.Body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Новых автоматических списаний не будет", notification.Body, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -74,7 +73,7 @@ public sealed class SubscriptionLifecycleHandlerTests : NotificationServiceTests
     }
 
     [Fact]
-    public async Task TerminalFailure_UsesEventGraceDate_AndExplainsHowToRestoreRenewal()
+    public async Task TerminalFailure_UsesEventGraceDate_WithoutOfferingRenewal()
     {
         Guid userId = Guid.NewGuid();
         DateTimeOffset failedAt = new(2026, 8, 12, 12, 0, 0, TimeSpan.Zero);

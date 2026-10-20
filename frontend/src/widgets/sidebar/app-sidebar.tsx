@@ -46,11 +46,10 @@ export function AppSidebar() {
     pathname.startsWith("/settings") ||
     pathname.startsWith("/payments") ||
     pathname.startsWith("/my-plans");
-  const isLearningView = !isAdminView && !isTeachingView && !isAccountView;
 
   // Логотип = контекстный «шаг вверх»: из под-контекста (профиль/админка/преподавание)
   // ведём на учебную главную, из самой учебной зоны — на публичный лендинг.
-  const logoHref = isLearningView ? routes.landing : routes.home;
+  const logoHref = routes.home;
 
   return (
     <Sidebar variant="floating" collapsible="icon">

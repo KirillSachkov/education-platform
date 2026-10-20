@@ -13,14 +13,6 @@ function anonymousRequest(pathname: string) {
   };
 }
 
-describe.each(["/c-sharp", "/dotnet", "/asp-net-core"])("SEO route %s", (pathname) => {
-  it("is public for anonymous visitors", async () => {
-    const response = await proxy(anonymousRequest(pathname) as never, {} as never);
-
-    expect(response).toBeUndefined();
-  });
-});
-
 it("keeps the AI discovery manifest public", async () => {
   const response = await proxy(anonymousRequest("/llms.txt") as never, {} as never);
 
@@ -46,16 +38,6 @@ it("keeps unrelated HTML paths protected", async () => {
   );
 });
 
-it("keeps nested paths outside the SEO allowlist protected", async () => {
-  const response = await proxy(anonymousRequest("/dotnet/private") as never, {} as never);
-
-  expect(response).toBeInstanceOf(Response);
-  expect(response?.status).toBe(302);
-  expect(response?.headers.get("location")).toBe(
-    "https://sachkov-learn.net/login?callbackUrl=%2Fdotnet%2Fprivate",
-  );
-});
-
 const roles = {
   anonymous: null,
   student: { user: { roles: ["platform-participant"] } },
@@ -63,6 +45,12 @@ const roles = {
   admin: { user: { roles: ["platform-admin"] } },
 };
 const retired = [
+  "/",
+  "/pricing",
+  "/pricing/lifetime?resume=checkout",
+  "/c-sharp",
+  "/dotnet/private",
+  "/asp-net-core",
   "/catalog",
   "/courses/",
   "/knowledge-base",
@@ -89,7 +77,7 @@ describe.each(Object.entries(roles))("route matrix %s", (role, auth) => {
   it.each(retired)("retires %s before route or role checks", async (path) => {
     const response = await proxy({ ...anonymousRequest(path), auth } as never, {} as never);
     expect(response?.headers.get("location")).toBe(
-      `https://sachkov-learn.net/${role === "anonymous" ? "pricing" : "home"}`,
+      `https://sachkov-learn.net/${role === "anonymous" ? "login?callbackUrl=%2Fhome" : "home"}`,
     );
   });
   it.each([

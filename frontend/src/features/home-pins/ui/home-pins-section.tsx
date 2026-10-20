@@ -61,7 +61,7 @@ function HomePinRow({ pin }: { pin: HomePinDto }) {
   const href = routes.knowledgeBaseMaterial(pin.materialId);
   const unlockHref = pin.isAccessible
     ? null
-    : (resolveUnlockHref({ lockReason: pin.lockReason, returnTo: href }) ?? routes.pricing);
+    : (resolveUnlockHref({ lockReason: pin.lockReason, returnTo: href }) ?? routes.myPlans);
 
   const rowHref = pin.isAccessible ? href : (unlockHref ?? href);
 

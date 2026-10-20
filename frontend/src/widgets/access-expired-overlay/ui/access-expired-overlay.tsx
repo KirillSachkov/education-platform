@@ -77,7 +77,7 @@ function AccessExpiredDialog({ expired }: { expired: ExpiredAccessDto }) {
           <DialogTitle>Срок доступа истёк</DialogTitle>
           <DialogDescription>
             Доступ по плану «{expired.planName}» закончился {formatNumericDate(expired.expiredAt)}.
-            Продлите доступ — при доплате до полного доступа уже оплаченное идёт в зачёт.
+            Новые покупки и продления закрыты. История вашего обучения сохранена.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
@@ -85,9 +85,9 @@ function AccessExpiredDialog({ expired }: { expired: ExpiredAccessDto }) {
             Позже
           </Button>
           <Button asChild onClick={dismiss}>
-            <Link href={routes.pricing}>
+            <Link href={routes.myPlans}>
               <Icons.unlocked className="size-4" />
-              Продлить доступ
+              Мои доступы
             </Link>
           </Button>
         </DialogFooter>

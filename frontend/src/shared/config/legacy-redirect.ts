@@ -1,6 +1,8 @@
 import { routes } from "./routes";
 
 const retiredSections = [
+  /^\/$/,
+  /^\/(?:pricing|c-sharp|dotnet|asp-net-core)(?:\/|$)/,
   /^\/(?:catalog|courses|knowledge-base|collections)\/?$/,
   /^\/(?:trainer|leaderboard|progress|level-test|roadmaps|certificates|users)(?:\/|$)/,
   /^\/courses\/[^/]+\/(?:roadmap|progress)(?:\/|$)/,
@@ -15,6 +17,6 @@ export function legacyRedirect(pathname: string, isLoggedIn: boolean): string | 
   return retiredSections.some((pattern) => pattern.test(pathname))
     ? isLoggedIn
       ? routes.home
-      : routes.pricing
+      : `${routes.login}?callbackUrl=${encodeURIComponent(routes.home)}`
     : null;
 }

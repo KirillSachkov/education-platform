@@ -100,14 +100,16 @@ describe("MyPlansView upgrade visibility", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("keeps the upgrade banner and month card for trial-only access", () => {
+  it("keeps the paid expiry and month card without an upgrade offer", () => {
     renderMyPlans([
       createGrant("month", "Полный доступ на месяц", "FULL_ALL", "2026-07-20T09:53:35Z"),
     ]);
 
     expect(screen.getByRole("heading", { name: "Полный доступ на месяц" })).toBeInTheDocument();
     expect(screen.getByText(/Доступ активен до/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Доплатить до полного доступа/ })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: /Доплатить до полного доступа/ }),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps trial behavior while an older API response omits trial duration", () => {

@@ -12,9 +12,9 @@ import PricingSlugPage from "../page";
 describe("pricing slug canonical redirect", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("permanently redirects to the canonical pricing page with an encoded anchor", async () => {
-    await PricingSlugPage({ params: Promise.resolve({ slug: "full access?x=1" }) });
+  it("returns old plan links to the workspace", async () => {
+    PricingSlugPage();
 
-    expect(permanentRedirect).toHaveBeenCalledWith("/pricing#full%20access%3Fx%3D1");
+    expect(redirect).toHaveBeenCalledWith("/home");
   });
 });

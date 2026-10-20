@@ -35,7 +35,6 @@ export function MobileAccountMenu() {
       title: "Аккаунт",
       items: [
         { href: routes.settings, icon: Icons.settings, label: "Настройки" },
-        { href: routes.pricing, icon: Icons.crown, label: "Планы доступа" },
         { href: routes.myPlans, icon: Icons.crown, label: "Мои планы" },
         { href: routes.payments, icon: Icons.creditCard, label: "Платежи" },
         { href: routes.settingsIntegrations, icon: Icons.github, label: "Интеграции" },

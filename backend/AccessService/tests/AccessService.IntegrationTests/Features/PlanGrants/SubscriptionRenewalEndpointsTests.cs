@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Text.Json;
 using AccessService.Core.Database;
 using AccessService.Domain;
@@ -60,51 +60,6 @@ public sealed class SubscriptionRenewalEndpointsTests : AccessServiceTestsBase
     }
 
     [Fact]
-    public async Task ResumeRenewal_Owner_SchedulesCanonicalLeadTime_AndPublishesOnce()
-    {
-        Guid userId = Guid.NewGuid();
-        DateTimeOffset expiresAt = DateTimeOffset.UtcNow.AddDays(30);
-        (Plan plan, PlanGrant grant) = await SeedRecurringGrantAsync(
-            userId,
-            expiresAt,
-            cancelled: true);
-        AuthenticateAs("platform-participant", userId);
-
-        HttpResponseMessage first = await AppHttpClient.PostAsync(
-            $"/access/me/grants/{grant.Id}/resume-renewal/", content: null);
-        HttpResponseMessage replay = await AppHttpClient.PostAsync(
-            $"/access/me/grants/{grant.Id}/resume-renewal/", content: null);
-
-        Assert.Equal(HttpStatusCode.OK, first.StatusCode);
-        Assert.Equal(HttpStatusCode.OK, replay.StatusCode);
-        DateTimeOffset expectedChargeAt = SubscriptionRenewalPolicy.FirstChargeAt(expiresAt);
-        await ExecuteInDbAsync(async db =>
-        {
-            PlanGrant persisted = await db.PlanGrants.AsNoTracking().SingleAsync(g => g.Id == grant.Id);
-            Assert.Null(persisted.AutoRenewalCancelledAt);
-            Assert.Null(persisted.RenewalGraceEndsAt);
-            Assert.Equal(expectedChargeAt, persisted.NextChargeAt!.Value, TimeSpan.FromMicroseconds(1));
-            Assert.Equal(0, persisted.ChargeFailureCount);
-        });
-
-        PlanGrantRenewalResumed published =
-            Assert.Single(OutboxCollector.OfType<PlanGrantRenewalResumed>());
-        Assert.Equal(grant.Id, published.GrantId);
-        Assert.Equal(userId, published.UserId);
-        Assert.Equal(plan.Id, published.PlanId);
-        Assert.Equal(plan.AuthorId, published.PlanAuthorId);
-        Assert.Equal(expectedChargeAt, published.NextChargeAt, TimeSpan.FromMicroseconds(1));
-        Assert.Equal(
-            SubscriptionRenewalPolicy.GraceEndsAt(expiresAt),
-            published.GraceEndsAt,
-            TimeSpan.FromMicroseconds(1));
-        Assert.Equal(0, published.Attempt);
-        Assert.NotEqual(Guid.Empty, published.CorrelationId);
-        Assert.Null(published.RenewalOrderId);
-        Assert.Equal(SubscriptionLifecycleStages.Resumed, published.Stage);
-    }
-
-    [Fact]
     public async Task CancelRenewal_DuringGraceAfterPaidExpiry_ExpiresGrantAndPublishesAccessCleanup()
     {
         Guid userId = Guid.NewGuid();
@@ -149,7 +104,6 @@ public sealed class SubscriptionRenewalEndpointsTests : AccessServiceTestsBase
 
     [Theory]
     [InlineData("cancel-renewal")]
-    [InlineData("resume-renewal")]
     public async Task RenewalMutation_OtherUser_Returns404(string action)
     {
         Guid ownerId = Guid.NewGuid();
@@ -169,7 +123,6 @@ public sealed class SubscriptionRenewalEndpointsTests : AccessServiceTestsBase
 
     [Theory]
     [InlineData("cancel-renewal")]
-    [InlineData("resume-renewal")]
     public async Task RenewalMutation_ChargeLockBusy_Returns409WithoutMutation(string action)
     {
         Guid userId = Guid.NewGuid();
@@ -196,182 +149,6 @@ public sealed class SubscriptionRenewalEndpointsTests : AccessServiceTestsBase
             .AutoRenewalCancelledAt is not null));
         Assert.Empty(OutboxCollector.OfType<PlanGrantRenewalCancelled>());
         Assert.Empty(OutboxCollector.OfType<PlanGrantRenewalResumed>());
-    }
-
-    [Fact]
-    public async Task ResumeRenewal_AfterPaidExpiry_Returns400AndRemainsCancelled()
-    {
-        Guid userId = Guid.NewGuid();
-        (_, PlanGrant grant) = await SeedRecurringGrantAsync(
-            userId,
-            DateTimeOffset.UtcNow.AddDays(1),
-            cancelled: true);
-        await ExecuteInDbAsync(async db => await db.PlanGrants
-            .Where(g => g.Id == grant.Id)
-            .ExecuteUpdateAsync(update => update.SetProperty(
-                g => g.ExpiresAt,
-                DateTimeOffset.UtcNow.AddMinutes(-1))));
-        AuthenticateAs("platform-participant", userId);
-
-        HttpResponseMessage response = await AppHttpClient.PostAsync(
-            $"/access/me/grants/{grant.Id}/resume-renewal/", content: null);
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        await ExecuteInDbAsync(async db => Assert.NotNull(
-            (await db.PlanGrants.AsNoTracking().SingleAsync(g => g.Id == grant.Id))
-            .AutoRenewalCancelledAt));
-        Assert.Empty(OutboxCollector.OfType<PlanGrantRenewalResumed>());
-    }
-
-    [Fact]
-    public async Task ResumeRenewal_AlreadyEnabledWithoutScheduledCharge_IsIdempotentWithoutEvent()
-    {
-        Guid userId = Guid.NewGuid();
-        (_, PlanGrant grant) = await SeedRecurringGrantAsync(
-            userId,
-            DateTimeOffset.UtcNow.AddDays(30),
-            cancelled: false);
-        await ExecuteInDbAsync(async db => await db.PlanGrants
-            .Where(g => g.Id == grant.Id)
-            .ExecuteUpdateAsync(update => update.SetProperty(
-                g => g.NextChargeAt,
-                (DateTimeOffset?)null)));
-        AuthenticateAs("platform-participant", userId);
-
-        HttpResponseMessage response = await AppHttpClient.PostAsync(
-            $"/access/me/grants/{grant.Id}/resume-renewal/", content: null);
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Empty(OutboxCollector.OfType<PlanGrantRenewalResumed>());
-        await ExecuteInDbAsync(async db => Assert.Null(
-            (await db.PlanGrants.AsNoTracking().SingleAsync(g => g.Id == grant.Id)).NextChargeAt));
-    }
-
-    [Fact]
-    public async Task ResumeRenewal_ActiveDunningWithScheduledRetry_IsIdempotentWithoutEvent()
-    {
-        Guid userId = Guid.NewGuid();
-        DateTimeOffset expiresAt = DateTimeOffset.UtcNow.AddHours(12);
-        (_, PlanGrant grant) = await SeedRecurringGrantAsync(
-            userId,
-            expiresAt,
-            cancelled: false,
-            dunningFailureCount: 1);
-        AuthenticateAs("platform-participant", userId);
-
-        HttpResponseMessage response = await AppHttpClient.PostAsync(
-            $"/access/me/grants/{grant.Id}/resume-renewal/", content: null);
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Empty(OutboxCollector.OfType<PlanGrantRenewalResumed>());
-        await ExecuteInDbAsync(async db =>
-        {
-            PlanGrant persisted = await db.PlanGrants.AsNoTracking().SingleAsync(g => g.Id == grant.Id);
-            Assert.Equal(1, persisted.ChargeFailureCount);
-            Assert.Equal(expiresAt, persisted.NextChargeAt!.Value, TimeSpan.FromMicroseconds(1));
-            Assert.Equal(
-                SubscriptionRenewalPolicy.GraceEndsAt(expiresAt),
-                persisted.RenewalGraceEndsAt!.Value,
-                TimeSpan.FromMicroseconds(1));
-        });
-    }
-
-    [Fact]
-    public async Task ResumeRenewal_TerminalDunningBeforeGraceEnd_SchedulesImmediateAttemptAndPublishes()
-    {
-        Guid userId = Guid.NewGuid();
-        DateTimeOffset expiresAt = DateTimeOffset.UtcNow.AddHours(-1);
-        DateTimeOffset graceEndsAt = SubscriptionRenewalPolicy.GraceEndsAt(expiresAt);
-        (Plan plan, PlanGrant grant) = await SeedRecurringGrantAsync(
-            userId,
-            expiresAt,
-            cancelled: false,
-            dunningFailureCount: SubscriptionRenewalPolicy.MAX_ATTEMPTS);
-        AuthenticateAs("platform-participant", userId);
-        DateTimeOffset before = DateTimeOffset.UtcNow;
-
-        HttpResponseMessage response = await AppHttpClient.PostAsync(
-            $"/access/me/grants/{grant.Id}/resume-renewal/", content: null);
-        DateTimeOffset after = DateTimeOffset.UtcNow;
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        await ExecuteInDbAsync(async db =>
-        {
-            PlanGrant persisted = await db.PlanGrants.AsNoTracking().SingleAsync(g => g.Id == grant.Id);
-            Assert.Equal(PlanGrantStatus.ACTIVE, persisted.Status);
-            Assert.Null(persisted.AutoRenewalCancelledAt);
-            Assert.Equal(SubscriptionRenewalPolicy.MAX_ATTEMPTS - 1, persisted.ChargeFailureCount);
-            Assert.InRange(persisted.NextChargeAt!.Value, before, after);
-            Assert.Equal(
-                graceEndsAt,
-                persisted.RenewalGraceEndsAt!.Value,
-                TimeSpan.FromMicroseconds(1));
-        });
-
-        PlanGrantRenewalResumed published =
-            Assert.Single(OutboxCollector.OfType<PlanGrantRenewalResumed>());
-        Assert.Equal(grant.Id, published.GrantId);
-        Assert.Equal(plan.Id, published.PlanId);
-        Assert.InRange(published.NextChargeAt, before, after);
-        Assert.Equal(graceEndsAt, published.GraceEndsAt, TimeSpan.FromMicroseconds(1));
-        Assert.Equal(SubscriptionRenewalPolicy.MAX_ATTEMPTS - 1, published.Attempt);
-        Assert.NotEqual(Guid.Empty, published.CorrelationId);
-    }
-
-    [Fact]
-    public async Task ResumeRenewal_TerminalDunningAfterGraceEnd_Returns400WithoutMutationOrEvent()
-    {
-        Guid userId = Guid.NewGuid();
-        DateTimeOffset expiresAt = DateTimeOffset.UtcNow.AddHours(-73);
-        DateTimeOffset graceEndsAt = SubscriptionRenewalPolicy.GraceEndsAt(expiresAt);
-        (_, PlanGrant grant) = await SeedRecurringGrantAsync(
-            userId,
-            expiresAt,
-            cancelled: false,
-            dunningFailureCount: SubscriptionRenewalPolicy.MAX_ATTEMPTS);
-        AuthenticateAs("platform-participant", userId);
-
-        HttpResponseMessage response = await AppHttpClient.PostAsync(
-            $"/access/me/grants/{grant.Id}/resume-renewal/", content: null);
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Empty(OutboxCollector.OfType<PlanGrantRenewalResumed>());
-        await ExecuteInDbAsync(async db =>
-        {
-            PlanGrant persisted = await db.PlanGrants.AsNoTracking().SingleAsync(g => g.Id == grant.Id);
-            Assert.Equal(SubscriptionRenewalPolicy.MAX_ATTEMPTS, persisted.ChargeFailureCount);
-            Assert.Null(persisted.NextChargeAt);
-            Assert.Equal(
-                graceEndsAt,
-                persisted.RenewalGraceEndsAt!.Value,
-                TimeSpan.FromMicroseconds(1));
-        });
-    }
-
-    [Fact]
-    public async Task CancelResumeCancel_UsesDistinctCorrelationIdsForEachActualTransition()
-    {
-        Guid userId = Guid.NewGuid();
-        (_, PlanGrant grant) = await SeedRecurringGrantAsync(
-            userId,
-            DateTimeOffset.UtcNow.AddDays(30),
-            cancelled: false);
-        AuthenticateAs("platform-participant", userId);
-
-        (await AppHttpClient.PostAsync(
-            $"/access/me/grants/{grant.Id}/cancel-renewal/", content: null)).EnsureSuccessStatusCode();
-        (await AppHttpClient.PostAsync(
-            $"/access/me/grants/{grant.Id}/resume-renewal/", content: null)).EnsureSuccessStatusCode();
-        (await AppHttpClient.PostAsync(
-            $"/access/me/grants/{grant.Id}/cancel-renewal/", content: null)).EnsureSuccessStatusCode();
-
-        PlanGrantRenewalCancelled[] cancelled =
-            [.. OutboxCollector.OfType<PlanGrantRenewalCancelled>()];
-        PlanGrantRenewalResumed resumed = Assert.Single(OutboxCollector.OfType<PlanGrantRenewalResumed>());
-        Assert.Equal(2, cancelled.Length);
-        Guid[] correlationIds = [cancelled[0].CorrelationId, resumed.CorrelationId, cancelled[1].CorrelationId];
-        Assert.All(correlationIds, correlationId => Assert.NotEqual(Guid.Empty, correlationId));
-        Assert.Equal(3, correlationIds.Distinct().Count());
     }
 
     [Fact]
@@ -405,6 +182,29 @@ public sealed class SubscriptionRenewalEndpointsTests : AccessServiceTestsBase
             dto.GetProperty("accessEndsAt").GetDateTimeOffset(),
             TimeSpan.FromMicroseconds(1));
         Assert.Equal(JsonValueKind.Null, dto.GetProperty("autoRenewalCancelledAt").ValueKind);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ResumeRenewal_SalesClosed_PreservesExistingGrantAndPublishesNothing(bool cancelled)
+    {
+        Guid userId = Guid.NewGuid();
+        (_, PlanGrant grant) = await SeedRecurringGrantAsync(userId, DateTimeOffset.UtcNow.AddDays(30), cancelled);
+        AuthenticateAs("platform-participant", userId);
+        HttpResponseMessage response = await AppHttpClient.PostAsync(
+            $"/access/me/grants/{grant.Id}/resume-renewal/", content: null);
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        await ExecuteInDbAsync(async db =>
+        {
+            PlanGrant persisted = await db.PlanGrants.AsNoTracking().SingleAsync(g => g.Id == grant.Id);
+            Assert.Equal(grant.ExpiresAt!.Value, persisted.ExpiresAt!.Value, TimeSpan.FromMicroseconds(1));
+            Assert.Equal(cancelled, persisted.AutoRenewalCancelledAt is not null);
+            Assert.Equal(grant.NextChargeAt, persisted.NextChargeAt);
+        });
+        Assert.Empty(OutboxCollector.OfType<PlanGrantRenewalResumed>());
+        Assert.Empty(Factory.TBankClient.InitCalls);
+        Assert.Empty(Factory.TBankClient.ChargeCalls);
     }
 
     private async Task<(Plan Plan, PlanGrant Grant)> SeedRecurringGrantAsync(

@@ -15,34 +15,30 @@ interface CourseAccessNoticeProps {
 
 interface NoticeCta {
   label: string;
-  hrefKind: "login" | "pricing";
+  hrefKind: "login" | "access";
 }
 
 interface NoticeCopy {
   title: string;
   text: string;
   primary: NoticeCta;
-  /** Second optional CTA — currently used only for `anonymous` to offer both
-   *  «Войти» and «Посмотреть планы» on the same screen. */
-  secondary?: NoticeCta;
 }
 
 const noticeCopy: Partial<Record<CourseAccessLevel, NoticeCopy>> = {
   anonymous: {
     title: "Доступ не активирован",
-    text: "Войдите, чтобы продолжить, или выберите план — откроет материалы по вашему уровню.",
+    text: "Войдите, чтобы использовать ранее выданный доступ.",
     primary: { label: "Войти", hrefKind: "login" },
-    secondary: { label: "Посмотреть планы", hrefKind: "pricing" },
   },
   authenticated: {
     title: "Доступ не активирован",
-    text: "Выберите план, чтобы открыть платные материалы курса.",
-    primary: { label: "Выбрать план", hrefKind: "pricing" },
+    text: "Для этих материалов нужен ранее выданный доступ. Новые покупки закрыты.",
+    primary: { label: "Мои доступы", hrefKind: "access" },
   },
 };
 
-function resolveHref(hrefKind: "login" | "pricing", returnTo: string | null): string {
-  if (hrefKind === "pricing") return routes.pricing;
+function resolveHref(hrefKind: "login" | "access", returnTo: string | null): string {
+  if (hrefKind === "access") return routes.myPlans;
   if (!returnTo) return "/login";
   const qs = new URLSearchParams({ callbackUrl: returnTo }).toString();
   return `/login?${qs}`;
@@ -53,7 +49,6 @@ export function CourseAccessNotice({ accessLevel, className }: CourseAccessNotic
   const returnTo = usePathname();
   if (!copy) return null;
   const primaryHref = resolveHref(copy.primary.hrefKind, returnTo);
-  const secondaryHref = copy.secondary ? resolveHref(copy.secondary.hrefKind, returnTo) : null;
 
   return (
     <div
@@ -74,11 +69,6 @@ export function CourseAccessNotice({ accessLevel, className }: CourseAccessNotic
         </div>
       </div>
       <div className="flex shrink-0 flex-col-reverse gap-2 sm:flex-row sm:items-center">
-        {secondaryHref && copy.secondary && (
-          <Button asChild size="sm" variant="outline">
-            <Link href={secondaryHref}>{copy.secondary.label}</Link>
-          </Button>
-        )}
         <Button asChild size="sm">
           <Link href={primaryHref}>{copy.primary.label}</Link>
         </Button>

@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using Microsoft.Extensions.Logging;
 using NotificationService.Core.Dispatching;
 using NotificationService.Core.Templates;
@@ -28,17 +28,12 @@ public sealed class SubscriptionLifecycleHandler
 
     public async Task Handle(PlanGrantRenewed evt, CancellationToken ct)
     {
-        string nextChargeLine = evt.NextChargeAt is { } nextChargeAt
-            ? $"Следующее списание запланировано на {Format(nextChargeAt)}."
-            : "Дата следующего списания появится в разделе «Мои планы».";
-
         NotificationRequest request = NotificationRequest.From(
             template: NotificationTemplates.SubscriptionRenewed,
             recipientUserId: evt.UserId,
             correlationId: evt.CorrelationId,
             args: TemplateArgs.Of(
-                ("expiresAt", Format(evt.ExpiresAt)),
-                ("nextChargeLine", nextChargeLine)),
+                ("expiresAt", Format(evt.ExpiresAt))),
             payload: new
             {
                 grantId = evt.GrantId,

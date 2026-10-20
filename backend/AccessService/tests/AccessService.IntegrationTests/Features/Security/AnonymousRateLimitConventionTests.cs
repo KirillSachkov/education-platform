@@ -20,7 +20,7 @@ public sealed class AnonymousRateLimitConventionTests : AccessServiceTestsBase
     {
         string[] routes =
         [
-            "/access/billing-config",
+            "/access/billing-config/",
             "/access/invites/{token}/preview",
             "/access/plans/public",
             "/access/plans/by-slug/{slug}",

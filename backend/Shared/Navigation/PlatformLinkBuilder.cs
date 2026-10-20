@@ -94,11 +94,11 @@ public static class PlatformLinkBuilder
             // #580 — пробный доступ истекает: клик ведёт в каталог планов, где оформляется
             // апгрейд до полного доступа (upgrade-quote показывает цену с зачётом пробного).
             NotificationTypes.TRIAL_EXPIRY_APPROACHING =>
-                $"{baseUrl}/pricing",
+                $"{baseUrl}/my-plans",
             // #687 — доступ истёк: клик ведёт в каталог планов, где оформляется продление
             // (при доплате зачтётся уже оплаченное).
             NotificationTypes.ACCESS_EXPIRED =>
-                $"{baseUrl}/pricing",
+                $"{baseUrl}/my-plans",
             // #616 — нудж на вступление в Telegram-группу плана: клик ведёт на флоу
             // «привязка Telegram → вступление в чат» (страница ST-4 читает ?plan=).
             NotificationTypes.TG_JOIN_REMINDER when payload.PlanId is Guid joinPlanId =>

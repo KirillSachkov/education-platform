@@ -22,7 +22,7 @@ const TIER_PRIORITY: PlanTier[] = ["FULL_ALL", "LEARN_ALL", "SUBSCRIPTION", "COU
  * Индикатор текущего плана пользователя в подвале сайдбара.
  * - Админ/автор → «Полный доступ» (доступ по роли, без grant'а).
  * - Иначе — лучший активный plan-grant по приоритету tier'ов (tier живёт в grant.plan).
- * - Нет плана → CTA «Выбрать план» на /pricing.
+ * - Нет плана → просмотр текущих доступов.
  * В свёрнутом сайдбаре (`collapsible=icon`) текст скрыт, остаётся иконка короны.
  */
 export function SidebarPlanBadge() {
@@ -46,23 +46,23 @@ export function SidebarPlanBadge() {
     ? "FULL_ALL"
     : (TIER_PRIORITY.find((t) => activeTiers.includes(t)) ?? null);
 
-  // Нет активного плана → приглашение выбрать.
+  // Keep the access overview reachable without advertising a purchase.
   if (!bestTier) {
     return (
       <Link
-        href={routes.pricing}
-        title="Выбрать план"
+        href={routes.myPlans}
+        title="Мои доступы"
         className="flex items-center gap-2 rounded-lg border border-dashed border-sidebar-border px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
       >
         <Icons.crown className="size-4 shrink-0 text-primary/70" />
-        <span className="truncate group-data-[collapsible=icon]:hidden">Выбрать план</span>
+        <span className="truncate group-data-[collapsible=icon]:hidden">Нет активного доступа</span>
       </Link>
     );
   }
 
   return (
     <Link
-      href={routes.pricing}
+      href={routes.myPlans}
       title={`Ваш план: ${TIER_LABEL[bestTier]}`}
       className="flex items-center gap-2 rounded-lg border border-sidebar-border bg-sidebar-accent/40 px-2.5 py-2 transition-colors hover:bg-sidebar-accent"
     >

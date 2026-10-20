@@ -19,7 +19,6 @@ interface EnrollCardProps {
 export function EnrollCard({ state, startHref }: EnrollCardProps) {
   const isAuthenticated = useIsAuthenticated();
   const pathname = usePathname();
-  const pricingHref = routes.pricing;
 
   const loginUrl = `${routes.login}?callbackUrl=${encodeURIComponent(pathname)}`;
 
@@ -27,19 +26,28 @@ export function EnrollCard({ state, startHref }: EnrollCardProps) {
     <Card className="gap-0 border-border/60 bg-card px-4 py-4 shadow-sm sm:px-5 sm:py-5">
       <div className="flex flex-col gap-3">
         {state === "enrolled" && startHref ? (
-          <Button asChild size="default" className="w-full whitespace-normal h-auto min-h-9 py-2 text-center leading-snug">
+          <Button
+            asChild
+            size="default"
+            className="w-full whitespace-normal h-auto min-h-9 py-2 text-center leading-snug"
+          >
             <Link href={startHref}>Начать обучение</Link>
           </Button>
         ) : !isAuthenticated ? (
-          <Button asChild size="default" className="w-full whitespace-normal h-auto min-h-9 py-2 text-center leading-snug">
-            <Link href={loginUrl}>Войти, чтобы получить доступ</Link>
+          <Button
+            asChild
+            size="default"
+            className="w-full whitespace-normal h-auto min-h-9 py-2 text-center leading-snug"
+          >
+            <Link href={loginUrl}>Войти, чтобы продолжить</Link>
           </Button>
         ) : (
-          // Authenticated, нет доступа: уводим на pricing.
-          // Issue #358: бесплатные материалы открыты любому залогиненному (AccessType.REGISTERED),
-          // отдельного claim-free flow больше нет — на /pricing только платные тарифы.
-          <Button asChild size="default" className="w-full whitespace-normal h-auto min-h-9 py-2 text-center leading-snug">
-            <Link href={pricingHref}>Выбрать план</Link>
+          <Button
+            asChild
+            size="default"
+            className="w-full whitespace-normal h-auto min-h-9 py-2 text-center leading-snug"
+          >
+            <Link href={routes.myPlans}>Мои доступы</Link>
           </Button>
         )}
       </div>

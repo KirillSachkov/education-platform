@@ -3,11 +3,9 @@
 import { Loader2 } from "lucide-react";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
-import { useState, useSyncExternalStore } from "react";
+import { useState } from "react";
 import { routes } from "@/shared/config/routes";
-import { trackGrowthEvent } from "@/shared/analytics";
-import { readPricingIntentForCallback } from "@/shared/lib/pricing-intent";
-import { sanitizeCallbackUrl } from "@/shared/lib/sanitize-callback-url";
+import { resolveWorkspaceCallback } from "@/shared/lib/workspace-callback";
 import { CONSENT_MISSING_ERROR_CODE, VerifyOtpError, type VerifyOtpRequest } from "../model/api";
 import { useOtpCooldown } from "../model/use-otp-cooldown";
 import { useSendOtp } from "../model/use-send-otp";
@@ -18,23 +16,11 @@ import { EmailStep } from "./email-step";
 
 type Step = "email" | "code" | "consents" | "authenticating";
 
-const subscribeNoop = () => () => {};
-const NULL_PRICING_INTENT_ID = (): string | null => null;
-
-function usePricingIntentId(callbackUrl: string): string | null {
-  return useSyncExternalStore(
-    subscribeNoop,
-    () => readPricingIntentForCallback(callbackUrl)?.intentId ?? null,
-    NULL_PRICING_INTENT_ID,
-  );
-}
-
 export function LoginForm() {
   const searchParams = useSearchParams();
   // Defense-in-depth: NextAuth редиректит через конкатенацию с baseUrl, но
   // валидируем на входе — единые правила с /onboarding/connections (next-path).
-  const callbackUrl = sanitizeCallbackUrl(searchParams.get("callbackUrl"), "/home");
-  const pricingIntentId = usePricingIntentId(callbackUrl);
+  const callbackUrl = resolveWorkspaceCallback(searchParams.get("callbackUrl"));
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -80,25 +66,8 @@ export function LoginForm() {
     setCode(otpCode);
     const ok = await tryVerify({ email, code: otpCode });
     if (ok) {
-      trackPricingAuthCompleted(false);
       await completeSignIn(callbackUrl);
     }
-  };
-
-  const trackPricingAuthCompleted = (newAccount: boolean) => {
-    const pricingIntent = readPricingIntentForCallback(callbackUrl);
-    if (!pricingIntent || pricingIntent.intentId !== pricingIntentId) return;
-    trackGrowthEvent(
-      {
-        name: "auth_completed",
-        properties: {
-          flow: "checkout",
-          new_account: newAccount,
-          correlation_id: pricingIntent.intentId,
-        },
-      },
-      { once: `pricing-auth:${pricingIntent.intentId}` },
-    );
   };
 
   const handleSubmitConsents = async (consents: Consents) => {
@@ -112,7 +81,6 @@ export function LoginForm() {
     // Пройденный consents-шаг = новая регистрация (#696): ведём в онбординг
     // привязок GitHub/Telegram, исходная цель сохраняется в `next`.
     if (ok) {
-      trackPricingAuthCompleted(true);
       await completeSignIn(
         `${routes.onboardingConnections}?next=${encodeURIComponent(callbackUrl)}`,
       );
@@ -162,12 +130,5 @@ export function LoginForm() {
     );
   }
 
-  return (
-    <EmailStep
-      onSubmit={handleSendOtp}
-      isPending={isSending}
-      defaultEmail={email}
-      hasPricingIntent={pricingIntentId !== null}
-    />
-  );
+  return <EmailStep onSubmit={handleSendOtp} isPending={isSending} defaultEmail={email} />;
 }

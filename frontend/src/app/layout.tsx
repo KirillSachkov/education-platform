@@ -40,20 +40,7 @@ export const metadata: Metadata = {
     template: "%s | SachkovLearn",
     default: "SachkovLearn",
   },
-  description:
-    "Информационно-консультационная платформа по программированию: курсы C#, .NET, ASP.NET Core, " +
-    "микросервисы, DevOps, AI — с AI-ревью каждого PR и ответами автора.",
-  keywords: [
-    "курс C#",
-    "курсы C#",
-    "C# с нуля",
-    "курс .NET",
-    ".NET обучение",
-    "ASP.NET Core курс",
-    "C# разработка",
-    "backend разработка",
-    "fullstack .NET",
-  ],
+  description: "Рабочая область учебной платформы: материалы, задания и история обучения.",
   // Search-console ownership tags — read from runtime server env so the owner can
   // set them without a frontend rebuild. Undefined => Next omits the tag entirely
   // (no-op until verification codes exist). Yandex.Webmaster / Google Search Console

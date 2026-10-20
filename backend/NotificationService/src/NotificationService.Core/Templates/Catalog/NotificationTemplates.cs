@@ -347,13 +347,7 @@ public static class NotificationTemplates
             "Что нового за неделю: {digestSummary}.\n\n{digestItems}\n\nОткрыть платформу: {openUrl}"));
 
     /// <summary>
-    /// Месячный доступ скоро истекает (#580) → самому пользователю. CTA — оформить полный
-    /// доступ навсегда (уплаченное за месяц в зачёте). Клик ведёт на каталог планов
-    /// (/pricing), где оформляется апгрейд.
-    /// Аргументы: planName (название плана, напр. «Полный доступ на месяц»), expiresAt
-    /// (дата истечения dd.MM.yyyy, форматируется хендлером), openUrl.
-    /// Каналы: InApp + Telegram + Email (#687 — владелец захотел дублировать pre-expiry
-    /// напоминание ещё и письмом, чтобы покупатель точно увидел до потери доступа).
+    /// Reminder of the existing trial expiry. New purchases and extensions are closed.
     /// </summary>
     public static readonly NotificationTemplate TrialExpiryApproaching = new(
         id: "trial.expiry_approaching",
@@ -361,25 +355,18 @@ public static class NotificationTemplates
         defaultChannels: NotificationChannel.InApp | NotificationChannel.Telegram | NotificationChannel.Email,
         inApp: new(
             Title: "Доступ скоро закончится",
-            Body: "Доступ по плану «{planName}» истекает {expiresAt}. Оформи полный доступ к .NET Fullstack — уплаченное за месяц пойдёт в зачёт."),
+            Body: "Доступ по плану «{planName}» истекает {expiresAt}. Новые покупки и продления закрыты."),
         telegram: new(
-            Body: "⏳ *Доступ скоро закончится*\n\nДоступ по плану «{planName}» истекает {expiresAt}. Оформи полный доступ к .NET Fullstack — уплаченное за месяц пойдёт в зачёт.\n\n[Оформить полный доступ .NET Fullstack]({openUrl})"),
+            Body: "⏳ *Доступ скоро закончится*\n\nДоступ по плану «{planName}» истекает {expiresAt}. Новые покупки и продления закрыты.\n\n[Мои доступы]({openUrl})"),
         email: new(
             Subject: "Доступ по плану «{planName}» скоро закончится",
             HtmlBodyResource: "trial-expiry-approaching.html",
             PlainText:
             "Доступ по плану «{planName}» истекает {expiresAt}.\n\n" +
-            "Оформи полный доступ к .NET Fullstack — уплаченное за месяц пойдёт в зачёт: {openUrl}"));
+            "Новые покупки и продления закрыты. Мои доступы: {openUrl}"));
 
     /// <summary>
-    /// Доступ по плану истёк (#687) → самому пользователю. AccessService (фоновый
-    /// <c>ExpiredGrantsSweeper</c>) перевёл time-limited grant в EXPIRED по TTL. В отличие от
-    /// pre-expiry <see cref="TrialExpiryApproaching"/>, приходит ПОСЛЕ потери доступа и зовёт
-    /// продлить — при доплате зачтётся уже оплаченное. Клик ведёт в каталог планов (/pricing).
-    /// Событие <c>PlanGrantExpired</c> не несёт <c>PlanName</c>, поэтому хендлер строит
-    /// <c>accessSummary</c> из <c>PlanTier</c> (как <c>PlanGrantReceivedHandler</c>).
-    /// Аргументы: accessSummary (что именно истекло), openUrl.
-    /// Каналы: InApp + Telegram + Email (владелец явно хочет все три).
+    /// Existing time-limited access expired. Links lead to the access history.
     /// </summary>
     public static readonly NotificationTemplate AccessExpired = new(
         id: "access.expired",
@@ -387,15 +374,15 @@ public static class NotificationTemplates
         defaultChannels: NotificationChannel.InApp | NotificationChannel.Telegram | NotificationChannel.Email,
         inApp: new(
             Title: "Доступ закончился",
-            Body: "{accessSummary} истёк. Продлите доступ — при доплате зачтётся уже оплаченное."),
+            Body: "{accessSummary} истёк. Новые покупки и продления закрыты."),
         telegram: new(
-            Body: "⌛ *Доступ закончился*\n\n{accessSummary} истёк. Продлите доступ — при доплате зачтётся уже оплаченное.\n\n[Продлить доступ]({openUrl})"),
+            Body: "⌛ *Доступ закончился*\n\n{accessSummary} истёк. Новые покупки и продления закрыты.\n\n[Мои доступы]({openUrl})"),
         email: new(
             Subject: "Доступ закончился",
             HtmlBodyResource: "access-expired.html",
             PlainText:
             "{accessSummary} истёк.\n\n" +
-            "Продлите доступ — при доплате зачтётся уже оплаченное: {openUrl}"));
+            "Новые покупки и продления закрыты. Мои доступы: {openUrl}"));
 
     /// <summary>
     /// «Вход теперь по почте» (#704, epic #696) — one-shot кампания пользователям с
@@ -476,7 +463,7 @@ public static class NotificationTemplates
         defaultChannels: NotificationChannel.InApp,
         inApp: new(
             Title: "Подписка продлена",
-            Body: "Оплата прошла. Доступ продлён до {expiresAt}. {nextChargeLine}"));
+            Body: "Оплата прошла. Доступ продлён до {expiresAt}. Новых автоматических списаний не будет."));
 
     public static readonly NotificationTemplate SubscriptionRenewalRetryScheduled = new(
         id: "subscription.renewal_retry_scheduled",
@@ -484,15 +471,15 @@ public static class NotificationTemplates
         defaultChannels: NotificationChannel.InApp | NotificationChannel.Telegram | NotificationChannel.Email,
         inApp: new(
             Title: "Не удалось продлить подписку",
-            Body: "Списание не прошло. Повторим попытку {nextRetryAt}. Проверьте карту и баланс. Доступ сохранён до {graceEndsAt}."),
+            Body: "Списание не прошло. Новых автоматических списаний не будет. Доступ сохранён до {graceEndsAt}."),
         telegram: new(
-            Body: "⚠️ *Не удалось продлить подписку*\n\nСписание не прошло. Повторим попытку {nextRetryAt}. Проверьте карту и баланс. Доступ сохранён до {graceEndsAt}.\n\n[Открыть «Мои планы»]({openUrl})"),
+            Body: "⚠️ *Не удалось продлить подписку*\n\nСписание не прошло. Новых автоматических списаний не будет. Доступ сохранён до {graceEndsAt}.\n\n[Открыть «Мои планы»]({openUrl})"),
         email: new(
             Subject: "Не удалось продлить подписку",
             HtmlBodyResource: "subscription-renewal-retry.html",
             PlainText:
-            "Списание не прошло. Повторим попытку {nextRetryAt}.\n\n" +
-            "Проверьте карту и баланс. Доступ сохранён до {graceEndsAt}.\n\n" +
+            "Списание не прошло. Новых автоматических списаний не будет.\n\n" +
+            "Доступ сохранён до {graceEndsAt}.\n\n" +
             "Открыть «Мои планы»: {openUrl}"));
 
     public static readonly NotificationTemplate SubscriptionRenewalTerminalFailure = new(
@@ -501,7 +488,7 @@ public static class NotificationTemplates
         defaultChannels: NotificationChannel.InApp | NotificationChannel.Telegram | NotificationChannel.Email,
         inApp: new(
             Title: "Подписка не продлена",
-            Body: "Все попытки списания завершились неуспешно. Автопродление остановлено. Доступ сохранён до {graceEndsAt}. Откройте «Мои планы», чтобы проверить оплату и возобновить подписку."),
+            Body: "Все попытки списания завершились неуспешно. Автопродление остановлено. Доступ сохранён до {graceEndsAt}. Откройте «Мои планы», чтобы проверить историю оплат. Новые покупки и продления закрыты."),
         telegram: new(
             Body: "⛔ *Подписка не продлена*\n\nВсе попытки списания завершились неуспешно. Автопродление остановлено. Доступ сохранён до {graceEndsAt}.\n\n[Проверить оплату в «Моих планах»]({openUrl})"),
         email: new(
@@ -509,8 +496,7 @@ public static class NotificationTemplates
             HtmlBodyResource: "subscription-renewal-terminal.html",
             PlainText:
             "Все попытки списания завершились неуспешно. Автопродление остановлено.\n\n" +
-            "Доступ сохранён до {graceEndsAt}. Откройте «Мои планы», чтобы проверить оплату " +
-            "и возобновить подписку: {openUrl}"));
+            "Доступ сохранён до {graceEndsAt}. Откройте «Мои планы», чтобы проверить историю оплат: {openUrl}"));
 
     public static readonly NotificationTemplate SubscriptionRenewalCancelled = new(
         id: "subscription.renewal_cancelled",
@@ -518,11 +504,11 @@ public static class NotificationTemplates
         defaultChannels: NotificationChannel.InApp | NotificationChannel.Email,
         inApp: new(
             Title: "Автопродление отключено",
-            Body: "Новых списаний не будет. Доступ сохранится до {accessEndsAt}. Возобновить подписку можно в разделе «Мои планы»."),
+            Body: "Новых списаний не будет. Доступ сохранится до {accessEndsAt}. Новые покупки и продления закрыты. История доступна в разделе «Мои планы»."),
         email: new(
             Subject: "Автопродление подписки отключено",
             HtmlBodyResource: "subscription-renewal-cancelled.html",
             PlainText:
             "Новых списаний не будет. Доступ сохранится до {accessEndsAt}.\n\n" +
-            "Возобновить подписку можно в разделе «Мои планы»: {openUrl}"));
+            "История доступна в разделе «Мои планы»: {openUrl}"));
 }

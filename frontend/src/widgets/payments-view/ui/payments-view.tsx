@@ -6,13 +6,10 @@ import {
   type OrderStatus,
 } from "@/entities/access-order";
 import { formatPriceFromCents } from "@/entities/access-plan";
-import { routes } from "@/shared/config/routes";
 import { Badge } from "@/shared/ui/kit/badge";
-import { Button } from "@/shared/ui/kit/button";
 import { EmptyState } from "@/shared/ui/kit/empty-state";
 import { Icons } from "@/shared/ui/icons";
 import { useQuery } from "@tanstack/react-query";
-import Link from "next/link";
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
   PENDING: "Ожидает оплаты",
@@ -21,16 +18,12 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
   REFUNDED: "Возвращён",
 };
 
-const STATUS_VARIANTS: Record<
-  OrderStatus,
-  "default" | "secondary" | "destructive" | "outline"
-> = {
+const STATUS_VARIANTS: Record<OrderStatus, "default" | "secondary" | "destructive" | "outline"> = {
   PENDING: "secondary",
   PAID: "default",
   FAILED: "destructive",
   REFUNDED: "outline",
 };
-
 
 /**
  * `/payments` — подробная история заказов текущего юзера: статус, сумма, дата,
@@ -70,12 +63,7 @@ export function PaymentsView() {
           variant="card"
           icon={Icons.creditCard}
           title="Платежей пока нет"
-          description="Здесь появятся ваши заказы на платные планы. Чек на email отправит онлайн-касса автоматически."
-          action={
-            <Button asChild>
-              <Link href={routes.pricing}>Посмотреть планы</Link>
-            </Button>
-          }
+          description="Здесь хранится история ваших оплат. Новые покупки и продления закрыты."
         />
       ) : (
         <div className="space-y-3">

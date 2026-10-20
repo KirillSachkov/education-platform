@@ -11,10 +11,9 @@ type Props = {
   onSubmit: (email: string) => void;
   isPending: boolean;
   defaultEmail?: string;
-  hasPricingIntent?: boolean;
 };
 
-export function EmailStep({ onSubmit, isPending, defaultEmail, hasPricingIntent = false }: Props) {
+export function EmailStep({ onSubmit, isPending, defaultEmail }: Props) {
   const form = useForm<EmailFormValues>({
     resolver: zodResolver(emailSchema),
     defaultValues: { email: defaultEmail ?? "" },
@@ -34,11 +33,6 @@ export function EmailStep({ onSubmit, isPending, defaultEmail, hasPricingIntent 
         <p className="text-xs text-muted-foreground">
           По коду из письма вы войдёте в аккаунт или создадите новый.
         </p>
-        {hasPricingIntent ? (
-          <p className="text-xs text-muted-foreground">
-            После входа вернём вас к оформлению выбранного плана.
-          </p>
-        ) : null}
       </div>
 
       <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col gap-3">

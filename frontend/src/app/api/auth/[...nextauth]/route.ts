@@ -1,5 +1,5 @@
 import { handlers, signIn } from "@/shared/auth/auth";
-import { sanitizeCallbackUrl } from "@/shared/lib/sanitize-callback-url";
+import { resolveWorkspaceCallback } from "@/shared/lib/workspace-callback";
 import { type NextRequest, NextResponse } from "next/server";
 
 type RouteContext = {
@@ -15,9 +15,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
   // Auth.js v5 does not support GET /signin/:provider.
   // Some clients may still hit this URL, so we normalize it to a server-side signIn.
   if (segments[0] === "signin" && segments[1]) {
-    const callbackUrl = sanitizeCallbackUrl(
+    const callbackUrl = resolveWorkspaceCallback(
       new URL(request.url).searchParams.get("callbackUrl"),
-      "/catalog",
     );
 
     const redirectUrl = (await signIn(segments[1], {
@@ -26,9 +25,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     })) as string | undefined;
 
     if (!redirectUrl) {
-      return NextResponse.redirect(
-        new URL("/api/auth/error?error=Configuration", request.url),
-      );
+      return NextResponse.redirect(new URL("/api/auth/error?error=Configuration", request.url));
     }
 
     const target = redirectUrl.startsWith("http")

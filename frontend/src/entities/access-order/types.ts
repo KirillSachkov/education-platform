@@ -4,20 +4,6 @@
 export type { OrderStatus } from "@/shared/types/status";
 import type { OrderStatus } from "@/shared/types/status";
 
-/**
- * Request body для `POST /access/orders/`. Frontend шлёт только planId — цена
- * snapshot'ится из `plan.priceCents` на сервере (защита от tampering). Idempotency-Key
- * передаётся отдельным header'ом, не в body.
- */
-export interface CreateOrderRequest {
-  planId: string;
-}
-
-export interface CreateOrderResponse {
-  orderId: string;
-  paymentUrl: string;
-}
-
 export interface GetOrderStatusResponse {
   orderId: string;
   status: OrderStatus;
