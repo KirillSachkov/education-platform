@@ -1,4 +1,8 @@
-# Observability
+# Local observability
+
+Production uses the lightweight checks and bounded logs described in
+[production maintenance](production-maintenance.md). The Grafana stack below is
+optional local debugging infrastructure.
 
 Стек, шина данных, кастомные метрики и реализация. В root `CLAUDE.md` остаётся только
 один абзац c командой `./scripts/dev.sh up-obs` и debug order — подробности здесь.
@@ -22,9 +26,9 @@ OTel SDK в .NET-сервисах для traces+metrics, Alloy для shipping �
 
 **Dev (с obs):** `./scripts/dev.sh up-obs` — единственная команда, поднимающая Grafana stack и экспортящая `OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317`. Grafana на `http://localhost:3001`.
 
-**Prod:** Grafana via SSH tunnel (`ssh -L 3001:localhost:3001 root@server`). `OTEL_EXPORTER_OTLP_ENDPOINT` задан в Infisical.
+**Production:** no Grafana stack or telemetry export. Backend SDKs are disabled in production Compose.
 
-**Retention:** Loki 14d (prod) / 72h (dev), Tempo 7d, Prometheus 15d (prod) / 7d (dev).
+**Local retention:** see the development Loki, Tempo and Prometheus configurations.
 
 ## Bootstrap unification
 

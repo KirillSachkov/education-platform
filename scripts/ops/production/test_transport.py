@@ -83,7 +83,9 @@ class ProductionTransport(unittest.TestCase):
         required = {"docker-compose.prod.yml": "services: {}", "nginx.prod.conf": "events {}",
                     "frontend/src/shared/legal/versions.ts": "versions",
                     "backend/AuthService/src/AuthService.Core/Services/LegalDocumentVersions.cs": "versions",
-                    "CHANGELOG.md": "## [1.2.3]\n"}
+                    "CHANGELOG.md": "## [1.2.3]\n",
+                    "scripts/backup-s3.sh": "#!/bin/bash\n",
+                    "scripts/ops/production/check_health.py": "# selected monitor\n"}
         for bad in [None, "duplicate", "symlink", "missing", "oversized"]:
             output = io.BytesIO()
             with zipfile.ZipFile(output, "w") as result:

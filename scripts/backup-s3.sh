@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+umask 077
 
 # ─── Database backup to Yandex Object Storage (S3) ──────────────────────────
 #
@@ -31,7 +32,7 @@ PG_PASSWORD="${POSTGRES_PASSWORD:-}"
 
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 BACKUP_FILE="backup_${TIMESTAMP}.sql.gz"
-TMP_DIR="/tmp/pg-backups"
+TMP_DIR="${BACKUP_TMP_DIR:-/tmp/pg-backups}"
 
 log() { echo "[$(date '+%Y-%m-%d %H:%M:%S UTC')] $*"; }
 log_err() { echo "[$(date '+%Y-%m-%d %H:%M:%S UTC')] ERROR: $*" >&2; }
@@ -58,14 +59,19 @@ export AWS_DEFAULT_REGION="ru-central1"
 
 # ─── Dump ────────────────────────────────────────────────────────────────────
 mkdir -p "$TMP_DIR"
+python3 - "$TMP_DIR" <<'PY_PRIVATE_DIRECTORY'
+import os, stat, sys
+from pathlib import Path
+path = Path(sys.argv[1]); metadata = path.lstat()
+if not stat.S_ISDIR(metadata.st_mode) or metadata.st_uid != os.geteuid():
+    raise SystemExit("Backup temporary directory must be owned by the backup user")
+path.chmod(0o700)
+PY_PRIVATE_DIRECTORY
 log "Starting pg_dumpall (user=${PG_USER}, container=${PG_CONTAINER})..."
 
-PGPASSWORD_ENV=""
-if [[ -n "$PG_PASSWORD" ]]; then
-  PGPASSWORD_ENV="-e PGPASSWORD=${PG_PASSWORD}"
-fi
+export PGPASSWORD="$PG_PASSWORD"
 
-if ! docker exec $PGPASSWORD_ENV "$PG_CONTAINER" \
+if ! docker exec -e PGPASSWORD "$PG_CONTAINER" \
     pg_dumpall -U "$PG_USER" --clean --if-exists \
     | gzip > "$TMP_DIR/$BACKUP_FILE"; then
   log_err "pg_dumpall failed"
@@ -84,18 +90,48 @@ if [[ "$BYTES" -lt 10240 ]]; then
   exit 1
 fi
 
+gzip -t "$TMP_DIR/$BACKUP_FILE"
+CHECKSUM="$(sha256sum "$TMP_DIR/$BACKUP_FILE" | awk '{print $1}')"
+
 # ─── Upload ──────────────────────────────────────────────────────────────────
 log "Uploading to s3://${S3_BUCKET}/${BACKUP_FILE}..."
 
 if ! aws s3 cp "$TMP_DIR/$BACKUP_FILE" "s3://${S3_BUCKET}/${BACKUP_FILE}" \
     --endpoint-url "$S3_ENDPOINT" \
+    --acl private --metadata "sha256=$CHECKSUM" \
     --quiet; then
   log_err "S3 upload failed"
   rm -f "$TMP_DIR/$BACKUP_FILE"
   exit 1
 fi
 
-log "Upload complete"
+# Verify the remote object before recording a successful backup or removing the dump.
+HEAD_FILE="$(mktemp)"
+if ! aws s3api head-object --bucket "$S3_BUCKET" --key "$BACKUP_FILE" \
+    --endpoint-url "$S3_ENDPOINT" > "$HEAD_FILE"; then
+  rm -f "$HEAD_FILE"
+  log_err "Backup read-back failed; local dump retained"
+  exit 1
+fi
+python3 - "$HEAD_FILE" "$BYTES" "$CHECKSUM" "${BACKUP_RECEIPT_FILE:-/var/lib/education-platform/last-backup.json}" <<'PY_RECEIPT'
+import json, os, sys, tempfile, time
+from pathlib import Path
+head = json.loads(Path(sys.argv[1]).read_text())
+if head.get("ContentLength") != int(sys.argv[2]) or head.get("Metadata", {}).get("sha256") != sys.argv[3]:
+    raise SystemExit("Backup remote size or checksum metadata mismatch; local dump retained")
+receipt = Path(sys.argv[4])
+receipt.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+fd, temporary = tempfile.mkstemp(prefix=".backup-", dir=receipt.parent)
+try:
+    with os.fdopen(fd, "w") as stream:
+        json.dump({"verified_at": time.time(), "size_bytes": int(sys.argv[2]), "sha256": sys.argv[3], "version_id": head.get("VersionId")}, stream)
+        stream.flush(); os.fsync(stream.fileno())
+    os.replace(temporary, receipt)
+finally:
+    if os.path.exists(temporary): os.unlink(temporary)
+PY_RECEIPT
+rm -f "$HEAD_FILE"
+log "Upload and remote read-back complete"
 rm -f "$TMP_DIR/$BACKUP_FILE"
 
 # ─── Cleanup old S3 backups ──────────────────────────────────────────────────
