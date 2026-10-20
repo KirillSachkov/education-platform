@@ -35,7 +35,7 @@ class RuntimeBackup(unittest.TestCase):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(body); path.chmod(0o600)
 
-    def retain(self, fault=None):
+    def retain(self, fault=None, metadata_key="sha256"):
         stored = {}
         real_command = backup_runtime.command
 
@@ -52,8 +52,12 @@ class RuntimeBackup(unittest.TestCase):
                 return json.dumps({"VersionId": None if fault == "version" else "v1"}).encode()
             self.assertEqual(arguments[arguments.index("--version-id") + 1], "v1")
             if operation == "head-object":
+                metadata = {metadata_key: hashlib.sha256(stored["data"]).hexdigest()}
+                if fault == "checksum": metadata[metadata_key] = "wrong"
+                if fault == "duplicate": metadata["SHA256"] = "wrong"
+                if fault == "missing-checksum": metadata = {}
                 return json.dumps({"ContentLength": len(stored["data"]) + (fault == "size"),
-                                   "Metadata": {"sha256": hashlib.sha256(stored["data"]).hexdigest()}}).encode()
+                                   "Metadata": metadata}).encode()
             if operation == "get-object":
                 Path(arguments[-1]).write_bytes(b"damaged" if fault == "readback" else stored["data"])
                 return b'{"VersionId":"v1"}'
@@ -77,8 +81,15 @@ class RuntimeBackup(unittest.TestCase):
                 self.assertEqual(archive.getmember(name).mode, 0o600)
             self.assertEqual(archive.extractfile("runtime.env").read(), self.env.read_bytes())
 
+    def test_checksum_metadata_names_are_case_insensitive(self):
+        for key in ["Sha256", "SHA256", "sHa256"]:
+            with self.subTest(key=key):
+                receipt, _ = self.retain(metadata_key=key)
+                self.assertEqual(receipt["status"], "PASS")
+                with self.assertRaises(ValueError): self.retain("checksum", metadata_key=key)
+
     def test_missing_version_or_remote_corruption_blocks_success(self):
-        for fault in ["version", "size", "readback"]:
+        for fault in ["version", "size", "readback", "checksum", "duplicate", "missing-checksum"]:
             with self.subTest(fault=fault), self.assertRaises(ValueError): self.retain(fault)
 
     def test_untrusted_recipient_and_missing_recovery_state_block_upload(self):
