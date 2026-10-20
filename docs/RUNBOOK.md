@@ -475,9 +475,12 @@ WHERE status = 'PROCESSING' AND completed_at IS NULL
 
 Resolver кэширует singleton 60 секунд. Если ты manually patch'ил DB row — wait 60s или рестартни ARS pod.
 
-### Ключевые dashboard panels
+### Диагностика review pipeline
 
-`Assignment Review Pipeline` (Grafana → search `assignment-review-pipeline`):
+В небольшом production runtime используйте ограниченные логи `assignment-review-service`
+и [host health check](production-maintenance.md). Grafana остаётся только опциональным
+локальным инструментом отладки. Для запущенного локально observability stack доступны
+панели `Assignment Review Pipeline` (Grafana → search `assignment-review-pipeline`):
 - Iteration outcomes — пик любого `review.*` failure-кода = upstream issue (GitHub / LLM down).
 - RAG context chunks — резкое падение к 0 = индекс stale или embedding-провайдер недоступен.
 - Indexing runs (1h) — failed > 0 = нужен re-index manual.

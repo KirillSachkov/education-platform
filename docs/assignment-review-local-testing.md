@@ -285,7 +285,7 @@ Tempo: фильтр по `service.name=AssignmentReviewService` → span `iterat
 
 - [ ] Создан **prod** GitHub App (отдельный от dev) с теми же permissions и events.
 - [ ] Webhook URL у prod App'а: `https://<prod-domain>/api/assignment-review/webhooks/github/`.
-- [ ] Все 5 `ASSIGNMENT_REVIEW__GITHUB__*` залиты в Infisical (prod env).
+- [ ] Все 5 `ASSIGNMENT_REVIEW__GITHUB__*` сохранены в защищённом production `runtime.env` согласно [процедуре секретов](production-secrets.md).
 - [ ] Хотя бы один `ProjectReviewContext.GuidelinesMarkdown` + `IssueReviewSpec` создан на prod ECS.
 - [ ] Ref-repo индексация прошла (метрика `assignment_review_indexing_runs_total{outcome="success"}` ≥ 1).
 - [ ] Grafana dashboard `assignment-review-pipeline` доступен на prod Grafana.
