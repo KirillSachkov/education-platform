@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -135,6 +136,44 @@ class ProductionTransport(unittest.TestCase):
         self.assertEqual(base64.b64decode(restore["base64"]), (transport.ROOT / "scripts/restore-s3.sh").read_bytes())
         self.assertEqual(restore["sha256"], hashlib.sha256(base64.b64decode(restore["base64"])).hexdigest())
         self.assertEqual(json.loads(output.getvalue())["health_services"], 13)
+
+    def execute_loader(self, counts=(10, 9), fault=None):
+        receipt = subprocess.CompletedProcess([], 0, b'{"status":"PASS","operation":"probe","applications":14,"health_services":13}', b"")
+        with patch.dict(os.environ, self.environment(), clear=True), patch.object(transport.subprocess, "run", return_value=receipt) as ssh, contextlib.redirect_stdout(io.StringIO()):
+            transport.main()
+        packet = json.loads(ssh.call_args.kwargs["input"])
+        remote = b"import json,pathlib,sys; p=pathlib.Path(sys.argv[1]); d=json.loads(p.read_text()); (p.parent/'public-result.json').write_text(json.dumps({'status':'PASS','operation':'probe','applications':d['fixture_counts'][0],'health_services':d['fixture_counts'][1]}))"
+        packet["scripts"]["remote_production.py"] = {"base64": base64.b64encode(remote).decode(), "sha256": hashlib.sha256(remote).hexdigest()}
+        packet["fixture_counts"] = counts
+        if fault == "missing": packet["scripts"].pop("backup_runtime.py")
+        if fault == "extra": packet["scripts"]["unexpected.py"] = packet["scripts"]["backup_runtime.py"]
+        if fault == "checksum": packet["scripts"]["backup_runtime.py"]["sha256"] = "0" * 64
+        with tempfile.TemporaryDirectory() as directory:
+            original_root = '"/opt/education-platform/.github-production/runs"'
+            self.assertEqual(transport.LOADER.count(original_root), 1)
+            loader = transport.LOADER.replace(original_root, json.dumps(directory))
+            return subprocess.run([sys.executable, "-c", loader], input=json.dumps(packet).encode(), capture_output=True, timeout=30)
+
+    def test_real_loader_accepts_complete_transport_packet_and_current_inventories(self):
+        for counts in [(10, 9), (14, 13)]:
+            with self.subTest(counts=counts):
+                result = self.execute_loader(counts)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(json.loads(result.stdout)["applications"], counts[0])
+
+    def test_real_loader_rejects_stale_or_invalid_service_counts(self):
+        for counts in [(11, 10), (10, 10), (True, 0), (14, "13")]:
+            with self.subTest(counts=counts):
+                result = self.execute_loader(counts)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(result.stdout, b"")
+
+    def test_real_loader_still_rejects_missing_extra_or_corrupt_scripts(self):
+        for fault in ["missing", "extra", "checksum"]:
+            with self.subTest(fault=fault):
+                result = self.execute_loader(fault=fault)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(result.stdout, b"")
 
     def test_transport_failure_and_count_sentinel_are_never_public(self):
         for result in [subprocess.CompletedProcess([], 255, b"PRIVATE_OUTPUT", b"PRIVATE_ERROR"),

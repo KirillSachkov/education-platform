@@ -50,12 +50,15 @@ packet=json.loads(raw)
 root=pathlib.Path("/opt/education-platform/.github-production/runs")
 root.mkdir(parents=True,exist_ok=True,mode=0o700)
 run=pathlib.Path(tempfile.mkdtemp(prefix="run-",dir=root))
-allowed={"remote_production.py","release_model.py","run-production-migrations.sh","check-production-rollback.sh","validate-production-env.sh","restore-s3.sh"}
+allowed={"remote_production.py","release_model.py","environment_file.py","backup_runtime.py","run-production-migrations.sh","check-production-rollback.sh","validate-production-env.sh","restore-s3.sh"}
 if set(packet["scripts"])!=allowed: raise RuntimeError("script inventory mismatch")
 for name,item in packet.pop("scripts").items():
     content=base64.b64decode(item["base64"],validate=True)
     if hashlib.sha256(content).hexdigest()!=item["sha256"]: raise RuntimeError("script checksum mismatch")
     (run/name).write_bytes(content)
+sys.path.insert(0,str(run))
+from release_model import SERVICES,LEGACY_SERVICES
+allowed_counts={(len(SERVICES),len(SERVICES)-1),(len(LEGACY_SERVICES),len(LEGACY_SERVICES)-1)}
 request=run/"request.json"
 request.write_text(json.dumps(packet))
 with (run/"operation.log").open("w") as log:
@@ -67,7 +70,7 @@ if result.returncode or not receipt.exists():
     sys.exit(1)
 data=json.loads(receipt.read_text())
 if set(data)-{"status","operation","applications","health_services","source_sha","version"}: raise RuntimeError("invalid public result")
-if type(data.get("applications")) is not int or type(data.get("health_services")) is not int or (data["applications"],data["health_services"]) not in {(11,10),(14,13)}: raise RuntimeError("invalid public counts")
+if type(data.get("applications")) is not int or type(data.get("health_services")) is not int or (data["applications"],data["health_services"]) not in allowed_counts: raise RuntimeError("invalid public counts")
 print(json.dumps(data))
 '''
 
