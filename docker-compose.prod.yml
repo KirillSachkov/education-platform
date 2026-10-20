@@ -57,7 +57,8 @@ services:
       ASPNETCORE_URLS: http://+:8010
       ASPNETCORE_ENVIRONMENT: Production
       OTEL_SERVICE_NAME: AccessService
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SDK_DISABLED: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: ""
       CONNECTIONSTRINGS__DATABASE: ${ACCESS_DB_CONNECTION}
     healthcheck:
       <<: *healthcheck
@@ -93,7 +94,8 @@ services:
       ASPNETCORE_URLS: http://+:8012
       ASPNETCORE_ENVIRONMENT: Production
       OTEL_SERVICE_NAME: AssignmentReviewService
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SDK_DISABLED: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: ""
       CONNECTIONSTRINGS__DATABASE: ${ASSIGNMENT_REVIEW_DB_CONNECTION}
     healthcheck:
       <<: *healthcheck
@@ -140,7 +142,8 @@ services:
       ASPNETCORE_URLS: http://+:8004
       ASPNETCORE_ENVIRONMENT: Production
       OTEL_SERVICE_NAME: CommentService
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SDK_DISABLED: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: ""
       CONNECTIONSTRINGS__DATABASE: ${COMMENT_DB_CONNECTION}
     healthcheck:
       <<: *healthcheck
@@ -177,7 +180,8 @@ services:
       ASPNETCORE_URLS: http://+:8006
       ASPNETCORE_ENVIRONMENT: Production
       OTEL_SERVICE_NAME: NotificationService
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SDK_DISABLED: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: ""
       CONNECTIONSTRINGS__DATABASE: ${NOTIFICATION_DB_CONNECTION}
     healthcheck:
       <<: *healthcheck
@@ -227,7 +231,8 @@ services:
       ASPNETCORE_URLS: http://+:8008
       ASPNETCORE_ENVIRONMENT: Production
       OTEL_SERVICE_NAME: TelegramBotService
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SDK_DISABLED: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: ""
       CONNECTIONSTRINGS__DATABASE: ${TELEGRAM_DB_CONNECTION}
       CONNECTIONSTRINGS__REDIS: redis:6379
       BOT__TOKEN: ${BOT__TOKEN}
@@ -270,7 +275,8 @@ services:
       ASPNETCORE_URLS: http://+:8001
       ASPNETCORE_ENVIRONMENT: Production
       OTEL_SERVICE_NAME: EducationContentService
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SDK_DISABLED: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: ""
       CONNECTIONSTRINGS__DATABASE: ${EDUCATION_DB_CONNECTION}
     healthcheck:
       <<: *healthcheck
@@ -312,7 +318,8 @@ services:
       ASPNETCORE_URLS: http://+:8002
       ASPNETCORE_ENVIRONMENT: Production
       OTEL_SERVICE_NAME: FileService
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SDK_DISABLED: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: ""
       CONNECTIONSTRINGS__DATABASE: ${FILE_DB_CONNECTION}
       EDUCATIONSERVICEOPTIONS__URL: http://education-service:8001
     healthcheck:
@@ -344,7 +351,8 @@ services:
       ASPNETCORE_URLS: http://+:8003
       ASPNETCORE_ENVIRONMENT: Production
       OTEL_SERVICE_NAME: ProgressService
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SDK_DISABLED: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: ""
       CONNECTIONSTRINGS__DATABASE: ${PROGRESS_DB_CONNECTION}
       AI__PROVIDERS__AITUNNEL__APIKEY: ${AI__PROVIDERS__AITUNNEL__APIKEY:-}
     healthcheck:
@@ -376,7 +384,8 @@ services:
       ASPNETCORE_URLS: http://+:8005
       ASPNETCORE_ENVIRONMENT: Production
       OTEL_SERVICE_NAME: AuthService
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SDK_DISABLED: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: ""
       CONNECTIONSTRINGS__DATABASE: ${AUTH_DB_CONNECTION}
     healthcheck:
       <<: *healthcheck
@@ -474,11 +483,11 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_EXPORTER_PASSWORD: ${POSTGRES_EXPORTER_PASSWORD:?POSTGRES_EXPORTER_PASSWORD must be set}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/postgres/init-databases.sql:/docker-entrypoint-initdb.d/01-init-databases.sql:ro
-      - ./docker/postgres/init-monitoring.sh:/docker-entrypoint-initdb.d/02-init-monitoring.sh:ro
+    # Keep useful database error/slow-query logs without a metrics exporter.
+    command: ["postgres", "-c", "log_min_duration_statement=500", "-c", "log_lock_waits=on", "-c", "log_temp_files=10485760"]
     healthcheck:
       # Fallback to "postgres" if POSTGRES_USER is empty/unset — a transient
       # infisical-export / env-sourcing hiccup must NOT brick the platform: an
@@ -538,8 +547,7 @@ services:
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
-      - ./docker/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
-      - ./docker/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./docker/rabbitmq/enabled_plugins.prod:/etc/rabbitmq/enabled_plugins:ro
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
@@ -566,213 +574,11 @@ services:
     image: axllent/mailpit:latest
     ports:
       - "127.0.0.1:8025:8025"
+    logging: *logging
     restart: unless-stopped
     networks:
       - platform-network
 
-  # ─── Observability ───
-  otel-collector:
-    container_name: otel-collector
-    image: otel/opentelemetry-collector-contrib:0.120.0
-    command: ["--config", "/etc/otelcol/otel-collector-config.yaml"]
-    volumes:
-      - ./docker/otel-collector/otel-collector-config.prod.yaml:/etc/otelcol/otel-collector-config.yaml:ro
-    depends_on:
-      loki:
-        condition: service_started
-      tempo:
-        condition: service_started
-    logging: *logging
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-          cpus: "0.50"
-        reservations:
-          memory: 256M
-    restart: always
-    networks:
-      - platform-network
-
-  tempo:
-    container_name: tempo
-    image: grafana/tempo:2.7.2
-    command: ["-config.file=/etc/tempo/tempo-config.yaml"]
-    volumes:
-      - ./docker/tempo/tempo-config.prod.yaml:/etc/tempo/tempo-config.yaml:ro
-      - tempo_data:/var/tempo
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3200/ready"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      # Replaying the production WAL/blocklist took ~199s after recreation on 2026-09-27 (#1169).
-      start_period: 5m
-    logging: *logging
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-          cpus: "0.50"
-        reservations:
-          memory: 256M
-    restart: always
-    networks:
-      - platform-network
-
-  postgres-exporter:
-    container_name: postgres-exporter
-    image: prometheuscommunity/postgres-exporter:v0.18.1
-    environment:
-      DATA_SOURCE_NAME: "postgresql://postgres_exporter:${POSTGRES_EXPORTER_PASSWORD:?POSTGRES_EXPORTER_PASSWORD must be set}@postgres:5432/postgres?sslmode=disable"
-      PG_EXPORTER_AUTO_DISCOVER_DATABASES: "true"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    logging: *logging
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-          cpus: "0.10"
-    restart: always
-    networks:
-      - platform-network
-
-  redis-exporter:
-    container_name: redis-exporter
-    image: oliver006/redis_exporter:v1.69.0-alpine
-    environment:
-      REDIS_ADDR: "redis://redis-platform:6379"
-    depends_on:
-      redis:
-        condition: service_started
-    logging: *logging
-    deploy:
-      resources:
-        limits:
-          memory: 64M
-          cpus: "0.10"
-    restart: always
-    networks:
-      - platform-network
-
-  alloy:
-    container_name: alloy
-    image: grafana/alloy:v1.5.1
-    command:
-      - run
-      - --server.http.listen-addr=0.0.0.0:12345
-      - --storage.path=/var/lib/alloy/data
-      - /etc/alloy/config.alloy
-    environment:
-      CLUSTER_NAME: production
-    volumes:
-      - ./docker/alloy/config.alloy:/etc/alloy/config.alloy:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - alloy_data:/var/lib/alloy/data
-    depends_on:
-      loki:
-        condition: service_started
-    logging: *logging
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: "0.25"
-    restart: always
-    networks:
-      - platform-network
-
-  loki:
-    container_name: loki
-    image: grafana/loki:3.4.2
-    command: -config.file=/etc/loki/loki-config.yaml
-    volumes:
-      - ./docker/loki/loki-config.prod.yaml:/etc/loki/loki-config.yaml:ro
-      - loki_data:/loki
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3100/ready"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-    logging: *logging
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: "0.25"
-        reservations:
-          memory: 128M
-    restart: always
-    networks:
-      - platform-network
-
-  prometheus:
-    container_name: prometheus
-    image: prom/prometheus:latest
-    command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
-      - "--storage.tsdb.path=/prometheus"
-      - "--storage.tsdb.retention.time=15d"
-      - "--web.enable-remote-write-receiver"
-      - "--enable-feature=exemplar-storage"
-    volumes:
-      - ./docker/prometheus/prometheus.prod.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus_data:/prometheus
-    depends_on:
-      otel-collector:
-        condition: service_started
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/ready"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-    logging: *logging
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: "0.25"
-        reservations:
-          memory: 128M
-    restart: always
-    networks:
-      - platform-network
-
-  grafana:
-    container_name: grafana
-    # Pinned to the version reported by the production /api/health endpoint on 2026-07-12.
-    image: grafana/grafana:12.4.2
-    ports:
-      - "127.0.0.1:3001:3000"
-    environment:
-      GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER:-admin}
-      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD}
-      GF_AUTH_ANONYMOUS_ENABLED: "false"
-      GF_FEATURE_TOGGLES_ENABLE: "traceqlEditor traceQLStreaming metricsSummary"
-    volumes:
-      - ./docker/grafana/provisioning-prod:/etc/grafana/provisioning:ro
-      - ./docker/grafana/dashboards:/var/lib/grafana/dashboards:ro
-      - grafana_data:/var/lib/grafana
-    depends_on:
-      prometheus:
-        condition: service_started
-      loki:
-        condition: service_started
-      tempo:
-        condition: service_started
-    logging: *logging
-    deploy:
-      resources:
-        limits:
-          memory: 384M
-          cpus: "0.25"
-        reservations:
-          memory: 192M
-    restart: always
-    networks:
-      - platform-network
 
 networks:
   platform-network:
@@ -782,8 +588,3 @@ volumes:
   postgres_data:
   rabbitmq_data:
   redis_data:
-  loki_data:
-  prometheus_data:
-  tempo_data:
-  grafana_data:
-  alloy_data:

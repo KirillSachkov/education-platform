@@ -29,7 +29,7 @@ import uuid
 from environment_file import dotenv, private_environment
 
 from release_model import (
-    LEGACY_REGISTRY, PUBLIC_REGISTRY, services_for_registry,
+    LEGACY_REGISTRY, PUBLIC_REGISTRY, MAINTENANCE_SCRIPTS, services_for_registry,
     dispatch_inputs, full_sha, image_manifest, private_roles, strict_json,
 )
 
@@ -511,7 +511,7 @@ class HostOperation:
             self.normalize_legacy_configuration()
         configurations = self.target["configuration_files"]
         self.target["config_hashes"] = {name: item["sha256"] for name, item in configurations.items()
-                                        if name in {"docker-compose.prod.yml", "nginx.prod.conf"} or name.startswith("docker/")}
+                                        if name in {"docker-compose.prod.yml", "nginx.prod.conf", *MAINTENANCE_SCRIPTS} or name.startswith("docker/")}
         staged_base = self.run / "target-compose.yml"
         write_private(staged_base, base64.b64decode(configurations["docker-compose.prod.yml"]["base64"], validate=True))
         override = {"services": {name: {"image": reference} for name, reference in self.references.items()}}
@@ -565,6 +565,8 @@ class HostOperation:
             path = self.root / name
             content = base64.b64decode(self.target["configuration_files"][name]["base64"], validate=True)
             if path.exists() and path.read_bytes() == content:
+                if name in MAINTENANCE_SCRIPTS:
+                    path.chmod(0o700)
                 continue
             if path.exists():
                 write_private(self.run / "pre-config" / name, path.read_bytes())
@@ -572,6 +574,8 @@ class HostOperation:
             changed.add(str(path))
             if name.startswith("docker/") or name == "nginx.prod.conf":
                 path.chmod(0o644)
+            elif name in MAINTENANCE_SCRIPTS:
+                path.chmod(0o700)
         consumers = set(self.changed_definition_consumers)
         for name, service in self.rendered_config["services"].items():
             if name in self.services or name.removesuffix("-migrations") in self.services:

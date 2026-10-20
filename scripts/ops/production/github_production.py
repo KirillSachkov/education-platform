@@ -18,7 +18,7 @@ import urllib.parse
 import zipfile
 
 from release_model import (
-    REPOSITORY, SERVICES, LEGACY_SERVICES, dispatch_inputs, image_manifest, private_roles, strict_json,
+    REPOSITORY, SERVICES, LEGACY_SERVICES, MAINTENANCE_SCRIPTS, dispatch_inputs, image_manifest, private_roles, strict_json,
     trusted_build_run, trusted_dispatch,
 )
 
@@ -114,7 +114,8 @@ def selected_configuration(source_sha):
     blob = github_request("/zipball/" + source_sha, binary=True)
     files = {}
     required = {"docker-compose.prod.yml", "nginx.prod.conf", "frontend/src/shared/legal/versions.ts",
-                "backend/AuthService/src/AuthService.Core/Services/LegalDocumentVersions.cs", "CHANGELOG.md"}
+                "backend/AuthService/src/AuthService.Core/Services/LegalDocumentVersions.cs", "CHANGELOG.md",
+                *MAINTENANCE_SCRIPTS}
     # The selected image SHA also selects its configuration; a newer workflow
     # revision never substitutes pending-main configuration into an older release.
     with zipfile.ZipFile(io.BytesIO(blob)) as archive:
