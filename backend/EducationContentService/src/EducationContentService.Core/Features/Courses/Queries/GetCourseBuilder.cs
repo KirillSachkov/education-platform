@@ -1,4 +1,4 @@
-using System.Data.Common;
+﻿using System.Data.Common;
 using Core.Abstractions;
 using Core.Database;
 using Dapper;
@@ -6,13 +6,10 @@ using EducationContentService.Contracts.Courses;
 using EducationContentService.Contracts.Modules;
 using EducationContentService.Domain;
 using EducationContentService.Domain.Courses;
-using EducationContentService.Domain.Materials;
 using EducationContentService.Domain.Modules;
 using FileService.Contracts.Assets;
 using FileService.Contracts.HttpCommunication;
 using Framework.Endpoints;
-using MaterialProcessingService.Contracts.HttpCommunication;
-using MaterialProcessingService.Contracts.Timecodes.Dtos;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
@@ -39,20 +36,17 @@ public sealed class GetCourseBuilderEndpoint : IEndpoint
 public sealed class GetCourseBuilderHandler : IQueryHandlerWithResult<CourseBuilderDto, GetCourseBuilderQuery>
 {
     private readonly ITransactionManager _transactionManager;
-    private readonly IMaterialProcessingServiceClient _materialProcessingClient;
     private readonly IFileServiceClient _fileServiceClient;
     private readonly ILogger<GetCourseBuilderHandler> _logger;
     private readonly UserScopedData _userScopedData;
 
     public GetCourseBuilderHandler(
         ITransactionManager transactionManager,
-        IMaterialProcessingServiceClient materialProcessingClient,
         IFileServiceClient fileServiceClient,
         ILogger<GetCourseBuilderHandler> logger,
         UserScopedData userScopedData)
     {
         _transactionManager = transactionManager;
-        _materialProcessingClient = materialProcessingClient;
         _fileServiceClient = fileServiceClient;
         _logger = logger;
         _userScopedData = userScopedData;
@@ -96,7 +90,6 @@ public sealed class GetCourseBuilderHandler : IQueryHandlerWithResult<CourseBuil
                           COALESCE(mat.title, i.title, q.title) AS title,
                           COALESCE(mat.status, i.status, q.status) AS status,
                           COALESCE(mat.access_type, i.access_type, q.access_type) AS access_type,
-                          mat.kind AS material_kind,
                           mat.video_id AS material_video_id,
                           mat.image_id AS material_image_id,
                           CASE WHEN mi.item_type = 'Quiz' THEN jsonb_array_length(q.questions) END AS questions_count
@@ -129,9 +122,6 @@ public sealed class GetCourseBuilderHandler : IQueryHandlerWithResult<CourseBuil
             .GroupBy(r => r.ModuleId)
             .ToDictionary(g => g.Key, g => g.ToList());
 
-        Dictionary<Guid, VideoArtifactStatusDto> artifactByMaterialId =
-            await ResolveArtifactStatusesAsync(moduleItemRows, cancellationToken);
-
         // Batch-fetch covers (manual ImageId + Kinescope video thumbnail fallback).
         // Same priority as MaterialFeedEnricher / GetCurriculum: explicit author intent wins.
         (Dictionary<Guid, string> imageUrlMap, Dictionary<Guid, GetPublicVideoResponse> videoMap) =
@@ -153,13 +143,9 @@ public sealed class GetCourseBuilderHandler : IQueryHandlerWithResult<CourseBuil
                     .GetValueOrDefault(section.ReferenceId, [])
                     .Select(mi =>
                     {
-                        VideoArtifactStatusDto? artifact = artifactByMaterialId.GetValueOrDefault(mi.ReferenceId);
                         return new ModuleItemDto(
                             mi.Id, mi.ReferenceId, mi.ItemType.ToString(), mi.SortKey, mi.IsOptional,
                             mi.ViewPriority, mi.Title, mi.Status?.ToString(), mi.AccessType,
-                            HasTranscript: artifact?.HasTranscript,
-                            HasTimecodes: artifact?.HasTimecodes,
-                            HasSummary: artifact?.HasSummary,
                             CoverUrl: ResolveCoverUrl(mi, imageUrlMap, videoMap),
                             QuestionsCount: mi.QuestionsCount,
                             QuizId: mi.ItemType == ModuleItemType.Quiz ? mi.ReferenceId : null);
@@ -245,7 +231,6 @@ public sealed class GetCourseBuilderHandler : IQueryHandlerWithResult<CourseBuil
         public string? Status { get; init; }
         public string? AccessType { get; init; }
 
-        public MaterialKind? MaterialKind { get; init; }
         public Guid? MaterialVideoId { get; init; }
         public Guid? MaterialImageId { get; init; }
         public int? QuestionsCount { get; init; }
@@ -350,41 +335,4 @@ public sealed class GetCourseBuilderHandler : IQueryHandlerWithResult<CourseBuil
         return null;
     }
 
-    private async Task<Dictionary<Guid, VideoArtifactStatusDto>> ResolveArtifactStatusesAsync(
-        List<ModuleItemRow> moduleItemRows,
-        CancellationToken cancellationToken)
-    {
-        // Артефакты только для видео-материалов. Article/Note/Stream не имеют video_id,
-        // конспект пока не строится для текстовых материалов — даже если потом начнём,
-        // тогда снимем фильтр по Kind.
-        List<VideoArtifactQuery> queries = moduleItemRows
-            .Where(r => r.ItemType == ModuleItemType.Material
-                        && r.MaterialKind == EducationContentService.Domain.Materials.MaterialKind.VIDEO
-                        && r.MaterialVideoId.HasValue)
-            .Select(r => new VideoArtifactQuery(r.MaterialVideoId!.Value, r.ReferenceId))
-            .ToList();
-
-        if (queries.Count == 0)
-            return [];
-
-        Result<GetVideoArtifactStatusesResponse, Error> result =
-            await _materialProcessingClient.GetArtifactStatusesAsync(
-                new GetVideoArtifactStatusesRequest(queries),
-                cancellationToken);
-
-        if (result.IsFailure)
-        {
-            // Не валим страницу course-builder'а из-за вспомогательной фичи — просто
-            // лишаем UI бейджей. На странице материала автор увидит реальный статус.
-            _logger.LogWarning(
-                "Failed to fetch video artifact statuses for course-builder. Falling back to empty enrichment. Error: {Error}",
-                result.Error.GetMessage());
-            return [];
-        }
-
-        return result.Value.Items
-            .Where(x => x.MaterialId.HasValue)
-            .GroupBy(x => x.MaterialId!.Value)
-            .ToDictionary(g => g.Key, g => g.First());
-    }
 }

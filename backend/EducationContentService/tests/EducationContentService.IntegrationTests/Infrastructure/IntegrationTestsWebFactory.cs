@@ -22,8 +22,6 @@ using ContentAccess.TestSupport;
 using CSharpFunctionalExtensions;
 using FileService.Contracts.Assets;
 using FileService.Contracts.HttpCommunication;
-using MaterialProcessingService.Contracts.HttpCommunication;
-using MaterialProcessingService.Contracts.Timecodes.Dtos;
 using ProgressService.Contracts.HttpCommunication;
 using Respawn;
 using NSubstitute;
@@ -261,18 +259,6 @@ public class IntegrationTestsWebFactory : WebApplicationFactory<Program>, IAsync
                 .Returns(Result.Success<IReadOnlyDictionary<Guid, long>, Error>(
                     new Dictionary<Guid, long>()));
             services.AddSingleton(mockProgressClient);
-
-            // Replace IMaterialProcessingServiceClient with mock — same reason: test factory
-            // не имеет реального MPS, GetCourseBuilder подкачивает артефакты через batch
-            // вызов. Default-stub возвращает пустой Items[] (никаких артефактов).
-            services.RemoveAll<IMaterialProcessingServiceClient>();
-            var mockMpsClient = Substitute.For<IMaterialProcessingServiceClient>();
-            mockMpsClient.GetArtifactStatusesAsync(
-                    Arg.Any<GetVideoArtifactStatusesRequest>(),
-                    Arg.Any<CancellationToken>())
-                .Returns(Result.Success<GetVideoArtifactStatusesResponse, Error>(
-                    new GetVideoArtifactStatusesResponse([])));
-            services.AddSingleton(mockMpsClient);
 
             // Replace ICoursePricingClient with mock — no real AccessService HTTP in tests.
             // Default-stub returns empty pricing map (no plans bound to any course).

@@ -14,7 +14,6 @@
     <ProjectReference Include="..\EducationContentService.Contracts\EducationContentService.Contracts.csproj"/>
     <ProjectReference Include="..\EducationContentService.Domain\EducationContentService.Domain.csproj"/>
     <ProjectReference Include="..\..\..\FileService\src\FileService.Contracts\FileService.Contracts.csproj"/>
-    <ProjectReference Include="..\..\..\MaterialProcessingService\src\MaterialProcessingService.Contracts\MaterialProcessingService.Contracts.csproj"/>
     <ProjectReference Include="..\..\..\ProgressService\src\ProgressService.Contracts\ProgressService.Contracts.csproj"/>
     <ProjectReference Include="..\..\..\Shared\Authentication\Authentication.csproj"/>
     <ProjectReference Include="..\..\..\Shared\Database\Database.csproj" />

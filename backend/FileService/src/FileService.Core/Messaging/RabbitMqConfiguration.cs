@@ -1,4 +1,4 @@
-using Shared.Messaging;
+﻿using Shared.Messaging;
 using Shared.Messaging.IntegrationEvents.Education;
 using Shared.Messaging.IntegrationEvents.Files;
 using Shared.Messaging.IntegrationEvents.Files.Events;
@@ -93,9 +93,5 @@ public static class RabbitMqConfiguration
             FileEventsRouting.EXCHANGE,
             m => FileEventsRouting.RoutingKeys.UploadInitiated(m.TargetEntityType)).UseDurableOutbox();
 
-        // Видео готово к AI-обработке (issue #648) → MaterialProcessingService авто-запуск.
-        opts.PublishMessagesToRabbitMqExchange<VideoReadyForProcessing>(
-            FileEventsRouting.EXCHANGE,
-            m => FileEventsRouting.RoutingKeys.Ready(m.TargetEntityType)).UseDurableOutbox();
     }
 }

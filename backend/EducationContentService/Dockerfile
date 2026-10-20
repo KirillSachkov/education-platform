@@ -39,8 +39,6 @@ COPY ["Shared/Ordering/Ordering/Ordering.csproj", "Shared/Ordering/Ordering/"]
 COPY ["FileService/Directory.Build.props", "FileService/"]
 COPY ["FileService/src/FileService.Contracts/FileService.Contracts.csproj", "FileService/src/FileService.Contracts/"]
 
-COPY ["MaterialProcessingService/Directory.Build.props", "MaterialProcessingService/"]
-COPY ["MaterialProcessingService/src/MaterialProcessingService.Contracts/MaterialProcessingService.Contracts.csproj", "MaterialProcessingService/src/MaterialProcessingService.Contracts/"]
 
 COPY ["ProgressService/Directory.Build.props", "ProgressService/"]
 COPY ["ProgressService/src/ProgressService.Contracts/ProgressService.Contracts.csproj", "ProgressService/src/ProgressService.Contracts/"]
@@ -62,7 +60,6 @@ RUN --mount=type=secret,id=nuget_config,target=/src/nuget.config \
 # ── Full source ──
 COPY ["Shared/", "Shared/"]
 COPY ["FileService/src/FileService.Contracts/", "FileService/src/FileService.Contracts/"]
-COPY ["MaterialProcessingService/src/MaterialProcessingService.Contracts/", "MaterialProcessingService/src/MaterialProcessingService.Contracts/"]
 COPY ["ProgressService/src/ProgressService.Contracts/", "ProgressService/src/ProgressService.Contracts/"]
 COPY ["EducationContentService/", "EducationContentService/"]
 COPY ["docker/healthcheck/", "docker/healthcheck/"]

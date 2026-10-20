@@ -84,19 +84,6 @@
     </Folder>
 
 
-    <Folder Name="/MaterialProcessingService/" />
-    <Folder Name="/MaterialProcessingService/src/">
-        <Project Path="MaterialProcessingService/src/MaterialProcessingService.Contracts/MaterialProcessingService.Contracts.csproj" />
-        <Project Path="MaterialProcessingService/src/MaterialProcessingService.Core/MaterialProcessingService.Core.csproj" />
-        <Project Path="MaterialProcessingService/src/MaterialProcessingService.Domain/MaterialProcessingService.Domain.csproj" />
-        <Project Path="MaterialProcessingService/src/MaterialProcessingService.Infrastructure.AI/MaterialProcessingService.Infrastructure.AI.csproj" />
-        <Project Path="MaterialProcessingService/src/MaterialProcessingService.Infrastructure.FFmpeg/MaterialProcessingService.Infrastructure.FFmpeg.csproj" />
-        <Project Path="MaterialProcessingService/src/MaterialProcessingService.Infrastructure.Postgres/MaterialProcessingService.Infrastructure.Postgres.csproj" />
-        <Project Path="MaterialProcessingService/src/MaterialProcessingService.Web/MaterialProcessingService.Web.csproj" />
-    </Folder>
-    <Folder Name="/MaterialProcessingService/tests/">
-        <Project Path="MaterialProcessingService/tests/MaterialProcessingService.IntegrationTests/MaterialProcessingService.IntegrationTests.csproj" />
-    </Folder>
 
     <Folder Name="/NotificationService/" />
 

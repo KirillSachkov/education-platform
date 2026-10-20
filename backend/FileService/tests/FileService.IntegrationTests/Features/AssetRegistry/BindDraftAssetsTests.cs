@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using FileService.Contracts.Assets;
@@ -335,7 +335,6 @@ public sealed class BindDraftAssetsTests : FileServiceTestsBase
                 [videoResponse.AssetId]));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Empty(OutboxCollector.OfType<VideoReadyForProcessing>());
         Assert.Empty(OutboxCollector.OfType<FileAssetBound>());
     }
 

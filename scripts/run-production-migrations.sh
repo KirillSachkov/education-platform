@@ -18,7 +18,6 @@ migration_services=(
     progress-service-migrations
     comment-service-migrations
     access-service-migrations
-    material-processing-service-migrations
     notification-service-migrations
     telegram-bot-service-migrations
     assignment-review-service-migrations
@@ -28,7 +27,6 @@ remaining_cutover_services=(
     progress-service-migrations
     comment-service-migrations
     access-service-migrations
-    material-processing-service-migrations
     notification-service-migrations
     telegram-bot-service-migrations
     assignment-review-service-migrations

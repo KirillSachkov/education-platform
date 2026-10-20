@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using AssignmentReviewService.Core.Features.Reviews.Handlers;
 using AssignmentReviewService.Core.Vcs.Models;
@@ -67,6 +67,9 @@ public sealed class RunIterationTests : AssignmentReviewServiceTestsBase
             Assert.Equal(1, iteration.InlineCommentsCount);
             Assert.Equal(42L, iteration.GitHubReviewId);
             Assert.Equal("deadbeef", iteration.CommitSha);
+            Assert.Equal("openai/gpt-4.1-mini", iteration.ModelUsed);
+            Assert.Equal(1500, iteration.InputTokens);
+            Assert.Equal(200, iteration.OutputTokens);
         });
 
         // Suppress unused warning — body is captured for debugging in case of future failures.
@@ -82,6 +85,10 @@ public sealed class RunIterationTests : AssignmentReviewServiceTestsBase
         Assert.Contains("Задание принято", posted.SummaryBody, StringComparison.Ordinal);
         Assert.Contains("Solid implementation, fix naming.", posted.SummaryBody, StringComparison.Ordinal);
         Assert.DoesNotContain("MINOR_ISSUES", posted.SummaryBody, StringComparison.Ordinal);
+        AiReviewIterationCompleted progressEvent = Assert.Single(OutboxCollector.OfType<AiReviewIterationCompleted>());
+        Assert.Equal(reviewId, progressEvent.AiReviewId);
+        Assert.Equal("MINOR_ISSUES", progressEvent.Verdict);
+        Assert.NotEqual(Guid.Empty, progressEvent.IterationId);
     }
 
     [Fact]

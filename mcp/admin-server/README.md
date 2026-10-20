@@ -147,6 +147,10 @@ Short version:
 | `edu_quiz_delete` | Hard delete with cascade (confirm-guarded) |
 
 ### Materials
+
+Stored video subtitles remain available through `edu_video_subtitles_export` and
+`edu_module_transcripts_export`. These read FileService's saved segments; they never generate
+transcripts. The API requires `Videos.MANAGE` and video ownership or platform administrator access.
 | Tool | Description |
 |---|---|
 | `edu_material_detail` | Full material detail |

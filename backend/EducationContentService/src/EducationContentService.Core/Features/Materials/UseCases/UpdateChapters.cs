@@ -1,4 +1,4 @@
-using Core.Abstractions;
+﻿using Core.Abstractions;
 using Core.Database;
 using Core.Validation;
 using EducationContentService.Contracts.Materials;
@@ -17,8 +17,7 @@ namespace EducationContentService.Core.Features.Materials.UseCases;
 
 /// <summary>
 ///     Денормализует главы видео (заголовок + offset в секундах) в материалы,
-///     привязанные к данному видео. Вызывается MaterialProcessingService после
-///     успешного PUT глав в Kinescope. Возвращает количество затронутых материалов;
+///     привязанные к данному видео. Возвращает количество затронутых материалов;
 ///     идемпотентно (повторный вызов с тем же набором не публикует event'ов).
 /// </summary>
 public sealed record UpdateVideoChaptersCommand(

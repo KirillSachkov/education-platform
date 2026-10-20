@@ -1,4 +1,4 @@
-using Core.Abstractions;
+﻿using Core.Abstractions;
 using Core.Database;
 using FileService.Core.Database;
 using FileService.Core.Repositories;
@@ -35,7 +35,7 @@ public sealed class DetachAssetEndpoint : IEndpoint
 ///     <c>AssetRetentionService</c>.
 ///
 ///     Publishes <see cref="FileAssetDeleted"/> in the same transaction — downstream
-///     consumers (MaterialProcessingService transcript cleanup, AuthService avatar
+///     consumers (AuthService avatar
 ///     cleanup, ECS material/course media references) rely on this event to cascade
 ///     their own deletion. Mirrors <c>DeleteFile</c>/<c>DeleteVideo</c>.
 /// </summary>

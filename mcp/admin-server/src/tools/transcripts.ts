@@ -5,11 +5,11 @@ import { PlatformApiError } from '../client.js';
 export const eduVideoSubtitlesExport = defineTool({
   name: 'edu_video_subtitles_export',
   description:
-    'Download .srt transcript for a single video. Returns SRT text (with timestamps and segment text). 404 if transcript not yet generated for this video.',
+    'Download .srt transcript for a single video. Returns SRT text (with timestamps and segment text). 404 if no saved transcript exists for the current video version.',
   inputSchema: z.object({ videoId: z.string().uuid() }).strict(),
   handler: async ({ videoId }, { client }) => {
     const { data } = await client.get<string>(
-      `/api/material-processing/videos/${videoId}/subtitles.srt`,
+      `/api/videos/${videoId}/subtitles.srt/`,
     );
     return { videoId, srt: data };
   },
@@ -51,8 +51,8 @@ export const eduModuleTranscriptsExport = defineTool({
   name: 'edu_module_transcripts_export',
   description:
     'Batch export of transcripts for all VIDEO materials in a module. Returns array of {position, materialId, title, durationSeconds, videoId, status, srt?}. ' +
-    'status=OK when SRT is available; TRANSCRIPT_MISSING when video has no transcript yet (404 from material-processing); ' +
-    'NO_VIDEO for material without videoId; ERROR for unexpected upstream failures. Skips Issue / non-VIDEO materials. ' +
+    'status=OK when SRT is available; TRANSCRIPT_MISSING when FileService has no saved transcript for this version; ' +
+    'NO_VIDEO_ASSET for material without videoId; ERROR for upstream failures, including access denial. Skips Issue / non-VIDEO materials. ' +
     'Designed for course-audit workflows — one call returns enough context to analyse an entire module. ' +
     'Use `maxVideos` to cap how many VIDEO materials are fetched; remaining materials are listed without SRT and marked status=SKIPPED_LIMIT.',
   inputSchema: z
@@ -63,7 +63,7 @@ export const eduModuleTranscriptsExport = defineTool({
     .strict(),
   handler: async ({ moduleId, maxVideos }, { client }) => {
     const { data: overview } = await client.get<ModuleOverview>(
-      `/api/modules/${moduleId}/overview`,
+      `/api/modules/${moduleId}/overview/`,
     );
 
     const materialItems = (overview.items ?? []).filter((i) => i.itemType === 'Material');
@@ -86,7 +86,7 @@ export const eduModuleTranscriptsExport = defineTool({
 
       try {
         const { data: detail } = await client.get<MaterialDetail>(
-          `/api/materials/${item.id}/detail`,
+          `/api/materials/${item.id}/detail/`,
         );
         entry.kind = detail.kind;
         entry.videoId = detail.videoId ?? null;
@@ -113,7 +113,7 @@ export const eduModuleTranscriptsExport = defineTool({
 
         try {
           const { data: srt } = await client.get<string>(
-            `/api/material-processing/videos/${detail.videoId}/subtitles.srt`,
+            `/api/videos/${detail.videoId}/subtitles.srt/`,
           );
           entry.srt = srt;
           entry.status = 'OK';

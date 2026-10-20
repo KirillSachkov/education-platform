@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using FileService.Contracts.Assets;
 using FileService.Contracts.Dtos;
@@ -70,7 +70,6 @@ public sealed class TargetEntityAuthorizationTests : FileServiceTestsBase
                 new TargetEntityDto("material", Guid.NewGuid())));
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-        Assert.Empty(OutboxCollector.OfType<VideoReadyForProcessing>());
     }
 
     [Fact]
@@ -91,7 +90,6 @@ public sealed class TargetEntityAuthorizationTests : FileServiceTestsBase
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         Assert.Empty(OutboxCollector.OfType<FileAssetBound>());
-        Assert.Empty(OutboxCollector.OfType<VideoReadyForProcessing>());
     }
 
     [Fact]
