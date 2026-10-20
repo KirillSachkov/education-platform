@@ -51,4 +51,3 @@ def dotenv(text):
             value = re.split(r"\s+#", value, maxsplit=1)[0].rstrip()
         result[key] = value
     return result
-
