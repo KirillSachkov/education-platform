@@ -7,11 +7,11 @@ from pathlib import Path
 import subprocess
 import sys
 
-from environment_file import dotenv, private_environment
+from environment_file import compose_environment
 
 
 def run(root, runtime_root):
-    environment = {**os.environ, **dotenv(private_environment(root / ".env"))}
+    environment = {**os.environ, **compose_environment(root / ".env", root)}
     subprocess.run([sys.executable, str(Path(__file__).with_name("backup_runtime.py")),
                     "--root", str(root), "--env-file", str(runtime_root / "runtime.env"),
                     "--recipient-file", str(runtime_root / "backup-age-recipient"),

@@ -1,6 +1,10 @@
 """Read the protected, single-line Compose environment without shell evaluation."""
 
 import os
+import json
+from pathlib import Path
+import subprocess
+import tempfile
 import re
 import stat
 
@@ -51,3 +55,31 @@ def dotenv(text):
             value = re.split(r"\s+#", value, maxsplit=1)[0].rstrip()
         result[key] = value
     return result
+
+
+def compose_environment(path, root, execute=None):
+    """Decode actual values with the same Compose env_file rules as deployment."""
+    keys = dotenv(private_environment(path))
+    with tempfile.TemporaryDirectory(prefix="private-env-") as directory:
+        probe = Path(directory) / "compose.json"
+        descriptor = os.open(probe, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(descriptor, "w") as stream:
+            json.dump({"services": {"dotenv-values": {"image": "unused:dotenv-parser", "env_file": [str(path.resolve())]}}}, stream)
+        arguments = ["docker", "compose", "--project-directory", str(root), "-p", "private-environment", "-f", str(probe), "config", "--format", "json"]
+        if execute is None:
+            try:
+                result = subprocess.run(arguments, capture_output=True, timeout=180)
+            except subprocess.SubprocessError as error:
+                raise ValueError("private Compose environment resolution failed") from error
+            if result.returncode:
+                raise ValueError("private Compose environment resolution failed")
+            body = result.stdout
+        else:
+            body = execute(arguments)
+    values = json.loads(body)["services"]["dotenv-values"]["environment"]
+    if set(values) != set(keys) or any(not isinstance(value, str) for value in values.values()):
+        raise ValueError("canonical Compose environment inventory mismatch")
+    # Compose config escapes every literal dollar for re-reading the model.
+    # Decode that serialization once before passing credentials to a process.
+    # https://github.com/docker/compose/blob/main/cmd/compose/config.go
+    return {key: value.replace("$$", "$") for key, value in values.items()}

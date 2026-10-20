@@ -13,6 +13,7 @@ from unittest.mock import patch
 
 import backup_runtime
 import daily_backup
+from environment_file import compose_environment
 
 
 class RuntimeBackup(unittest.TestCase):
@@ -96,10 +97,31 @@ class RuntimeBackup(unittest.TestCase):
 
     def test_daily_backup_never_evaluates_shell_and_stops_before_database_on_config_failure(self):
         self.write(self.root / ".env", "PRIVATE='$(touch /should-not-exist)'\n")
-        with patch.object(daily_backup.subprocess, "run") as run:
+        values = compose_environment(self.root / ".env", self.root)
+        with patch.object(daily_backup, "compose_environment", return_value=values), patch.object(daily_backup.subprocess, "run") as run:
             daily_backup.run(self.root, self.root)
         self.assertEqual(run.call_count, 2)
         self.assertEqual(run.call_args_list[1].kwargs["env"]["PRIVATE"], "$(touch /should-not-exist)")
-        with patch.object(daily_backup.subprocess, "run", side_effect=subprocess.CalledProcessError(1, "backup")) as run:
+        with patch.object(daily_backup, "compose_environment", return_value=values), patch.object(daily_backup.subprocess, "run", side_effect=subprocess.CalledProcessError(1, "backup")) as run:
             with self.assertRaises(subprocess.CalledProcessError): daily_backup.run(self.root, self.root)
         self.assertEqual(run.call_count, 1)
+
+    def test_actual_compose_interpolation_matches_deploy_and_backup_credentials(self):
+        self.write(self.env, 'BASE=synthetic\nBACKUP_S3_ACCESS_KEY=${BASE}-access\nBACKUP_S3_SECRET_KEY="${BASE}-secret"\nBACKUP_S3_BUCKET=fake\nPOSTGRES_PASSWORD=${BASE}-password\n')
+        with self.env.open("a") as stream:
+            stream.write("ONE='dollar$literal'\nTWO='dollar$$literal'\n")
+        values = compose_environment(self.env, self.root)
+        self.assertEqual(values["ONE"], "dollar$literal")
+        self.assertEqual(values["TWO"], "dollar$$literal")
+        self.assertEqual(values["POSTGRES_PASSWORD"], "synthetic-password")
+        self.assertEqual(values["BACKUP_S3_ACCESS_KEY"], "synthetic-access")
+        real_command = backup_runtime.command
+        def command(arguments, **kwargs):
+            if arguments[0] == "aws":
+                self.assertEqual(kwargs["env"]["AWS_ACCESS_KEY_ID"], "synthetic-access")
+                self.assertEqual(kwargs["env"]["AWS_SECRET_ACCESS_KEY"], "synthetic-secret")
+                raise RuntimeError("synthetic stop after checking resolved credentials")
+            return real_command(arguments, **kwargs)
+        with patch.object(backup_runtime, "command", side_effect=command):
+            with self.assertRaisesRegex(RuntimeError, "synthetic stop"):
+                backup_runtime.retain(self.root, self.env, self.recipient)

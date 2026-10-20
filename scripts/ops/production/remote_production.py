@@ -26,7 +26,7 @@ import urllib.parse
 import urllib.request
 import uuid
 
-from environment_file import dotenv, private_environment
+from environment_file import dotenv, private_environment, compose_environment
 
 from release_model import (
     LEGACY_REGISTRY, PUBLIC_REGISTRY, MAINTENANCE_SCRIPTS, services_for_registry,
@@ -155,14 +155,7 @@ class HostOperation:
                              "-f", str(file or self.effective), *arguments], capture=capture, timeout=timeout)
 
     def environment_values(self, path):
-        keys = dotenv(path.read_text())
-        probe = self.run / "dotenv-compose.json"
-        write_json(probe, {"services": {"dotenv-values": {"image": "unused:dotenv-parser", "env_file": [str(path)]}}})
-        rendered = strict_json(self.compose("config", "--format", "json", file=probe))
-        values = rendered["services"]["dotenv-values"]["environment"]
-        if set(values) != set(keys) or any(not isinstance(value, str) for value in values.values()):
-            raise ValueError("canonical Compose environment inventory mismatch")
-        return values
+        return compose_environment(path, self.root, execute=self.command)
 
     def baseline(self):
         for tool in ["docker", "bash", "age", "aws", "gzip", "setpriv"]:

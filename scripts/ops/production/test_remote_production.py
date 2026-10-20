@@ -42,8 +42,8 @@ class FixtureHost(HostOperation):
             refs = [row["reference"] for row in self.roles["roles"]["current"]["image_manifest"]["images"]]
             refs += [self.roles["postgres_image"]]
             return json.dumps([{"RepoDigests": refs}]).encode()
-        if "dotenv-compose.json" in " ".join(arguments):
-            model = json.loads((self.run / "dotenv-compose.json").read_text())
+        if "private-environment" in arguments:
+            model = json.loads(Path(arguments[arguments.index("-f") + 1]).read_text())
             return json.dumps({"services": {"dotenv-values": {"environment": dotenv(Path(model["services"]["dotenv-values"]["env_file"][0]).read_text())}}}).encode()
         return b""
 

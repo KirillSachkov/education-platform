@@ -14,7 +14,7 @@ import tempfile
 import time
 import uuid
 
-from environment_file import dotenv, private_environment
+from environment_file import private_environment, compose_environment
 
 
 def snapshot(root, env_file):
@@ -63,7 +63,7 @@ def command(arguments, *, env=None, input=None):
 
 
 def retain(root, env_file, recipient_file):
-    values = dotenv(private_environment(env_file))
+    values = compose_environment(env_file, root)
     descriptor = os.open(recipient_file, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
     with os.fdopen(descriptor) as stream:
         metadata = os.fstat(stream.fileno())
