@@ -11,9 +11,9 @@ namespace AuthService.Core.Services;
 /// </summary>
 public static class LegalDocumentVersions
 {
-    public const string Offer = "v2";
-    public const string PrivacyPolicy = "v3";
-    public const string PersonalDataConsent = "v2";
+    public const string Offer = "v1";
+    public const string PrivacyPolicy = "v2";
+    public const string PersonalDataConsent = "v1";
     public const string CookiesPolicy = "v1";
     public const string MarketingConsent = "v1";
 }

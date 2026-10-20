@@ -10,9 +10,9 @@
  *   5. Перегенерировать PDF в приватном LEGAL_PDFS_DIR; см. docs/legal.md.
  */
 export const CURRENT_LEGAL_VERSIONS = {
-  offer: "v2",
-  privacy: "v3",
-  "consent-pd": "v2",
+  offer: "v1",
+  privacy: "v2",
+  "consent-pd": "v1",
   cookies: "v1",
   "consent-marketing": "v1",
 } as const satisfies Record<string, string>;

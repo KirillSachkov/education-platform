@@ -26,17 +26,17 @@ Prepare `/etc/education-platform/monitor.json`, owned by root with mode `0600`:
   "root": "/opt/education-platform",
   "project": "education-platform",
   "public_url": "https://platform.example/",
-  "backup_receipt": "/var/lib/education-platform/last-backup.json",
-  "alert_webhook_url": "https://alerts.example/approved-private-endpoint"
+  "backup_receipt": "/var/lib/education-platform/last-backup.json"
 }
 ```
 
-The webhook must accept `{"text":"..."}`. Configure an owner-selected alert
-destination and verify actual delivery during the authorized production cutover.
-No real alert is sent by preparation or unit tests. The command without `--notify`
-prints a small PASS/FAIL report; the explicit flag enables failure notifications.
-It never sends inspect output, environment values or private URLs. A failed
-notification remains a failed check. Persistent failures notify every five minutes.
+The installed service prints a local PASS/FAIL report and records failures in the
+journal without sending external alerts. The owner has excluded personal alerts
+from this cutover. No webhook or delivery test is required for this mode.
+If the owner later selects a destination, add `alert_webhook_url` accepting
+`{"text":"..."}` and explicitly enable `--notify` in a systemd override. Verify
+delivery only under that assignment. The flag never sends inspect output,
+environment values or private URLs; a failed notification remains a failed check.
 
 Normal release delivery installs `scripts/backup-s3.sh`,
 `scripts/ops/production/check_health.py` and the private environment/backup helpers from the exact accepted source SHA with
@@ -74,7 +74,7 @@ Preparation changes source only. During the separately authorized release:
 3. Remove only retired monitoring containers after confirming their project and
    mounts. The normal Compose file no longer declares them; never use volume prune.
 4. Run a daily backup to establish its verified receipt; install and exercise the
-   lightweight timer and owner-selected alert route.
+   lightweight timer in local-report mode without external notifications.
 5. After acceptance and the agreed recovery window, delete only the named retired
    monitoring volumes from the reviewed inventory. They are not application data.
    Record the resulting RAM and disk footprint before selecting a smaller server.
