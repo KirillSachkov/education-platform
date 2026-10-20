@@ -518,6 +518,10 @@ After both the current and target releases carry `MEDIA_BINDING_PROTOCOL=1`, the
 is no longer needed. All migration services in the selected release inventory run as a fail-fast preflight while the
 current application revision remains online, followed by the full compose recreation.
 
+The first simplified-source release has an additional retirement boundary even when
+both media markers are present: follow [retired data and legacy recovery](production-retirement.md).
+Its writer drain, post-drain cold restore and retained-data checks precede migrations.
+
 ### Rollback boundary
 
 The automated rollback job deliberately refuses both completed and partial protocol transitions:

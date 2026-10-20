@@ -32,7 +32,7 @@ class FixtureHost(HostOperation):
             return {"Name": "/postgres", "Config": {"Image": self.roles["postgres_image"], "Labels": {"com.docker.compose.project": self.project}},
                     "Image": "CONFIG_ID", "State": {"Running": True, "Health": {"Status": "healthy"}},
                     "Mounts": [{"Type": "volume", "Name": self.mount_name, "Destination": "/var/lib/postgresql/data", "RW": True}]}
-        return {"Name": "/" + name, "Config": {"Image": self.roles["roles"]["current"]["image_manifest"]["images"][SERVICES.index(name)]["reference"],
+        return {"Id": "fixture-" + name, "Name": "/" + name, "Config": {"Image": self.roles["roles"]["current"]["image_manifest"]["images"][SERVICES.index(name)]["reference"],
                 "Labels": {"com.docker.compose.project": self.project, "com.docker.compose.service": name}},
                 "Image": "CONFIG_ID", "State": {"Running": True, "Health": {"Status": "unhealthy" if name in self.unhealthy else "healthy"}}}
 
@@ -258,7 +258,7 @@ class NormalRuntime(RemoteFixture):
                          "registry_hashes": {name: item["sha256"] for name, item in configurations.items()},
                          "file_hashes": {}}
         self.refresh_hashes()
-        self.host.target = {"source_sha": "b" * 40, "configuration_files": configurations,
+        self.host.target = {"source_sha": "b" * 40, "registry": PUBLIC_REGISTRY, "configuration_files": configurations,
                             "runtime_approval": self.approval}
 
     def write_pair(self, slug, version):
@@ -267,15 +267,17 @@ class NormalRuntime(RemoteFixture):
 
     def refresh_hashes(self):
         self.approval["file_hashes"] = {str(path): hashlib.sha256(path.read_bytes()).hexdigest()
-                                        for path in self.runtime.rglob("*") if path.is_file()}
+                                        for path in [*self.markdown.glob("*.md"), *self.pdf.glob("*.pdf"), self.runtime / "business.json"]}
 
     def test_accepts_matching_registries_current_pairs_and_approved_archive(self):
         self.assertEqual(self.host.normal_runtime(), self.approval)
         self.assertEqual(self.host.legal_versions, self.versions)
-        checked = [arguments[-1] for arguments, _ in self.host.calls if arguments[0] == "setpriv"]
-        self.assertEqual(set(checked), set(self.approval["file_hashes"]))
-        self.assertTrue(all(arguments[:6] == ["setpriv", "--reuid=1000", "--regid=1000", "--clear-groups", "test", "-r"]
-                            for arguments, _ in self.host.calls))
+        self.host.runtime = self.approval
+        self.host.references = {"frontend": "fixture:frontend"}
+        self.host.verify_runtime_container()
+        paths = json.loads(self.host.calls[-1][0][-1])
+        self.assertEqual(len(paths), len(self.approval["file_hashes"]))
+        self.assertTrue(all(path["path"].startswith("/run/legal/") for path in paths))
 
     def test_rejects_approval_for_another_source_or_registry(self):
         self.approval["source_sha"] = "c" * 40
@@ -323,8 +325,10 @@ class NormalRuntime(RemoteFixture):
         with self.assertRaisesRegex(ValueError, "empty or unfinished"): self.host.normal_runtime()
 
     def test_rejects_unreadable_uid1000_inputs(self):
+        self.host.runtime = self.host.normal_runtime()
+        self.host.references = {"frontend": "fixture:frontend"}
         with patch.object(self.host, "command", side_effect=PermissionError("synthetic UID1000 denial")):
-            with self.assertRaises(PermissionError): self.host.normal_runtime()
+            with self.assertRaises(PermissionError): self.host.verify_runtime_container()
 
     def test_rejects_invalid_business_record(self):
         business = Path(self.approval["environment"]["BUSINESS_DETAILS_FILE"])

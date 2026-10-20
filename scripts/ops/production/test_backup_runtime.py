@@ -88,6 +88,17 @@ class RuntimeBackup(unittest.TestCase):
                 self.assertEqual(receipt["status"], "PASS")
                 with self.assertRaises(ValueError): self.retain("checksum", metadata_key=key)
 
+    def test_retirement_recovery_plan_is_inside_encrypted_manifest(self):
+        name = ".github-production/retirement-recovery.json"
+        self.write(self.root / name, '{"schema_version":1,"archive_schema":"retained_fixture"}')
+        _, encrypted = self.retain()
+        clear = subprocess.run(["age", "-d", "-i", str(self.key)], input=encrypted, capture_output=True, check=True).stdout
+        with tarfile.open(fileobj=io.BytesIO(clear), mode="r:gz") as archive:
+            manifest = json.load(archive.extractfile("manifest.json"))
+            body = archive.extractfile(name).read()
+            self.assertEqual(body, (self.root / name).read_bytes())
+            self.assertEqual(hashlib.sha256(body).hexdigest(), manifest[name]["sha256"])
+
     def test_missing_version_or_remote_corruption_blocks_success(self):
         for fault in ["version", "size", "readback", "checksum", "duplicate", "missing-checksum"]:
             with self.subTest(fault=fault), self.assertRaises(ValueError): self.retain(fault)

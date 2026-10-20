@@ -45,7 +45,13 @@ class NormalRuntime(fixtures.RemoteFixture):
     def test_exact_business_and_five_matching_legal_pairs(self):
         self.assertEqual(self.host.normal_runtime(), self.host.target["runtime_approval"])
         self.assertEqual(self.host.legal_versions, self.versions)
-        self.assertEqual(sum(arguments[0] == "setpriv" for arguments, _ in self.host.calls), 11)
+        self.host.runtime = self.host.target["runtime_approval"]
+        self.host.references = {"frontend": "fixture:frontend"}
+        self.host.verify_runtime_container()
+        arguments = self.host.calls[-1][0]
+        self.assertEqual(arguments[:10], ["docker", "run", "--rm", "--network", "none", "--read-only", "--user", "1000:1000", "--cap-drop", "ALL"])
+        self.assertEqual(arguments[arguments.index("--entrypoint") + 1:arguments.index("--entrypoint") + 3], ["node", "fixture:frontend"])
+        self.assertEqual(len(json.loads(arguments[-1])), 11)
 
     def test_wrong_source_registry_hash_file_hash_or_missing_pair_fails(self):
         original = copy.deepcopy(self.host.target)

@@ -131,7 +131,7 @@ class ProductionTransport(unittest.TestCase):
         self.assertNotIn("PRIVATE_ERROR_SENTINEL", output.getvalue())
         packet = json.loads(ssh.call_args.kwargs["input"])
         self.assertEqual(packet["credentials"], {})
-        self.assertEqual(set(packet["scripts"]), {"remote_production.py", "release_model.py", "environment_file.py", "backup_runtime.py", "run-production-migrations.sh", "check-production-rollback.sh", "validate-production-env.sh", "restore-s3.sh"})
+        self.assertEqual(set(packet["scripts"]), {"remote_production.py", "release_model.py", "environment_file.py", "backup_runtime.py", "database_recovery.py", "retained_data.py", "closed_sales.py", "run-production-migrations.sh", "check-production-rollback.sh", "validate-production-env.sh", "restore-s3.sh"})
         restore = packet["scripts"]["restore-s3.sh"]
         self.assertEqual(base64.b64decode(restore["base64"]), (transport.ROOT / "scripts/restore-s3.sh").read_bytes())
         self.assertEqual(restore["sha256"], hashlib.sha256(base64.b64decode(restore["base64"])).hexdigest())
