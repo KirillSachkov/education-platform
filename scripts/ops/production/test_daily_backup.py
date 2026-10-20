@@ -24,7 +24,8 @@ if sys.argv[1] == 'ps': print('postgres')
 elif sys.argv[1] == 'exec':
     assert 'PRIVATE_PASSWORD' not in ' '.join(sys.argv)
     assert os.environ['PGPASSWORD'] == 'PRIVATE_PASSWORD'
-    sys.stdout.buffer.write(os.urandom(20000))
+    sys.stdout.buffer.write(b'too small' if os.environ.get('BACKUP_FAULT') == 'small' else os.urandom(20000))
+    if os.environ.get('BACKUP_FAULT') == 'dump': raise SystemExit(1)
 else: raise SystemExit(1)
 ''')
         self.tool(bin, "stat", '''
@@ -35,6 +36,7 @@ print(os.stat(sys.argv[-1]).st_size)
 import hashlib, json, os, pathlib, sys
 a=sys.argv[1:]; store=pathlib.Path(os.environ['FAKE_HEAD'])
 if a[:2] == ['s3','cp']:
+    if os.environ.get('BACKUP_FAULT') == 'upload': raise SystemExit(1)
     assert '--acl' in a and a[a.index('--acl')+1] == 'private'
     data=pathlib.Path(a[2]).read_bytes()
     head={'ContentLength':len(data),'Metadata':{os.environ.get('METADATA_KEY','sha256'):hashlib.sha256(data).hexdigest()},'VersionId':'synthetic-version'}
@@ -88,3 +90,19 @@ elif a[:2] != ['s3','ls']: raise SystemExit(1)
                 self.assertNotEqual(result.returncode, 0)
                 self.assertEqual(self.receipt.read_text(), 'prior receipt')
                 self.assertTrue(list((self.root / "dumps").glob('*.gz')))
+
+    def test_producer_small_and_upload_failures_preserve_new_dump_and_prior_receipt(self):
+        self.receipt.parent.mkdir(); self.receipt.write_text('prior receipt')
+        for fault in ['dump', 'small', 'upload']:
+            with self.subTest(fault=fault):
+                dumps = self.root / 'dumps'
+                if dumps.exists():
+                    for path in dumps.glob('*.gz'): path.unlink()
+                result = subprocess.run(['bash', str(SCRIPT)], env={**self.env, 'BACKUP_FAULT': fault}, capture_output=True)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(self.receipt.read_text(), 'prior receipt')
+                retained = list(dumps.glob('*.gz'))
+                self.assertEqual(len(retained), 1)
+                self.assertEqual(retained[0].stat().st_mode & 0o777, 0o600)
+                self.assertGreater(retained[0].stat().st_size, 0)
+                self.assertNotIn(b'PRIVATE_PASSWORD', result.stdout + result.stderr)

@@ -4,20 +4,13 @@ umask 077
 
 # ─── Database backup to Yandex Object Storage (S3) ──────────────────────────
 #
-# Usage:
-#   BACKUP_S3_ACCESS_KEY=... BACKUP_S3_SECRET_KEY=... ./scripts/backup-s3.sh
+# Production entrypoint (also used by the daily 03:00 UTC cron):
+#   python3 /opt/education-platform/scripts/ops/production/daily_backup.py
 #
-# Or with .env (POSIX-compatible — works under cron/dash):
-#   set -a && . ./.env && set +a && ./scripts/backup-s3.sh
-#
-# Install aws cli (one-time):
-#   apt install -y awscli
-#
-# Crontab entry (note: cron uses /bin/sh = dash on Ubuntu, so set SHELL=/bin/bash
-# or use `.` instead of `source`):
-#   SHELL=/bin/bash
-#   PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-#   0 3 * * * cd /opt/education-platform && set -a && . /opt/education-platform/.env && set +a && /opt/education-platform/scripts/backup-s3.sh >> /var/log/backup-s3.log 2>&1
+# The wrapper reads the protected environment without evaluating shell code and
+# verifies encrypted runtime recovery before calling this database backup helper.
+# This helper accepts BACKUP_S3_ACCESS_KEY / BACKUP_S3_SECRET_KEY in its environment.
+# Install aws cli once: apt install -y awscli
 # ─────────────────────────────────────────────────────────────────────────────
 
 S3_BUCKET="${BACKUP_S3_BUCKET:-education-platform-backups}"
@@ -74,8 +67,7 @@ export PGPASSWORD="$PG_PASSWORD"
 if ! docker exec -e PGPASSWORD "$PG_CONTAINER" \
     pg_dumpall -U "$PG_USER" --clean --if-exists \
     | gzip > "$TMP_DIR/$BACKUP_FILE"; then
-  log_err "pg_dumpall failed"
-  rm -f "$TMP_DIR/$BACKUP_FILE"
+  log_err "pg_dumpall failed; partial dump retained"
   exit 1
 fi
 
@@ -85,8 +77,7 @@ log "Dump complete: $BACKUP_FILE ($SIZE)"
 # Check dump is not empty/corrupt (min 10KB expected)
 BYTES=$(stat -c%s "$TMP_DIR/$BACKUP_FILE")
 if [[ "$BYTES" -lt 10240 ]]; then
-  log_err "Dump suspiciously small (${BYTES} bytes) — aborting upload"
-  rm -f "$TMP_DIR/$BACKUP_FILE"
+  log_err "Dump suspiciously small (${BYTES} bytes) — aborting upload; dump retained"
   exit 1
 fi
 
@@ -100,8 +91,7 @@ if ! aws s3 cp "$TMP_DIR/$BACKUP_FILE" "s3://${S3_BUCKET}/${BACKUP_FILE}" \
     --endpoint-url "$S3_ENDPOINT" \
     --acl private --metadata "sha256=$CHECKSUM" \
     --quiet; then
-  log_err "S3 upload failed"
-  rm -f "$TMP_DIR/$BACKUP_FILE"
+  log_err "S3 upload failed; local dump retained"
   exit 1
 fi
 
