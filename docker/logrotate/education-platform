@@ -1,0 +1,24 @@
+/opt/education-platform/logs/nginx/*.log {
+    daily
+    maxsize 20M
+    rotate 3
+    missingok
+    notifempty
+    compress
+    delaycompress
+    create 0640 root root
+    sharedscripts
+    postrotate
+        /usr/bin/docker kill --signal=USR1 nginx >/dev/null 2>&1 || exit 1
+    endscript
+}
+/var/log/backup-s3.log {
+    daily
+    maxsize 10M
+    rotate 3
+    missingok
+    notifempty
+    compress
+    delaycompress
+    create 0600 root root
+}
