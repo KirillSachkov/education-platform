@@ -57,9 +57,6 @@ jobs:
           PRODUCTION_SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
           LEGACY_RELEASE_MANIFEST: ${{ secrets.LEGACY_RELEASE_MANIFEST }}
           LEGACY_GHCR_READ_TOKEN: ${{ secrets.LEGACY_GHCR_READ_TOKEN }}
-          INFISICAL_CLIENT_ID: ${{ secrets.INFISICAL_CLIENT_ID }}
-          INFISICAL_CLIENT_SECRET: ${{ secrets.INFISICAL_CLIENT_SECRET }}
-          INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
           NORMAL_RUNTIME_APPROVAL: ${{ secrets.NORMAL_RUNTIME_APPROVAL }}
         run: python3 scripts/ops/production/github_production.py
 

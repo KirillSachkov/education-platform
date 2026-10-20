@@ -124,6 +124,8 @@ jobs:
           submodules: recursive
           persist-credentials: false
       - run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y age
           bash scripts/ci/validate-compose-contracts.sh
           systemd-analyze verify docker/systemd/education-platform-health.service docker/systemd/education-platform-health.timer
           bash scripts/ci/validate-nginx-contracts.sh
