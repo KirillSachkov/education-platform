@@ -46,20 +46,13 @@ for rendered_compose in "$dev_json" "$prod_json"; do
   ' "$rendered_compose" >/dev/null
 done
 
-# #1169: a failed dependency wait aborts the whole `up -d`, leaving nginx and apps `Created`.
-# Observability must never gate startup, so nothing may wait for its health.
-observability_waits="$(jq -r '
-  ["tempo", "loki", "prometheus", "otel-collector", "alloy", "grafana"] as $observability
-  | .services | to_entries[]
-  | .key as $service
-  | (.value.depends_on // {}) | to_entries[]
-  | select((.key | IN($observability[])) and .value.condition != "service_started")
-  | "\($service) -> \(.key): \(.value.condition)"
-' "$prod_json")"
-if [[ -n "$observability_waits" ]]; then
-  echo "Production services must not wait for observability health:" >&2
-  echo "$observability_waits" >&2
-  exit 1
-fi
+# The normal production runtime has no monitoring storage or remote exporters.
+jq -e '
+  [.services | keys[] | select(. == "tempo" or . == "loki" or . == "prometheus" or . == "otel-collector" or . == "alloy" or . == "grafana" or . == "postgres-exporter" or . == "redis-exporter")] | length == 0
+' "$prod_json" >/dev/null
+jq -e '
+  [.services[] | select(.environment.ASPNETCORE_ENVIRONMENT == "Production")
+   | (.environment.OTEL_SDK_DISABLED == "true" and .environment.OTEL_EXPORTER_OTLP_ENDPOINT == "")] | all
+' "$prod_json" >/dev/null
 
-echo "Compose contracts valid: Education migrations precede Comment migrations and runtime; observability never gates startup."
+echo "Compose contracts valid: migration dependencies preserved; normal production telemetry disabled."

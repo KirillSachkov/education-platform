@@ -49,6 +49,13 @@ operations retain the approved immutable database digest and volume.
 
 Sender selection is automatic: if `EmailOptions.ApiKey` is set, HTTP API is used; otherwise SMTP.
 
+## Production health and logs
+
+The small production runtime uses a five-minute host check and bounded container
+logs instead of a continuously running monitoring stack. See
+[production maintenance](production-maintenance.md) for configuration, alert setup,
+backup receipts and the authorized retirement sequence.
+
 ## Backup
 
 **Dev:** `./scripts/dev.sh backup` — local gzipped pg_dumpall, last 10 retained.

@@ -61,6 +61,7 @@
       "scripts/ci/validate-compose-contracts.sh",
       "scripts/ci/validate-nginx-contracts.sh",
       "scripts/ops/**/*",
+      "scripts/backup-s3.sh",
       "scripts/restore-s3.sh",
       "scripts/run-production-migrations.sh",
       "scripts/tests/test-restore-s3.sh",
