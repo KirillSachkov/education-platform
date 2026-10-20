@@ -1,18 +1,20 @@
 """Read the protected, single-line Compose environment without shell evaluation."""
 
 import os
-from pathlib import Path
 import re
 import stat
 
 
 def private_environment(path):
-    descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+    descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
     with os.fdopen(descriptor, "r") as stream:
         metadata = os.fstat(stream.fileno())
         if not stat.S_ISREG(metadata.st_mode) or metadata.st_uid != os.geteuid() or metadata.st_mode & 0o077:
             raise ValueError("environment file ownership or permissions invalid")
         body = stream.read(1024 * 1024 + 1)
+        after = os.fstat(stream.fileno())
+        if (metadata.st_size, metadata.st_mtime_ns) != (after.st_size, after.st_mtime_ns):
+            raise ValueError("environment file changed while reading")
         if len(body) > 1024 * 1024 or not body.strip():
             raise ValueError("environment file empty or too large")
     dotenv(body)

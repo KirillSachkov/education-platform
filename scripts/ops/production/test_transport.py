@@ -85,7 +85,10 @@ class ProductionTransport(unittest.TestCase):
                     "backend/AuthService/src/AuthService.Core/Services/LegalDocumentVersions.cs": "versions",
                     "CHANGELOG.md": "## [1.2.3]\n",
                     "scripts/backup-s3.sh": "#!/bin/bash\n",
-                    "scripts/ops/production/check_health.py": "# selected monitor\n"}
+                    "scripts/ops/production/check_health.py": "# selected monitor\n",
+                    "scripts/ops/production/backup_runtime.py": "# backup\n",
+                    "scripts/ops/production/environment_file.py": "# reader\n",
+                    "scripts/ops/production/daily_backup.py": "# daily\n"}
         for bad in [None, "duplicate", "symlink", "missing", "oversized"]:
             output = io.BytesIO()
             with zipfile.ZipFile(output, "w") as result:

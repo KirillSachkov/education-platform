@@ -22,8 +22,6 @@ write_required() {
         printf 'RABBITMQ_DEFAULT_USER=platform\n'
         printf 'RABBITMQ_DEFAULT_PASS=valid-rabbit-password\n'
         printf 'BOT__TOKEN=%s\n' "$bot_value"
-        printf 'INFISICAL_AUTH_SECRET=valid-auth-secret\n'
-        printf 'INFISICAL_ENCRYPTION_KEY=valid-encryption-key\n'
     } > "$target"
 }
 

@@ -490,7 +490,7 @@ services:
     command: ["postgres", "-c", "log_min_duration_statement=500", "-c", "log_lock_waits=on", "-c", "log_temp_files=10485760"]
     healthcheck:
       # Fallback to "postgres" if POSTGRES_USER is empty/unset — a transient
-      # infisical-export / env-sourcing hiccup must NOT brick the platform: an
+      # missing optional email configuration must NOT brick the platform: an
       # empty -U arg makes pg_isready exit 3 (unhealthy) → every depends_on
       # service stalls in Created → site-wide outage (#642, prod 2026-06-23).
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres}"]

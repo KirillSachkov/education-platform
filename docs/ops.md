@@ -6,12 +6,12 @@ Operational concerns не нужные на каждой задаче. Если 
 ## Configuration Architecture
 
 **Three layers** (highest priority wins):
-1. Environment variables (from `.env` / Infisical)
+1. Environment variables (from the protected environment file)
 2. `appsettings.{Environment}.json` per service
 3. `appsettings.json` base config
 
 **What goes where:**
-- **Secrets** (passwords, API keys, signing keys) → `.env` (dev) / Infisical (prod)
+- **Secrets** (passwords, API keys, signing keys) → `.env` (dev) / `/srv/education-platform/runtime.env` (prod)
 - **Non-secret config** (URLs, CORS, client IDs, feature flags) → `appsettings.{Environment}.json`
 - **Business constants** (retention TTLs) → `appsettings.json`
 
@@ -21,9 +21,9 @@ Operational concerns не нужные на каждой задаче. Если 
 
 **Development:** `cp .env.example .env` — contains dev-safe defaults (postgres/postgres, guest/guest).
 
-**Production:** Self-hosted Infisical on VPS. CI deploy exports secrets via `infisical export` to `.env` on server. Access Infisical UI via SSH tunnel (`ssh -L 8080:localhost:8080 root@server`).
+**Production:** `/srv/education-platform/runtime.env` is the sole editable environment, owned by root with mode `0600` inside a root-owned `0700` directory. Deployment validates and copies it into the applied `/opt/education-platform/.env`; do not edit the applied copy. Normal deployment, backup and restore require no secrets service. See [production secrets](production-secrets.md) for bootstrap, encrypted offsite retention and recovery.
 
-Only secrets belong in Infisical/`.env`. Non-secret production config is in `appsettings.Production.json` per service.
+Only secrets and required host/runtime inputs belong in the protected environment file. Non-secret production config is in `appsettings.Production.json` per service.
 
 ## CI/CD Pipeline
 
@@ -60,7 +60,7 @@ backup receipts and the authorized retirement sequence.
 
 **Dev:** `./scripts/dev.sh backup` — local gzipped pg_dumpall, last 10 retained.
 
-**Prod:** `scripts/backup-s3.sh` — pg_dumpall → gzip → Yandex Object Storage (bucket from `BACKUP_S3_BUCKET`). Cron daily at 3:00 UTC, 30-day retention. Pre-deploy backups also created by CI pipeline.
+**Prod:** `scripts/ops/production/daily_backup.py` first encrypts and verifies the private runtime recovery copy, then runs `scripts/backup-s3.sh` for pg_dumpall → gzip → private object storage. Replace the old shell-sourcing cron with this command at 03:00 UTC during cutover. Database objects retain the existing 30-day policy; encrypted runtime versions have no automatic deletion. Pre-deploy backups use the same runtime protection before the separate verified database dump.
 
 Credentials: `BACKUP_S3_ACCESS_KEY` / `BACKUP_S3_SECRET_KEY` env vars.
 

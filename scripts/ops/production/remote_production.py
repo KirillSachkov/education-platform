@@ -349,6 +349,12 @@ class HostOperation:
         self.env.update(self.environment_values(candidate))
         self.env.update(self.target["metadata"])
 
+    def backup_runtime(self):
+        self.command([sys.executable, str(self.run / "backup_runtime.py"),
+                      "--root", str(self.root), "--env-file", str(self.run / "source-runtime.env"),
+                      "--recipient-file", str(self.runtime_root / "backup-age-recipient"),
+                      "--receipt", str(self.run / "runtime-backup-receipt.json")])
+
     def backup(self):
         archive = self.run / ("pre-operation-" + uuid.uuid4().hex + ".sql.gz")
         partial = archive.with_suffix(archive.suffix + ".part")
@@ -691,6 +697,7 @@ class HostOperation:
             self.normal_runtime()
         self.prepare_env()
         self.prepare_configuration()
+        self.backup_runtime()
         self.backup()
         self.pull()
         if not (self.state / "approved-config.json").exists():

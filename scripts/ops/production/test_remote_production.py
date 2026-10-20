@@ -158,14 +158,14 @@ class RemoteProduction(RemoteFixture):
         self.assertTrue((self.run / "prior-failed-pending.env").exists())
 
     def test_backup_failure_prevents_pull_migrations_start_and_promotion(self):
-        for failure in ["export", "configuration", "backup", "pull", "migrations", "health", "smoke", "verify"]:
+        for failure in ["export", "configuration", "runtime-backup", "backup", "pull", "migrations", "health", "smoke", "verify"]:
             host = FixtureHost(self.packet, self.run, self.root)
             host.fail_stage = failure
             host.baseline = lambda: host.event("baseline")
             host.choose_target = lambda: setattr(host, "target", {"registry": LEGACY_REGISTRY, "metadata": {}, "source_sha": "a" * 40})
             host.baseline_env_text = "EXAMPLE=original\n"; host.candidate_env_text = "EXAMPLE=candidate\n"
             host.pending_path = self.root / "releases/pending.env"
-            for method, event in [("prepare_env", "export"), ("prepare_configuration", "configuration"), ("backup", "backup"),
+            for method, event in [("prepare_env", "export"), ("prepare_configuration", "configuration"), ("backup_runtime", "runtime-backup"), ("backup", "backup"),
                                   ("pull", "pull"), ("apply_configuration", "apply"), ("migrate_and_start", "migrations"),
                                   ("smoke", "smoke"), ("verify_release", "verify"), ("promote", "promote")]:
                 setattr(host, method, lambda event=event: host.event(event))
@@ -173,7 +173,7 @@ class RemoteProduction(RemoteFixture):
             host.captured_configuration = lambda: {}
             with self.subTest(failure=failure), self.assertRaises(RuntimeError): host.execute()
             self.assertNotIn("promote", host.events)
-            if failure in {"export", "configuration", "backup", "pull"}:
+            if failure in {"export", "configuration", "runtime-backup", "backup", "pull"}:
                 self.assertNotIn("migrations", host.events)
                 self.assertNotIn("apply", host.events)
 

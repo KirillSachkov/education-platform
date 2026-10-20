@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import stat
 import tarfile
 import tempfile
 import time
@@ -22,14 +23,14 @@ def snapshot(root, env_file):
     for name in ["releases/current.env", "releases/previous.env", "releases/pending.env",
                  ".github-production/current.json", ".github-production/previous.json",
                  ".github-production/pending.json", ".github-production/approved-legacy.json",
-                 ".github-production/approved-config.json"]:
+                 ".github-production/approved-config.json", ".github-production/promotion.pending.json"]:
         path = root / name
         if path.exists():
             # Same root-private file contract, without interpreting JSON as dotenv.
-            descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+            descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
             with os.fdopen(descriptor, "rb") as stream:
                 before = os.fstat(stream.fileno())
-                if before.st_uid != os.geteuid() or before.st_mode & 0o077:
+                if not stat.S_ISREG(before.st_mode) or before.st_uid != os.geteuid() or before.st_mode & 0o077:
                     raise ValueError("private recovery record permissions invalid")
                 content = stream.read(16 * 1024 * 1024 + 1)
                 after = os.fstat(stream.fileno())
@@ -52,7 +53,10 @@ def snapshot(root, env_file):
 
 
 def command(arguments, *, env=None, input=None):
-    result = subprocess.run(arguments, input=input, env=env, capture_output=True, timeout=180)
+    try:
+        result = subprocess.run(arguments, input=input, env=env, capture_output=True, timeout=180)
+    except subprocess.SubprocessError as error:
+        raise RuntimeError("private runtime backup command failed") from error
     if result.returncode:
         raise RuntimeError("private runtime backup command failed")
     return result.stdout
@@ -60,7 +64,12 @@ def command(arguments, *, env=None, input=None):
 
 def retain(root, env_file, recipient_file):
     values = dotenv(private_environment(env_file))
-    recipient = recipient_file.read_text().strip()
+    descriptor = os.open(recipient_file, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    with os.fdopen(descriptor) as stream:
+        metadata = os.fstat(stream.fileno())
+        if not stat.S_ISREG(metadata.st_mode) or metadata.st_uid != os.geteuid() or metadata.st_mode & 0o022:
+            raise ValueError("age recipient ownership or permissions invalid")
+        recipient = stream.read(1024).strip()
     if not recipient.startswith("age1") or any(char.isspace() for char in recipient):
         raise ValueError("age public recipient required")
     for key in ["BACKUP_S3_ACCESS_KEY", "BACKUP_S3_SECRET_KEY", "BACKUP_S3_BUCKET"]:
