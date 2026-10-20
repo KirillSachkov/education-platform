@@ -42,8 +42,6 @@ Configure these only in the private `production` environment:
   complete private image manifests, approved PostgreSQL digest, live config
   hashes, `compose_project`, `postgres_volume` and approved `public_url`.
 - `LEGACY_GHCR_READ_TOKEN`: dedicated `read:packages` credential.
-- `INFISICAL_CLIENT_ID`, `INFISICAL_CLIENT_SECRET`, `INFISICAL_PROJECT_ID`:
-  credentials for the independent production secret service.
 - `NORMAL_RUNTIME_APPROVAL`: required only for a normal public-source release.
 
 The source repository and forks receive no permission to private legacy
@@ -60,11 +58,15 @@ Telegram belongs to image and migration inventories but not the blocking
 health gate.
 
 Before deploy, validate the current release and reject unresolved transitions.
-Export a unique candidate dotenv from Infisical, validate all prior keys and
-eight critical secrets, and forbid critical secret rotation. Original private
+Read the root-private canonical `/srv/education-platform/runtime.env`, validate
+the required critical secrets, and forbid critical secret rotation. Original private
 trials also require unchanged environment values. Compose decodes actual dotenv
 values; the adapter never evaluates a dotenv file as shell code.
 
+Before any live-file mutation, encrypt and retain the canonical/applied environment
+and current/previous/pending recovery records, then download the exact object
+version and compare its full ciphertext checksum. The off-host age identity is
+never installed on production. See [production secrets](production-secrets.md).
 Before migrations or startup, retain a mode600 `pg_dumpall` gzip archive.
 Verify producer exit, gzip integrity and minimum size. Upload that exact archive
 under a unique key. Download the same key/version and verify its full checksum,

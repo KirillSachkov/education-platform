@@ -67,7 +67,7 @@ services:
     restart: always
 
   # ─── Assignment Review Service ───
-  # Activated for prod (#334). GitHub App + LLM secrets live in Infisical; the
+  # Activated for prod (#334). GitHub App + LLM secrets use the protected runtime environment; the
   # assignment_review schema + tables are created by the InitialCreate migration
   # (EnsureSchema). Included in EXPECTED_SERVICES in .gitlab-ci.yml: nginx routes
   # /api/assignment-review/* directly here, so a stopped container breaks student
@@ -418,36 +418,6 @@ services:
     networks:
       - platform-network
 
-  # ─── Infisical (secret management) ───
-  infisical:
-    container_name: infisical
-    image: infisical/infisical:latest
-    environment:
-      DB_CONNECTION_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/infisical
-      REDIS_URL: redis://redis-platform:6379
-      ENCRYPTION_KEY: ${INFISICAL_ENCRYPTION_KEY}
-      AUTH_SECRET: ${INFISICAL_AUTH_SECRET}
-      SITE_URL: http://localhost:8080
-      HTTPS_ENABLED: "false"
-    ports:
-      - "127.0.0.1:8080:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
-    logging: *logging
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-          cpus: "0.50"
-        reservations:
-          memory: 512M
-    restart: always
-    networks:
-      - platform-network
-
   # ─── Nginx ───
   nginx:
     container_name: nginx
@@ -520,7 +490,7 @@ services:
     command: ["postgres", "-c", "log_min_duration_statement=500", "-c", "log_lock_waits=on", "-c", "log_temp_files=10485760"]
     healthcheck:
       # Fallback to "postgres" if POSTGRES_USER is empty/unset — a transient
-      # infisical-export / env-sourcing hiccup must NOT brick the platform: an
+      # missing optional email configuration must NOT brick the platform: an
       # empty -U arg makes pg_isready exit 3 (unhealthy) → every depends_on
       # service stalls in Created → site-wide outage (#642, prod 2026-06-23).
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres}"]

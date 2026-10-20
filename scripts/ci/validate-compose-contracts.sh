@@ -48,7 +48,7 @@ done
 
 # The normal production runtime has no monitoring storage or remote exporters.
 jq -e '
-  [.services | keys[] | select(. == "tempo" or . == "loki" or . == "prometheus" or . == "otel-collector" or . == "alloy" or . == "grafana" or . == "postgres-exporter" or . == "redis-exporter")] | length == 0
+  [.services | keys[] | select(. == "infisical" or . == "tempo" or . == "loki" or . == "prometheus" or . == "otel-collector" or . == "alloy" or . == "grafana" or . == "postgres-exporter" or . == "redis-exporter")] | length == 0
 ' "$prod_json" >/dev/null
 jq -e '
   [.services[] | select(.environment.ASPNETCORE_ENVIRONMENT == "Production")

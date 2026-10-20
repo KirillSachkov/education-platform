@@ -38,8 +38,8 @@ prints a small PASS/FAIL report; the explicit flag enables failure notifications
 It never sends inspect output, environment values or private URLs. A failed
 notification remains a failed check. Persistent failures notify every five minutes.
 
-Normal release delivery installs `scripts/backup-s3.sh` and
-`scripts/ops/production/check_health.py` from the exact accepted source SHA with
+Normal release delivery installs `scripts/backup-s3.sh`,
+`scripts/ops/production/check_health.py` and the private environment/backup helpers from the exact accepted source SHA with
 content hashes and root-only executable permissions. Existing helper bytes are
 retained with the release's pre-operation configuration for recovery. A deployment
 does not enable the timer or send an alert automatically.
@@ -55,7 +55,8 @@ and `journalctl -u education-platform-health.service`.
 
 ## Backup evidence
 
-The daily `backup-s3.sh` validates gzip, uploads a private object with SHA-256
+The daily `daily_backup.py` first verifies the encrypted runtime backup as described
+in [production secrets](production-secrets.md). Its database step, `backup-s3.sh`, validates gzip, uploads a private object with SHA-256
 metadata, and checks the remote size and checksum metadata before removing the
 local dump. Only then it atomically writes the root-private
 `/var/lib/education-platform/last-backup.json` receipt. A read-back mismatch keeps

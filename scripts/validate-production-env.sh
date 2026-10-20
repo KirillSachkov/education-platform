@@ -36,8 +36,6 @@ critical_keys=(
     RABBITMQ_DEFAULT_USER
     RABBITMQ_DEFAULT_PASS
     BOT__TOKEN
-    INFISICAL_AUTH_SECRET
-    INFISICAL_ENCRYPTION_KEY
 )
 
 for required_key in "${critical_keys[@]}"; do

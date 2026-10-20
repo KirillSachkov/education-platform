@@ -164,13 +164,15 @@ def main():
               "private_roles": roles, "credentials": {}, "scripts": {}}
     if inputs["operation"] != "probe":
         packet["credentials"] = {name: required_secret(name) for name in
-                                  ["LEGACY_GHCR_READ_TOKEN", "INFISICAL_CLIENT_ID", "INFISICAL_CLIENT_SECRET", "INFISICAL_PROJECT_ID"]}
+                                  ["LEGACY_GHCR_READ_TOKEN"]}
     if inputs["release"] == "normal-public-build":
         packet["public_release"] = selected_public_release(inputs["source_sha"], inputs["build_run_id"])
         packet["normal_configuration"], packet["public_version"] = selected_configuration(inputs["source_sha"])
         packet["normal_runtime_approval"] = strict_json(required_secret("NORMAL_RUNTIME_APPROVAL"))
     scripts = {"remote_production.py": Path(__file__).with_name("remote_production.py"),
-               "release_model.py": Path(__file__).with_name("release_model.py")}
+               "release_model.py": Path(__file__).with_name("release_model.py"),
+               "environment_file.py": Path(__file__).with_name("environment_file.py"),
+               "backup_runtime.py": Path(__file__).with_name("backup_runtime.py")}
     scripts.update({name: ROOT / "scripts" / name for name in
                     ["run-production-migrations.sh", "check-production-rollback.sh", "validate-production-env.sh", "restore-s3.sh"]})
     for name, path in scripts.items():

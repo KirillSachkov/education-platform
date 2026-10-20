@@ -293,10 +293,10 @@ App регистрируется один раз на github.com и устана
 4. **Permissions:** Organization → **Members: Read and write**. Никаких repo-permissions.
 5. **Subscribe to events:** `organization`, `installation`.
 6. **Webhook URL:** `https://platform/api/access/webhooks/github`.
-7. **Webhook secret:** `openssl rand -hex 32` → вставить в форму И в Infisical (`GITHUBAPP__WEBHOOKSECRET`).
+7. **Webhook secret:** `openssl rand -hex 32` → вставить в форму И в защищённый `/srv/education-platform/runtime.env` (`GITHUBAPP__WEBHOOKSECRET`).
 8. Создать App → запомнить **App ID**, **Client ID**, **Slug**.
 9. Сгенерировать private key (Generate a private key) → `.pem` файл.
-   `base64 -i private-key.pem | tr -d '\n'` → положить в Infisical (`GITHUBAPP__PRIVATEKEYPEMBASE64`).
+   `base64 -i private-key.pem | tr -d '\n'` → положить в защищённый `/srv/education-platform/runtime.env` (`GITHUBAPP__PRIVATEKEYPEMBASE64`).
 10. Заполнить остальные env vars: `GITHUBAPP__APPID`, `GITHUBAPP__SLUG`, `GITHUBAPP__CLIENTID`,
     `GITHUBAPP__FRONTENDINSTALLRETURNURL=/author/plans` (fallback если автор install-flow без planId).
 
@@ -320,7 +320,7 @@ docker logs access-service 2>&1 | grep -i "GitHub App installed"
 | Симптом | Причина | Реакция |
 |---|---|---|
 | `App JWT signing failed` в логах | Invalid PEM в `GITHUBAPP__PRIVATEKEYPEMBASE64` | Проверь base64 (без переносов), regenerate ключ на github.com если нужно |
-| `GitHub webhook signature mismatch` | Webhook secret разъехался между Infisical и github.com | Сверь оба места, restart access-service |
+| `GitHub webhook signature mismatch` | Webhook secret разъехался между защищённый `/srv/education-platform/runtime.env` и github.com | Сверь оба места, restart access-service |
 | `installation_token failed with 401` | Installation удалена автором, либо App suspended | См. `author_github_installations.suspended_at`. Автор должен переустановить App |
 | `installations/{id} → 404` в логах | Installation_id хранится, но App уже удалён в org | Очистить запись: `DELETE FROM access.author_github_installations WHERE installation_id=…` |
 | Pending invitations stuck >7d | GitHub-side invitation expired (default 7 days) | Юзер сам жмёт «Запросить новое приглашение» в onboarding wizard. Cron на эту автоматизацию не нужен |
@@ -333,9 +333,9 @@ docker logs access-service 2>&1 | grep -i "GitHub App installed"
 ```bash
 # 1. На github.com → App → Private keys → Generate a private key.
 #    Старый ключ остаётся валидным — у App может быть до 25 ключей одновременно.
-# 2. Encode + положить в Infisical:
+# 2. Encode + положить в защищённый `/srv/education-platform/runtime.env`:
 base64 -i new-key.pem | tr -d '\n' | pbcopy
-# Обновить GITHUBAPP__PRIVATEKEYPEMBASE64 в Infisical.
+# Обновить GITHUBAPP__PRIVATEKEYPEMBASE64 в защищённый `/srv/education-platform/runtime.env`.
 # 3. Redeploy AccessService → подхватит новый ключ.
 docker compose up -d access-service
 # 4. Smoke — install-flow / invitation create должен работать.
