@@ -77,7 +77,9 @@ class DatabaseRecovery:
         try:
             for attempt in range(90):
                 try:
-                    self.command(["docker", "exec", name, "pg_isready", "-U", self.user, "-d", "postgres"])
+                    # The image's initdb server accepts Unix sockets before it
+                    # restarts. TCP is available only on the final server.
+                    self.command(["docker", "exec", name, "pg_isready", "-h", "127.0.0.1", "-U", self.user, "-d", "postgres"])
                     break
                 except RuntimeError:
                     if attempt == 89:
