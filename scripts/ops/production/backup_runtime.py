@@ -23,7 +23,8 @@ def snapshot(root, env_file):
     for name in ["releases/current.env", "releases/previous.env", "releases/pending.env",
                  ".github-production/current.json", ".github-production/previous.json",
                  ".github-production/pending.json", ".github-production/approved-legacy.json",
-                 ".github-production/approved-config.json", ".github-production/promotion.pending.json"]:
+                 ".github-production/approved-config.json", ".github-production/promotion.pending.json",
+                 ".github-production/retirement-recovery.json"]:
         path = root / name
         if path.exists():
             # Same root-private file contract, without interpreting JSON as dotenv.

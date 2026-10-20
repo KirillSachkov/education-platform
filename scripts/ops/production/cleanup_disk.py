@@ -50,6 +50,12 @@ def protected_references(root, config):
         record = private_json(path)
         references.update(image_manifest(record["image_manifest"], record["source_sha"], record["registry"]).values())
         references.add(record["postgres_image"])
+    recovery = root / ".github-production/retirement-recovery.json"
+    if recovery.exists():
+        record = private_json(recovery)
+        if record.get("schema_version") != 1:
+            raise ValueError("unsupported retirement recovery record")
+        references.update(image_manifest(record["public_images"], record["public_source_sha"]).values())
     if not references or any(not re.fullmatch(r"[^\s]+@sha256:[0-9a-f]{64}", value) for value in references):
         raise ValueError("immutable recovery references required")
     return references

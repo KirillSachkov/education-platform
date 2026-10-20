@@ -79,6 +79,25 @@ class DiskRetention(unittest.TestCase):
             with self.assertRaises(OSError): self.plan()
         self.assertFalse(any("rm" in command for command in self.calls))
 
+    def test_retirement_migration_images_survive_beyond_current_previous_and_pending(self):
+        source = "4" * 40
+        images = manifest(source)
+        for item in images["images"]:
+            item["digest"] = "sha256:" + "4" * 64
+            item["reference"] = item["tag"].partition(":" + source)[0] + "@" + item["digest"]
+            self.add_image("retirement-" + item["name"], [item["tag"]], [item["reference"]])
+        path = self.root / ".github-production/retirement-recovery.json"
+        record = {"schema_version": 1, "public_source_sha": source, "public_images": images}
+        path.write_text(json.dumps(record)); path.chmod(0o600)
+        with patch.object(cleanup_disk, "command", side_effect=self.command):
+            plan = self.plan()
+            self.assertTrue(all("retirement-" + item["name"] in plan["protected_image_ids"] for item in images["images"]))
+            record["schema_version"] = 2; path.write_text(json.dumps(record))
+            with self.assertRaisesRegex(ValueError, "unsupported retirement"): self.plan()
+            record["schema_version"] = 1; record["public_source_sha"] = "5" * 40
+            path.write_text(json.dumps(record))
+            with self.assertRaises(ValueError): self.plan()
+
     def test_apply_requires_matching_inventory_and_uses_no_force_or_volume_prune(self):
         with patch.object(cleanup_disk, "command", side_effect=self.command):
             plan = self.plan()

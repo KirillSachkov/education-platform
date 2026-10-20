@@ -50,7 +50,7 @@ packet=json.loads(raw)
 root=pathlib.Path("/opt/education-platform/.github-production/runs")
 root.mkdir(parents=True,exist_ok=True,mode=0o700)
 run=pathlib.Path(tempfile.mkdtemp(prefix="run-",dir=root))
-allowed={"remote_production.py","release_model.py","environment_file.py","backup_runtime.py","run-production-migrations.sh","check-production-rollback.sh","validate-production-env.sh","restore-s3.sh"}
+allowed={"remote_production.py","release_model.py","environment_file.py","backup_runtime.py","database_recovery.py","retained_data.py","closed_sales.py","run-production-migrations.sh","check-production-rollback.sh","validate-production-env.sh","restore-s3.sh"}
 if set(packet["scripts"])!=allowed: raise RuntimeError("script inventory mismatch")
 for name,item in packet.pop("scripts").items():
     content=base64.b64decode(item["base64"],validate=True)
@@ -175,7 +175,10 @@ def main():
     scripts = {"remote_production.py": Path(__file__).with_name("remote_production.py"),
                "release_model.py": Path(__file__).with_name("release_model.py"),
                "environment_file.py": Path(__file__).with_name("environment_file.py"),
-               "backup_runtime.py": Path(__file__).with_name("backup_runtime.py")}
+               "backup_runtime.py": Path(__file__).with_name("backup_runtime.py"),
+               "database_recovery.py": Path(__file__).with_name("database_recovery.py"),
+               "retained_data.py": Path(__file__).with_name("retained_data.py"),
+               "closed_sales.py": Path(__file__).with_name("closed_sales.py")}
     scripts.update({name: ROOT / "scripts" / name for name in
                     ["run-production-migrations.sh", "check-production-rollback.sh", "validate-production-env.sh", "restore-s3.sh"]})
     for name, path in scripts.items():

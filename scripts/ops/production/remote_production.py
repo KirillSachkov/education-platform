@@ -26,7 +26,10 @@ import urllib.parse
 import urllib.request
 import uuid
 
-from environment_file import dotenv, private_environment, compose_environment
+from environment_file import dotenv, private_environment, compose_environment, connection_database
+from database_recovery import DatabaseRecovery
+import retained_data
+from closed_sales import protect_nginx
 
 from release_model import (
     LEGACY_REGISTRY, PUBLIC_REGISTRY, MAINTENANCE_SCRIPTS, services_for_registry,
@@ -97,6 +100,11 @@ class HostOperation:
         self.target = None
         self.services = services_for_registry(LEGACY_REGISTRY)
         self.effective = self.run / "compose.effective.json"
+        self.retirement_transition = False
+        self.retirement_rollback = False
+        self.sales_closed_rollback = False
+        self.quiesced = False
+        self.current_record = None
 
     def command(self, arguments, *, env=None, input=None, capture=True, timeout=180):
         result = subprocess.run(arguments, env=env or self.env, input=input,
@@ -342,6 +350,147 @@ class HostOperation:
         self.env.update(self.environment_values(candidate))
         self.env.update(self.target["metadata"])
 
+    def prepare_retirement(self):
+        baseline = self.current_record or {"registry": LEGACY_REGISTRY}
+        self.retirement_transition = baseline["registry"] == LEGACY_REGISTRY and self.target["registry"] == PUBLIC_REGISTRY
+        recovery_path = self.state / "retirement-recovery.json"
+        interrupted = self.pending_path.exists() and strict_json((self.state / "pending.json").read_bytes())["registry"] == PUBLIC_REGISTRY
+        self.sales_closed_rollback = self.inputs["operation"] == "rollback" and self.target["registry"] == LEGACY_REGISTRY and (
+            baseline["registry"] == PUBLIC_REGISTRY or interrupted or recovery_path.exists())
+        self.retirement_rollback = self.inputs["operation"] == "rollback" and self.target["registry"] == LEGACY_REGISTRY and recovery_path.exists()
+        if self.retirement_rollback:
+            self.retirement_recovery = strict_json(recovery_path.read_bytes())
+            if self.retirement_recovery.get("schema_version") != 1:
+                raise ValueError("unsupported retirement recovery record")
+            if self.target["source_sha"] != self.retirement_recovery["legacy_source_sha"]:
+                raise ValueError("retirement rollback requires the exact recorded legacy release")
+            image_manifest(self.retirement_recovery["public_images"], self.retirement_recovery["public_source_sha"])
+        elif baseline["registry"] == PUBLIC_REGISTRY and self.target["registry"] == LEGACY_REGISTRY:
+            raise ValueError("legacy schema recovery evidence missing")
+
+    def database_recovery(self):
+        databases = {connection_database(self.env[key]) for key in ["AUTH_DB_CONNECTION", "EDUCATION_DB_CONNECTION", "PROGRESS_DB_CONNECTION"]}
+        if len(databases) != 1:
+            raise ValueError("application database identities differ")
+        database = databases.pop()
+        return DatabaseRecovery(self.command, self.run, self.target["postgres_image"],
+                                self.env["POSTGRES_USER"], database, self.env["POSTGRES_PASSWORD"])
+
+    def quiesce_retirement(self):
+        if not (self.retirement_transition or self.sales_closed_rollback):
+            return
+        database = self.database_recovery()
+        baseline = self.current_record or {"registry": LEGACY_REGISTRY}
+        services = services_for_registry(baseline["registry"])
+        for name in services:
+            labels = self.inspect(name)["Config"].get("Labels", {})
+            if labels.get("com.docker.compose.project") != self.project or labels.get("com.docker.compose.service") != name:
+                raise ValueError("cannot quiesce a foreign application")
+        self.verify_access_instances()
+        # Record the target before stopping writers so a failed backup can use
+        # ordinary recorded-previous recovery without pretending baseline health.
+        write_json(self.state / "pending.json", self.target)
+        write_private(self.releases / "pending.env", metadata_text(self.target["metadata"]))
+        self.command(["docker", "stop", "--time", "60", *services], timeout=900)
+        if any(self.inspect(name)["State"].get("Running") for name in services):
+            raise ValueError("application writers did not stop")
+        database.no_writers()
+        self.quiesced_definitions = database.definitions()
+        self.quiesced_fingerprints = retained_data.fingerprints(database.query, self.quiesced_definitions)
+        database.no_writers()
+        if retained_data.fingerprints(database.query, self.quiesced_definitions) != self.quiesced_fingerprints:
+            raise ValueError("quiesced rows are not stable")
+        self.quiesced = True
+        write_json(self.run / "writer-drain.json", {"status": "PASS", "services": list(services),
+                   "objects": len(self.quiesced_fingerprints), "fingerprints": self.quiesced_fingerprints})
+
+    def verify_access_instances(self):
+        canonical = self.inspect("access-service")["Id"]
+        active = self.command(["docker", "ps", "--no-trunc", "-q", "--filter", "label=com.docker.compose.project=" + self.project,
+                               "--filter", "label=com.docker.compose.service=access-service"]).decode().split()
+        if any(identifier != canonical for identifier in active):
+            raise ValueError("another AccessService instance remains active")
+
+    def preserve_or_recover(self):
+        database = self.database_recovery()
+        if self.retirement_transition:
+            plan = retained_data.preserve(database.query, "retained_" + self.packet["run_id"] + "_" + self.packet["run_attempt"])
+            baseline = self.current_record or self.roles["roles"]["current"]
+            self.retirement_recovery = {"schema_version": 1, "legacy_source_sha": baseline["source_sha"],
+                "public_source_sha": self.target["source_sha"], "public_images": self.target["image_manifest"], "data": plan}
+            write_json(self.state / "retirement-recovery.json", self.retirement_recovery)
+        elif self.retirement_rollback:
+            references = image_manifest(self.retirement_recovery["public_images"], self.retirement_recovery["public_source_sha"])
+            retained_data.verify_archive(database.query, self.retirement_recovery["data"])
+            core_definitions = database.definitions()
+            core_before = retained_data.core_fingerprints(database.query, core_definitions, self.retirement_recovery["data"])
+            for service, (schema, migration) in retained_data.BASELINES.items():
+                connection_key = {"auth-service": "AUTH_DB_CONNECTION", "education-service": "EDUCATION_DB_CONNECTION",
+                                  "progress-service": "PROGRESS_DB_CONNECTION"}[service]
+                environment = {**self.env, "CONNECTIONSTRINGS__DATABASE": self.env[connection_key]}
+                self.command(["docker", "run", "--rm", "--network", "container:postgres", "--env", "CONNECTIONSTRINGS__DATABASE",
+                              "--env", "AI__PROVIDERS__AITUNNEL__APIKEY", "--entrypoint", "./efbundle", references[service], migration],
+                             env=environment, timeout=300)
+            retained_data.rehydrate(database.query, self.retirement_recovery["data"])
+            core_after = retained_data.core_fingerprints(database.query, core_definitions, self.retirement_recovery["data"])
+            if core_after != core_before:
+                raise ValueError("rollback changed current user writes")
+            write_json(self.run / "rollback-core-preservation.json", {"status": "PASS", "objects": len(core_before), "fingerprints": core_after})
+        elif self.sales_closed_rollback:
+            # A failure before preservation cannot have reached migrations.
+            # Still verify that fact and close sales before restoring old apps.
+            available = retained_data.columns(database.query)
+            if not set(retained_data.TABLES).issubset(available) or "level_test_config" not in available["education.quizzes"]:
+                raise ValueError("unrecorded retirement schema change")
+            for schema, expected in retained_data.BASELINES.values():
+                actual = database.query('SELECT "MigrationId" FROM ' + retained_data.qualified(schema + ".__EFMigrationsHistory")
+                                        + ' ORDER BY "MigrationId" DESC LIMIT 1;')
+                if actual != expected:
+                    raise ValueError("unrecorded retirement migration")
+        if self.retirement_transition or self.retirement_rollback:
+            self.target["retirement_recovery"] = self.retirement_recovery
+            write_json(self.state / "pending.json", self.target)
+            self.backup_runtime()
+
+    def verify_retirement(self):
+        if not self.retirement_transition:
+            return
+        database = self.database_recovery()
+        retained_data.verify_archive(database.query, self.retirement_recovery["data"])
+        difference = int(database.query("SELECT count(*) FROM ((SELECT to_jsonb(x) FROM material_processing.video_transcripts x "
+            "EXCEPT ALL SELECT to_jsonb(x) FROM files.video_transcripts x) UNION ALL "
+            "(SELECT to_jsonb(x) FROM files.video_transcripts x EXCEPT ALL SELECT to_jsonb(x) FROM material_processing.video_transcripts x)) t;"))
+        if difference:
+            raise ValueError("drained transcript copy differs from legacy source")
+        write_json(self.run / "retirement-verification.json", {"status": "PASS", "archive_tables": len(retained_data.TABLES),
+                   "transcript_whole_row_difference": difference})
+
+    def verify_runtime_container(self):
+        if self.target["registry"] != PUBLIC_REGISTRY:
+            return
+        arguments = ["docker", "run", "--rm", "--network", "none", "--read-only", "--user", "1000:1000", "--cap-drop", "ALL"]
+        for key, destination in [("LEGAL_DOCUMENTS_DIR", "/run/legal/markdown"), ("LEGAL_PDFS_DIR", "/run/legal/pdf"),
+                                 ("BUSINESS_DETAILS_FILE", "/run/legal/business-details.json")]:
+            source = self.runtime["environment"][key]
+            if "," in source:
+                raise ValueError("ordinary private bind source required")
+            arguments += ["--mount", "type=bind,source=" + source + ",target=" + destination + ",readonly"]
+        e = self.runtime["environment"]
+        paths = []
+        for path, expected in self.runtime["file_hashes"].items():
+            if path.startswith(e["LEGAL_DOCUMENTS_DIR"] + "/"):
+                mounted = "/run/legal/markdown/" + path.removeprefix(e["LEGAL_DOCUMENTS_DIR"] + "/")
+            elif path.startswith(e["LEGAL_PDFS_DIR"] + "/"):
+                mounted = "/run/legal/pdf/" + path.removeprefix(e["LEGAL_PDFS_DIR"] + "/")
+            elif path == e["BUSINESS_DETAILS_FILE"]:
+                mounted = "/run/legal/business-details.json"
+            else:
+                raise ValueError("approved runtime file is outside delivered mounts")
+            paths.append({"path": mounted, "sha256": expected})
+        script = "if(process.getuid()!==1000)throw Error('wrong uid');for(const p of JSON.parse(process.argv[1]))if(require('node:crypto').createHash('sha256').update(require('node:fs').readFileSync(p.path)).digest('hex')!==p.sha256)throw Error('runtime checksum mismatch')"
+        self.command(arguments + ["--entrypoint", "node", self.references["frontend"], "-e", script, json.dumps(paths)], timeout=120)
+        write_json(self.run / "runtime-container-proof.json", {"status": "PASS", "uid": 1000, "file_hashes_verified": len(paths)})
+
     def backup_runtime(self):
         self.command([sys.executable, str(self.run / "backup_runtime.py"),
                       "--root", str(self.root), "--env-file", str(self.run / "source-runtime.env"),
@@ -418,6 +567,12 @@ class HostOperation:
         receipt = {"status": "PASS", "archive": str(archive), "bytes": archive.stat().st_size,
                    "sha256": sha256(archive), "bucket": bucket, "key": key, "version": version,
                    "exact_readback": True, "private_acl": True, "anonymous_status": 403}
+        if self.quiesced:
+            if not version:
+                raise ValueError("post-drain backup requires an immutable object version")
+            proof = self.database_recovery().verify_readback(downloaded, self.quiesced_definitions, self.quiesced_fingerprints)
+            write_json(self.run / "post-drain-restore.json", proof)
+            receipt["isolated_restore"] = proof
         write_json(self.run / "backup-receipt.json", receipt)
         downloaded.unlink()
         return receipt
@@ -431,6 +586,8 @@ class HostOperation:
             for role in self.roles["roles"].values():
                 references.update(image_manifest(role["image_manifest"], role["source_sha"], LEGACY_REGISTRY).values())
         references.add(self.target["postgres_image"])
+        if self.retirement_rollback:
+            references.update(image_manifest(self.retirement_recovery["public_images"], self.retirement_recovery["public_source_sha"]).values())
         for reference in sorted(references):
             self.command(["docker", "pull", reference], timeout=600)
             rows = strict_json(self.command(["docker", "image", "inspect", reference]))
@@ -456,8 +613,8 @@ class HostOperation:
             path = Path(name)
             if not name.startswith(str(self.runtime_root) + "/") or ".." in name.split("/") or path.is_symlink() or not path.is_file() or sha256(path) != expected:
                 raise ValueError("private runtime file hash mismatch")
-            # Actual frontend UID1000 must be able to read every mounted file.
-            self.command(["setpriv", "--reuid=1000", "--regid=1000", "--clear-groups", "test", "-r", str(path)])
+            # UID readability is checked inside the exact image's mounts after
+            # pulling it. The root-private host ancestor remains mode 0700.
         configurations = self.target["configuration_files"]
         for name, item in configurations.items():
             if name.startswith("/") or ".." in name.split("/"):
@@ -508,6 +665,17 @@ class HostOperation:
         else:
             # Includes private recorded-previous targets and failed-deploy recovery.
             self.normalize_legacy_configuration()
+        if self.sales_closed_rollback:
+            original = self.captured_configuration()["nginx.prod.conf"]
+            raw = base64.b64decode(original["base64"], validate=True)
+            if hashlib.sha256(raw).hexdigest() != self.roles["config_hashes"]["nginx.prod.conf"]:
+                raise ValueError("approved original ingress checksum changed")
+            protected = protect_nginx(raw)
+            selected = self.target["configuration_files"]["nginx.prod.conf"]
+            if base64.b64decode(selected["base64"], validate=True) not in {raw, protected}:
+                raise ValueError("retained rollback ingress drift")
+            self.target["configuration_files"]["nginx.prod.conf"] = {
+                "base64": base64.b64encode(protected).decode(), "sha256": hashlib.sha256(protected).hexdigest()}
         configurations = self.target["configuration_files"]
         self.target["config_hashes"] = {name: item["sha256"] for name, item in configurations.items()
                                         if name in {"docker-compose.prod.yml", "nginx.prod.conf", *MAINTENANCE_SCRIPTS} or name.startswith("docker/")}
@@ -517,6 +685,10 @@ class HostOperation:
         for name in (service + "-migrations" for service in self.services if service != "frontend"):
             override["services"][name] = {"image": self.references[name.removesuffix("-migrations")]}
         override["services"]["postgres"] = {"image": self.target["postgres_image"]}
+        if self.sales_closed_rollback:
+            worker_keys = {key for key in self.env if key.lower() == "recurringchargessweeper__enabled"}
+            override["services"]["access-service"]["environment"] = {
+                key: "false" for key in worker_keys | {"RECURRINGCHARGESSWEEPER__ENABLED", "RecurringChargesSweeper__Enabled", "recurringchargessweeper__enabled"}}
         if self.target["registry"] == PUBLIC_REGISTRY:
             e = self.runtime["environment"]
             override["services"]["frontend"].update({"environment": {
@@ -528,6 +700,11 @@ class HostOperation:
         write_json(self.run / "compose.override.json", override)
         rendered = self.compose("-f", str(self.run / "compose.override.json"), "config", "--no-env-resolution", "--format", "json", file=staged_base)
         config = strict_json(rendered)
+        if self.sales_closed_rollback:
+            values = [value for key, value in config["services"]["access-service"].get("environment", {}).items()
+                      if key.lower() == "recurringchargessweeper__enabled"]
+            if not values or any(str(value).lower() != "false" for value in values):
+                raise ValueError("legacy recurring worker must be disabled in every environment alias")
         if config.get("name") != self.project or config.get("volumes", {}).get("postgres_data", {}).get("name") != self.volume:
             raise ValueError("effective Compose would change the database project or volume")
         for name, reference in self.references.items():
@@ -588,6 +765,18 @@ class HostOperation:
         self.changed_config_consumers = sorted(consumers)
 
     def migrate_and_start(self):
+        if self.sales_closed_rollback:
+            self.verify_access_instances()
+            # Apply and prove the ingress restriction before any old app starts.
+            self.compose("up", "-d", "--no-deps", "--no-build", "--pull", "never", "--force-recreate", "nginx", timeout=120)
+            base = self.roles["public_url"].rstrip("/")
+            for path in ["/api/access/orders/", "/api/access/me/grants/00000000-0000-0000-0000-000000000000/resume-renewal/"]:
+                try:
+                    with urllib.request.urlopen(urllib.request.Request(base + path, data=b"{}", method="POST"), timeout=30):
+                        raise ValueError("rollback ingress reopened sales")
+                except urllib.error.HTTPError as error:
+                    if error.code != 410:
+                        raise ValueError("rollback ingress closure not proved") from error
         # The existing migration runner uses one -f argument. This wrapper adds
         # the exact same project and directory to every compose invocation.
         docker = shutil.which("docker")
@@ -649,6 +838,12 @@ class HostOperation:
             if expected not in image.get("RepoDigests", []):
                 raise ValueError("running application digest mismatch")
         self.verify_configuration(self.target["config_hashes"])
+        if self.sales_closed_rollback:
+            self.verify_access_instances()
+            values = [item.partition("=")[2] for item in self.inspect("access-service")["Config"]["Env"]
+                      if item.partition("=")[0].lower() == "recurringchargessweeper__enabled"]
+            if not values or any(value.lower() != "false" for value in values):
+                raise ValueError("running legacy recurring worker configuration differs")
 
     def promote(self):
         before = self.run / "pre-promotion"
@@ -685,6 +880,7 @@ class HostOperation:
         if self.inputs["operation"] == "probe":
             return self.public_receipt()
         self.choose_target()
+        self.prepare_retirement()
         # Validate normal legal/runtime approval before any live-file mutation.
         if self.target["registry"] == PUBLIC_REGISTRY:
             self.normal_runtime()
@@ -693,6 +889,11 @@ class HostOperation:
         self.backup_runtime()
         self.backup()
         self.pull()
+        self.verify_runtime_container()
+        self.quiesce_retirement()
+        if self.quiesced:
+            self.backup()
+            self.preserve_or_recover()
         if not (self.state / "approved-config.json").exists():
             write_json(self.state / "approved-config.json", self.captured_configuration())
         write_json(self.state / "approved-legacy.json", self.roles)
@@ -705,6 +906,7 @@ class HostOperation:
         self.apply_configuration()
         write_json(self.run / "target-manifest.json", self.target)
         self.migrate_and_start()
+        self.verify_retirement()
         self.health(12 if self.inputs["operation"] == "rollback" else 36)
         self.smoke()
         self.verify_release()

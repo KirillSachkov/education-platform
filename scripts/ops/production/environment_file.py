@@ -2,8 +2,61 @@
 
 import os
 import json
+import re
 from pathlib import Path
 import subprocess
+
+
+def connection_database(value):
+    """Read an ordinary database name without splitting quoted passwords."""
+    if not isinstance(value, str) or len(value) > 65536:
+        raise ValueError("bounded database connection string required")
+    position, databases = 0, []
+    while position < len(value):
+        while position < len(value) and (value[position].isspace() or value[position] == ";"):
+            position += 1
+        if position == len(value):
+            break
+        start = position
+        while position < len(value) and value[position] not in "=;":
+            position += 1
+        if position == len(value) or value[position] != "=":
+            raise ValueError("invalid database connection field")
+        key = value[start:position].strip().lower()
+        if not key:
+            raise ValueError("empty database connection field")
+        position += 1
+        while position < len(value) and value[position].isspace():
+            position += 1
+        parts = []
+        if position < len(value) and value[position] in "\"'":
+            quote = value[position]; position += 1
+            while True:
+                if position == len(value):
+                    raise ValueError("unterminated database connection value")
+                character = value[position]; position += 1
+                if character == quote:
+                    if position < len(value) and value[position] == quote:
+                        parts.append(quote); position += 1
+                    else:
+                        break
+                else:
+                    parts.append(character)
+            while position < len(value) and value[position].isspace():
+                position += 1
+            if position < len(value) and value[position] != ";":
+                raise ValueError("invalid quoted database connection value")
+            item = "".join(parts)
+        else:
+            start = position
+            while position < len(value) and value[position] != ";":
+                position += 1
+            item = value[start:position].strip()
+        if key in {"database", "initial catalog"}:
+            databases.append(item)
+    if len(databases) != 1 or not re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]{0,62}", databases[0]):
+        raise ValueError("one explicit ordinary application database required")
+    return databases[0]
 import tempfile
 import re
 import stat
