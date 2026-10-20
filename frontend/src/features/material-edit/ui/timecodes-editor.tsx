@@ -1,15 +1,16 @@
 "use client";
 
 import type { UpdateVideoChapterItem, VideoChapter } from "@/entities/video";
+import { getErrorMessage } from "@/shared/api";
 import { cn } from "@/shared/lib/css";
 import { Badge } from "@/shared/ui/kit/badge";
 import { Button } from "@/shared/ui/kit/button";
 import { Input } from "@/shared/ui/kit/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/kit/tooltip";
-import { AlertCircle, Clock3, Loader2, Plus, Save, Sparkles, Trash2 } from "lucide-react";
+import { AlertCircle, Clock3, Loader2, Plus, Save, Trash2 } from "lucide-react";
 import { useState, type KeyboardEvent, type MouseEvent } from "react";
 import { toast } from "sonner";
-import { formatVideoTime, parseVideoTime } from "../lib/video-processing-ui";
+import { formatVideoTime, parseVideoTime } from "../lib/video-chapter-time";
 
 interface EditableTimecode {
   id: string;
@@ -24,10 +25,6 @@ interface TimecodesEditorProps {
   timecodes: VideoChapter[];
   currentTime?: number;
   isSaving?: boolean;
-  isGenerating?: boolean;
-  canGenerate?: boolean;
-  generateTooltip?: string;
-  onGenerate?: () => void;
   onSeekChapter?: (seconds: number) => Promise<void> | void;
   onSave: (timecodes: UpdateVideoChapterItem[]) => Promise<void>;
 }
@@ -62,10 +59,6 @@ export function TimecodesEditor({
   timecodes,
   currentTime = 0,
   isSaving = false,
-  isGenerating = false,
-  canGenerate = true,
-  generateTooltip = "Сгенерировать главы",
-  onGenerate,
   onSeekChapter,
   onSave,
 }: TimecodesEditorProps) {
@@ -164,7 +157,9 @@ export function TimecodesEditor({
       }));
 
     for (let index = 1; index < ordered.length; index += 1) {
-      if (ordered[index].startSeconds <= ordered[index - 1].startSeconds) {
+      const current = ordered[index];
+      const previous = ordered[index - 1];
+      if (current && previous && current.startSeconds <= previous.startSeconds) {
         toast.error("Главы должны идти по возрастанию времени");
         return null;
       }
@@ -176,8 +171,12 @@ export function TimecodesEditor({
   const handleSave = async () => {
     const payload = buildPayload();
     if (!payload) return;
-    await onSave(payload);
-    setDirty(false);
+    try {
+      await onSave(payload);
+      setDirty(false);
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Не удалось сохранить главы"));
+    }
   };
 
   return (
@@ -204,7 +203,9 @@ export function TimecodesEditor({
             )}
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Клик по главе перематывает видео в верхнем блоке к нужному моменту.
+            {onSeekChapter
+              ? "Клик по главе перематывает видео к нужному моменту."
+              : "Измените время начала и название каждой главы."}
           </p>
         </div>
 
@@ -215,8 +216,9 @@ export function TimecodesEditor({
                 type="button"
                 variant="ghost"
                 size="icon-sm"
-                disabled={isSaving || isGenerating}
+                disabled={isSaving}
                 onClick={handleAddChapter}
+                aria-label="Добавить главу"
                 className="min-touch text-muted-foreground"
               >
                 <Plus size={14} />
@@ -225,30 +227,10 @@ export function TimecodesEditor({
             <TooltipContent>Добавить главу</TooltipContent>
           </Tooltip>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                disabled={!canGenerate || isGenerating}
-                onClick={onGenerate}
-                className="min-touch text-muted-foreground"
-              >
-                {isGenerating ? (
-                  <Loader2 size={14} className="animate-spin" />
-                ) : (
-                  <Sparkles size={14} />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>{generateTooltip}</TooltipContent>
-          </Tooltip>
-
           <Button
             type="button"
             size="sm"
-            disabled={!dirty || isSaving || isGenerating}
+            disabled={!dirty || isSaving}
             onClick={() => void handleSave()}
             className="min-touch h-8 min-w-[8.5rem]"
           >
@@ -260,30 +242,22 @@ export function TimecodesEditor({
 
       {items.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-2 px-4 py-8 text-center">
-          {isGenerating ? (
-            <Loader2 className="size-5 animate-spin text-primary" />
-          ) : (
-            <AlertCircle className="size-5 text-muted-foreground" />
-          )}
-          <p className="text-sm font-medium">
-            {isGenerating ? "Генерируем главы" : "Глав пока нет"}
-          </p>
+          <AlertCircle className="size-5 text-muted-foreground" />
+          <p className="text-sm font-medium">Глав пока нет</p>
           <p className="max-w-md text-xs text-muted-foreground">
-            Добавьте главы вручную или запустите генерацию, чтобы получить черновой список
-            тайм-кодов и затем уточнить его.
+            Добавьте главы вручную и укажите время начала каждой главы.
           </p>
-          {!isGenerating && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleAddChapter}
-              className="mt-1 h-8"
-            >
-              <Plus size={14} />
-              Добавить главу
-            </Button>
-          )}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={isSaving}
+            onClick={handleAddChapter}
+            className="min-touch mt-1 h-8"
+          >
+            <Plus size={14} />
+            Добавить главу
+          </Button>
         </div>
       ) : (
         <div className="max-h-[34rem] overflow-auto">
@@ -328,7 +302,7 @@ export function TimecodesEditor({
                           value={item.startText}
                           onChange={(event) => handleStartChange(item.id, event.target.value)}
                           placeholder="0:00"
-                          disabled={isSaving || isGenerating}
+                          disabled={isSaving}
                           aria-label={`Время начала главы ${index + 1}`}
                           className="h-9 rounded-lg border-border/60 bg-background/50 px-2.5 font-mono tabular-nums"
                         />
@@ -341,7 +315,7 @@ export function TimecodesEditor({
                         <Input
                           value={item.title}
                           onChange={(event) => updateItem(item.id, { title: event.target.value })}
-                          disabled={isSaving || isGenerating}
+                          disabled={isSaving}
                           placeholder="Название главы"
                           aria-label={`Название главы ${index + 1}`}
                           className="h-9 rounded-lg border-border/60 bg-background/50 px-2.5"
@@ -353,7 +327,7 @@ export function TimecodesEditor({
                           type="button"
                           variant="ghost"
                           size="icon-sm"
-                          disabled={isSaving || isGenerating}
+                          disabled={isSaving}
                           onClick={() => handleDeleteChapter(item.id)}
                           className="min-touch h-8 w-8 rounded-lg text-muted-foreground"
                           aria-label={`Удалить главу ${index + 1}`}

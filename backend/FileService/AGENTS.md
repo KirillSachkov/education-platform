@@ -15,8 +15,13 @@ the owning service's handler together. Cross-service backend rules come from
 
 Single-slot bindings are revisioned: `FileAssetBound` prepares a candidate and only the owner's
 `FileAssetBindingConfirmed` makes it active, so stale retries cannot delete the newest asset.
-Assets are released when owning entities emit `*HardDeleted` events. Confirmed material videos are
-handed to MaterialProcessingService via `VideoReadyForProcessing`.
+Assets are released when owning entities emit `*HardDeleted` events. Video reconciliation and
+binding confirmation do not start AI processing.
+
+Stored SRT export requires `Videos.MANAGE` plus video ownership or platform administrator access.
+It reads retained segments for the current provider version without creating jobs. Storage and
+the future copy/retirement gate are documented in
+[`stored-material-artifacts.md`](../../docs/stored-material-artifacts.md).
 
 ## Entrypoint and verification
 

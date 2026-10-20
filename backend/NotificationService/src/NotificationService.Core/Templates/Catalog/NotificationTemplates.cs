@@ -280,21 +280,6 @@ public static class NotificationTemplates
             Body: "💬 *Вопрос по PR от студента*\n\n{studentName} задал(а) вопрос в PR ({pullRequest}).{questionTextTg}{studentContactTg}\n\n[Открыть на проверку]({openUrl}){prLinkTg}"));
 
     /// <summary>
-    /// Авто-обработка видео упала (#648) — автору. Платформа сама запустила транскрипцию +
-    /// тайм-коды по готовности видео, но pipeline упал. Дип-линк → редактор материала, где
-    /// есть кнопка перезапуска. InApp + Telegram (рабочее событие, не email-спам).
-    /// </summary>
-    public static readonly NotificationTemplate VideoAutoProcessingFailed = new(
-        id: "video.auto_processing_failed",
-        type: NotificationType.VideoAutoProcessingFailed,
-        defaultChannels: NotificationChannel.InApp | NotificationChannel.Telegram,
-        inApp: new(
-            Title: "Не удалось обработать видео",
-            Body: "Автоматическая обработка видео «{materialTitle}» не завершилась: {reason}. Откройте материал и запустите обработку вручную."),
-        telegram: new(
-            Body: "⚠️ *Не удалось обработать видео*\n\nАвтоматическая транскрипция и тайм-коды для «{materialTitle}» не сгенерировались: {reason}.\n\n[Открыть материал]({openUrl})"));
-
-    /// <summary>
     /// Доступ открыт по плану (redeem invite, admin grant, PURCHASE, Telegram-бот, GitHub-org).
     /// Заменяет N per-course CourseEnrolled-уведомлений когда юзеру открывается несколько
     /// курсов одним plan-grant'ом.

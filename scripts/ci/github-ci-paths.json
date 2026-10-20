@@ -171,11 +171,6 @@
       "context": "backend"
     },
     {
-      "name": "material-processing-service",
-      "dockerfile": "backend/MaterialProcessingService/Dockerfile",
-      "context": "backend"
-    },
-    {
       "name": "frontend",
       "dockerfile": "frontend/Dockerfile",
       "context": "frontend"

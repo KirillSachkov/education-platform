@@ -1,4 +1,4 @@
-namespace Shared.Messaging.IntegrationEvents.Files;
+﻿namespace Shared.Messaging.IntegrationEvents.Files;
 
 public static class FileEventsRouting
 {
@@ -40,9 +40,6 @@ public static class FileEventsRouting
 
         public static string UploadInitiated(string entityType) =>
             $"video.upload-initiated.{NormalizeSegment(entityType, nameof(entityType))}";
-
-        public static string Ready(string entityType) =>
-            $"file.ready.{NormalizeSegment(entityType, nameof(entityType))}";
 
         public static string Detached() => "file.detached";
 

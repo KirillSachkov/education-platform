@@ -202,40 +202,6 @@ services:
     # удваивать RSS на больших курсах, фиксированный потолок только мешает.
     restart: always
 
-  # ─── Material Processing Service ───
-  material-processing-service-migrations:
-    container_name: material-processing-service-migrations
-    image: ${DOCKER_REGISTRY:?DOCKER_REGISTRY must be set}material-processing-service:${IMAGE_TAG:?IMAGE_TAG must be set}
-    <<: *migration
-    environment:
-      CONNECTIONSTRINGS__DATABASE: ${MATERIAL_PROCESSING_DB_CONNECTION}
-
-  material-processing-service:
-    container_name: material-processing-service
-    image: ${DOCKER_REGISTRY:?DOCKER_REGISTRY must be set}material-processing-service:${IMAGE_TAG:?IMAGE_TAG must be set}
-    <<: *backend-env
-    depends_on:
-      postgres:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-      material-processing-service-migrations:
-        condition: service_completed_successfully
-    environment:
-      ASPNETCORE_URLS: http://+:8011
-      ASPNETCORE_ENVIRONMENT: Production
-      OTEL_SERVICE_NAME: MaterialProcessingService
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
-      CONNECTIONSTRINGS__DATABASE: ${MATERIAL_PROCESSING_DB_CONNECTION}
-      FILESERVICEOPTIONS__URL: http://file-service:8002
-      EDUCATIONSERVICEOPTIONS__URL: http://education-service:8001
-      AI__PROVIDERS__AITUNNEL__APIKEY: ${AI__PROVIDERS__AITUNNEL__APIKEY:-}
-    healthcheck:
-      <<: *healthcheck
-      test: ["CMD", "dotnet", "healthcheck/healthcheck.dll", "8011"]
-    logging: *logging
-    restart: always
-
   # ─── Telegram Bot Service ───
   telegram-bot-service-migrations:
     container_name: telegram-bot-service-migrations

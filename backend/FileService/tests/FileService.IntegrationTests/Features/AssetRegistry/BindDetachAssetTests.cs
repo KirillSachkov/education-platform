@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using FileService.Contracts.Assets;
 using FileService.Contracts.Dtos;
@@ -47,7 +47,7 @@ public sealed class BindDetachAssetTests : FileServiceTestsBase
     }
 
     [Fact]
-    public async Task BindAsset_ReadyMaterialVideo_PublishesReadyAfterAggregateConfirmation()
+    public async Task BindAsset_ReadyMaterialVideo_ConfirmsBindingWithoutProcessingEvents()
     {
         Guid materialId = Guid.NewGuid();
         InitiateVideoUploadResponse video =
@@ -69,13 +69,17 @@ public sealed class BindDetachAssetTests : FileServiceTestsBase
         FileAssetBound prepared = Assert.Single(OutboxCollector.OfType<FileAssetBound>());
         Assert.Equal(video.AssetId, prepared.AssetId);
         Assert.True(prepared.RequiresAuthoritativeConfirmation);
-        Assert.Empty(OutboxCollector.OfType<VideoReadyForProcessing>());
         long revision = await ExecuteInDb(async db =>
             (await db.MediaAssets.SingleAsync(asset => asset.Id == video.AssetId)).BindingRevision);
+        OutboxCollector.Clear();
         await InvokeMessageAndWaitAsync(new FileAssetBindingConfirmed(video.AssetId, revision));
-        Assert.Equal(
-            video.AssetId,
-            Assert.Single(OutboxCollector.OfType<VideoReadyForProcessing>()).AssetId);
+        Assert.Empty(OutboxCollector.Messages);
+        await ExecuteInDb(async db =>
+        {
+            MediaAsset asset = await db.MediaAssets.SingleAsync(x => x.Id == video.AssetId);
+            Assert.Equal(AssetStatus.READY, asset.Status);
+            Assert.Equal(revision, asset.ConfirmedBindingRevision);
+        });
     }
 
     [Fact]

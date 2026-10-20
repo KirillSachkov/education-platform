@@ -79,8 +79,7 @@ public interface IEducationContentServiceClient
 
     /// <summary>
     ///     Записывает сгенерированный конспект в <c>Material.Content</c>. Идемпотентно,
-    ///     проверяет совпадение <c>VideoId</c>. Service-to-service эндпоинт для
-    ///     MaterialProcessingService после завершения content-draft job'а.
+    ///     проверяет совпадение <c>VideoId</c>.
     /// </summary>
     Task<UnitResult<Error>> UpdateMaterialContentAsync(
         Guid materialId,
@@ -91,8 +90,7 @@ public interface IEducationContentServiceClient
     ///     Денормализует главы видео (заголовок + offset в секундах) в
     ///     <c>Material.ChapterTitles</c> + <c>Material.ChapterTimestamps</c> у всех
     ///     материалов, привязанных к указанному видео — для индексации в поиске и
-    ///     deep-link'а на конкретный таймкод. Вызывается MaterialProcessingService
-    ///     после успешного PUT глав в Kinescope. Идемпотентно. ECS делает fan-out +
+    ///     deep-link'а на конкретный таймкод. Идемпотентно. ECS делает fan-out +
     ///     публикует <c>material.updated</c> для каждого затронутого материала.
     /// </summary>
     Task<UnitResult<Error>> UpdateVideoChaptersAsync(

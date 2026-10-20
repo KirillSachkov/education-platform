@@ -4,7 +4,6 @@ using Shared.Messaging.IntegrationEvents.AssignmentReview;
 using Shared.Messaging.IntegrationEvents.Auth;
 using Shared.Messaging.IntegrationEvents.Comments;
 using Shared.Messaging.IntegrationEvents.Education;
-using Shared.Messaging.IntegrationEvents.MaterialProcessing;
 using Shared.Messaging.IntegrationEvents.Notifications;
 using Shared.Messaging.IntegrationEvents.Notifications.Events;
 using Shared.Messaging.IntegrationEvents.Progress;
@@ -31,7 +30,6 @@ public static class RabbitMqConfiguration
     private const string NOTIFICATIONS_CACHE_INVALIDATION_QUEUE = "notifications.cache.invalidation";
     private const string NOTIFICATIONS_TELEGRAM_DELIVERY_EVENTS_QUEUE = "notifications.self.telegram_delivery_events";
     private const string NOTIFICATIONS_ASSIGNMENT_REVIEW_EVENTS_QUEUE = "notifications.assignment_review.review_events";
-    private const string NOTIFICATIONS_MATERIAL_PROCESSING_FAILURE_EVENTS_QUEUE = "notifications.material_processing.failure_events";
 
     public static void ConfigureRabbitMq(this WolverineOptions opts, string connectionString)
     {
@@ -71,11 +69,6 @@ public static class RabbitMqConfiguration
                 exchange.IsDurable = true;
             })
             .DeclareExchange(AssignmentReviewEventsRouting.EXCHANGE, exchange =>
-            {
-                exchange.ExchangeType = ExchangeType.Topic;
-                exchange.IsDurable = true;
-            })
-            .DeclareExchange(MaterialProcessingEventsRouting.EXCHANGE, exchange =>
             {
                 exchange.ExchangeType = ExchangeType.Topic;
                 exchange.IsDurable = true;
@@ -233,14 +226,6 @@ public static class RabbitMqConfiguration
                 AssignmentReviewEventsRouting.RoutingKeys.StudentPrQuestionAsked());
         });
 
-        // material_processing.events → video.auto_processing.failed (#648): авто-обработка
-        // видео упала → уведомление владельцу видео с дип-линком в редактор материала.
-        opts.ListenToRabbitQueue(NOTIFICATIONS_MATERIAL_PROCESSING_FAILURE_EVENTS_QUEUE, queue =>
-        {
-            queue.BindExchange(
-                MaterialProcessingEventsRouting.EXCHANGE,
-                MaterialProcessingEventsRouting.RoutingKeys.VIDEO_AUTO_PROCESSING_FAILED);
-        });
 
         // self: notification.created → SSE fan-out (in-process binding)
         opts.ListenToRabbitQueue(NOTIFICATIONS_SELF_SSE_FANOUT_EVENTS_QUEUE, queue =>
