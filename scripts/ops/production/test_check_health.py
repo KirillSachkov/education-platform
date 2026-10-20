@@ -74,6 +74,19 @@ class HealthMonitor(unittest.TestCase):
             path.chmod(0o600)
             link = Path(directory) / "link"; link.symlink_to(path)
             with self.assertRaises(ValueError): monitor.private_json(link)
+            path.write_text('[]')
+            with self.assertRaises(ValueError): monitor.private_json(path)
+
+    def test_missing_runtime_and_malformed_backup_still_send_alert(self):
+        with tempfile.TemporaryDirectory() as directory:
+            receipt = Path(directory) / "backup.json"
+            receipt.write_text('[]'); receipt.chmod(0o600)
+            config = {"root": directory + "/missing", "project": "platform", "backup_receipt": str(receipt),
+                      "public_url": "https://example.invalid/", "alert_webhook_url": "https://example.invalid/alert"}
+            with patch.object(monitor.urllib.request, "urlopen") as request, patch.object(monitor, "send_alert") as alert:
+                request.return_value.__enter__.return_value.status = 200
+                self.assertEqual(monitor.run(config, notify=True), 1)
+                alert.assert_called_once_with(config["alert_webhook_url"], ["backup-receipt", "disk-space", "runtime-inventory"])
 
     def test_alert_payload_does_not_include_endpoint_and_rejects_plaintext(self):
         with self.assertRaises(ValueError): monitor.send_alert("http://example.invalid", ["public-http"])

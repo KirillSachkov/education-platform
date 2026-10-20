@@ -17,7 +17,10 @@ def private_json(path):
     if (not stat.S_ISREG(metadata.st_mode) or metadata.st_uid != os.geteuid()
             or metadata.st_mode & 0o077):
         raise ValueError("private file ownership or permissions invalid")
-    return json.loads(path.read_text())
+    value = json.loads(path.read_text())
+    if not isinstance(value, dict):
+        raise ValueError("JSON object required")
+    return value
 
 
 def https_url(value):
@@ -84,8 +87,11 @@ def check(config, now):
             failures.append("backup-stale")
     except (OSError, ValueError, TypeError):
         failures.append("backup-receipt")
-    disk = os.statvfs(root)
-    if disk.f_bavail / disk.f_blocks < 0.15:
+    try:
+        disk = os.statvfs(root)
+        if disk.f_blocks <= 0 or disk.f_bavail / disk.f_blocks < 0.15:
+            failures.append("disk-space")
+    except OSError:
         failures.append("disk-space")
     return sorted(failures)
 
