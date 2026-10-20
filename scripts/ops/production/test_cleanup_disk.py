@@ -87,8 +87,8 @@ class DiskRetention(unittest.TestCase):
             cleanup_disk.apply(self.root, self.config, plan["plan_sha256"])
         mutations = [command for command in self.calls if "rm" in command]
         self.assertEqual(len(mutations), 2)
-        self.assertIn(["docker", "image", "rm", PUBLIC_REGISTRY + "/frontend:old"], mutations)
-        self.assertTrue(all(command[:3] == ["docker", "image", "rm"] and "--force" not in command for command in mutations))
+        self.assertIn(["docker", "image", "rm", "--no-prune", PUBLIC_REGISTRY + "/frontend:old"], mutations)
+        self.assertTrue(all(command[:3] == ["docker", "image", "rm"] and "--no-prune" in command and "--force" not in command for command in mutations))
 
     def archive(self):
         directory = self.root / "backups"; directory.mkdir()

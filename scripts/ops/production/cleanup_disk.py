@@ -148,7 +148,7 @@ def apply(root, config, accepted_hash):
         # Removing the final tag of a repository also removes its digest alias.
         references = tags + [value for value in image["references"]
                              if "@" in value and repository(value) not in tagged_repositories]
-        command(["docker", "image", "rm", *references])
+        command(["docker", "image", "rm", "--no-prune", *references])
     for item in plan["local_archives"]:
         path = Path(item["path"])
         metadata = path.lstat()

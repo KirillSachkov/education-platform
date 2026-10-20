@@ -44,7 +44,8 @@ python3 /opt/education-platform/scripts/ops/production/cleanup_disk.py \
 Review the complete candidate inventory and protected image IDs. The separately
 authorized destructive command adds `--apply --plan-sha256 <accepted-plan-sha256>`.
 It reacquires the same exclusive lock as deployment and recomputes the inventory;
-any mismatch refuses deletion. Docker image removal never uses force. No container,
+any mismatch refuses deletion. Docker image removal never uses force and disables
+implicit deletion of untagged parent images with `--no-prune`. No container,
 volume, builder cache or unrelated repository is deleted. Keep the private result
 and measure filesystem use afterward: image size sums overlap shared layers and
 are not an estimate of bytes reclaimed.
