@@ -6,6 +6,9 @@
 /// </summary>
 public static class AccessErrors
 {
+    public static Error SalesClosed() =>
+        Error.Conflict("billing.sales_closed", "Новые покупки и продления недоступны");
+
     public static Error RetiredOffer() =>
         Error.Validation("plan.offer.retired", "Этот тип плана больше недоступен");
 

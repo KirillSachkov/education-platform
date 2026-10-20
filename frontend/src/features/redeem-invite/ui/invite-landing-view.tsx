@@ -131,7 +131,7 @@ export function InviteLandingView({ token }: InviteLandingViewProps) {
             После входа ты вернёшься сюда автоматически.
           </p>
         )}
-        <Link href={routes.landing} className="text-sm text-muted-foreground hover:underline">
+        <Link href={routes.home} className="text-sm text-muted-foreground hover:underline">
           На главную
         </Link>
       </div>

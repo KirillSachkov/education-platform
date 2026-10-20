@@ -6,11 +6,11 @@ vi.mock("@/shared/config/site", () => ({
 import sitemap from "../sitemap";
 
 describe("public sitemap", () => {
-  it("indexes the programme and pricing without exposing retired products or purchased content", () => {
+  it("indexes legal documents without advertising retired sales pages", () => {
     const urls = sitemap().map((entry) => entry.url);
-    expect(urls).toContain("https://example.test");
-    expect(urls).toContain("https://example.test/pricing");
-    expect(urls).toContain("https://example.test/dotnet");
+    expect(urls).toContain("https://example.test/legal");
+    expect(urls).not.toContain("https://example.test/pricing");
+    expect(urls).not.toContain("https://example.test/dotnet");
     expect(
       urls.some((url) =>
         /\/(courses|knowledge-base|collections|level-test|roadmaps|leaderboard|trainer|users|certificates)(\/|$)/.test(

@@ -6,11 +6,13 @@ Operational concerns не нужные на каждой задаче. Если 
 ## Configuration Architecture
 
 **Three layers** (highest priority wins):
+
 1. Environment variables (from the protected environment file)
 2. `appsettings.{Environment}.json` per service
 3. `appsettings.json` base config
 
 **What goes where:**
+
 - **Secrets** (passwords, API keys, signing keys) → `.env` (dev) / `/srv/education-platform/runtime.env` (prod)
 - **Non-secret config** (URLs, CORS, client IDs, feature flags) → `appsettings.{Environment}.json`
 - **Business constants** (retention TTLs) → `appsettings.json`
@@ -105,3 +107,21 @@ archive; confirm its full checksum and exact version before creating disposable 
 
 Полные восстановительные процедуры (потеря Redis, дрейф grants, stuck Wolverine envelopes
 и т.д.) — в [`docs/RUNBOOK.md`](RUNBOOK.md).
+
+## Закрытые продажи
+
+В maintenance-версии корень сайта и прежние страницы тарифов ведут в рабочую область
+(анонимного пользователя — ко входу). Создание новых заказов и возобновление автопродления
+возвращают `409 billing.sales_closed`; включить продажи административной настройкой нельзя.
+Worker автоматических списаний удалён. Исторические заказы, grants, сроки доступа, webhook,
+сверка незавершённых платежей и возвраты сохранены; миграция данных для закрытия продаж не нужна.
+Ранее созданная ссылка платёжного провайдера может ещё завершиться оплатой: закрытие новых
+заказов не аннулирует такую ссылку и не отменяет обязательство выдать оплаченный доступ.
+
+При подготовке релиза отдельно сверить незавершённые платежи и подписки. Если нужен откат на
+версию с продажами, до открытия трафика оставить запрет новых заказов на ingress, выключить
+старый recurring worker и убедиться, что не работают старые экземпляры AccessService. Иначе
+откат приложения может снова открыть списания. Не удалять исторические billing/grant-строки
+для этой цели. Совместимость схем и файлового протокола всего релиза проверяется отдельно
+по RUNBOOK: отсутствие миграции в этой правке не делает весь накопленный релиз автоматически
+обратимым. Production остаётся отдельным owner-authorized действием.

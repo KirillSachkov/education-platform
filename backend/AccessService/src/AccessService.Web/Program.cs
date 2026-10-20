@@ -1,4 +1,4 @@
-using System.Threading.RateLimiting;
+﻿using System.Threading.RateLimiting;
 using ContentAccess.Redis;
 using Framework.Endpoints;
 using Microsoft.AspNetCore.RateLimiting;
@@ -229,8 +229,6 @@ builder.Services.Configure<ExpiredGrantsSweeperOptions>(
     builder.Configuration.GetSection(ExpiredGrantsSweeperOptions.SectionName));
 builder.Services.Configure<TrialExpiryReminderSweeperOptions>(
     builder.Configuration.GetSection(TrialExpiryReminderSweeperOptions.SectionName));
-builder.Services.Configure<RecurringChargesSweeperOptions>(
-    builder.Configuration.GetSection(RecurringChargesSweeperOptions.SectionName));
 builder.Services.Configure<TgJoinReminderSweeperOptions>(
     builder.Configuration.GetSection(TgJoinReminderSweeperOptions.SectionName));
 if (!builder.Environment.IsEnvironment("Testing"))
@@ -239,16 +237,6 @@ if (!builder.Environment.IsEnvironment("Testing"))
     builder.Services.AddHostedService<TrialExpiryReminderSweeper>();
     builder.Services.AddHostedService<TgJoinReminderSweeper>();
     builder.Services.AddHostedService(sp => sp.GetRequiredService<PendingOrderReconciliationService>());
-
-    // Recurring-subscription auto-renewal (#614) — gated by its own Enabled flag so it can
-    // be toggled off independently without touching the other sweepers.
-    RecurringChargesSweeperOptions recurringOptions =
-        builder.Configuration.GetSection(RecurringChargesSweeperOptions.SectionName)
-            .Get<RecurringChargesSweeperOptions>() ?? new RecurringChargesSweeperOptions();
-    if (recurringOptions.Enabled)
-    {
-        builder.Services.AddHostedService<RecurringChargesSweeper>();
-    }
 }
 
 WebApplication app = builder.Build();

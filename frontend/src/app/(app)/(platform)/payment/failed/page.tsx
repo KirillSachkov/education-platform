@@ -29,12 +29,12 @@ export default function PaymentFailedPage() {
         </CardHeader>
         <CardContent className="space-y-4 text-center">
           <p className="text-sm text-muted-foreground">
-            Платёжная система отказала или вы вышли из формы оплаты. Если деньги
-            всё-таки списались — они вернутся на карту в течение нескольких рабочих дней.
+            Платёжная система отказала или вы вышли из формы оплаты. Если деньги всё-таки списались
+            — они вернутся на карту в течение нескольких рабочих дней.
           </p>
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
             <Button asChild>
-              <Link href={routes.pricing}>Выбрать план</Link>
+              <Link href={routes.myPlans}>Мои доступы</Link>
             </Button>
             <Button asChild variant="outline">
               <Link href={routes.settings}>В настройки</Link>

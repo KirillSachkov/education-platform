@@ -21,7 +21,7 @@ export type NavItem = {
 export const learningNav: NavItem[] = [
   { href: routes.home, icon: Icons.home, label: "Моё обучение", exact: true },
   { href: routes.saved, icon: Icons.bookmark, label: "Сохранённое" },
-  { href: routes.pricing, icon: Icons.crown, label: "Доступ" },
+  { href: routes.myPlans, icon: Icons.crown, label: "Доступ" },
 ];
 
 export const teachingNav: NavItem[] = [

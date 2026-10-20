@@ -12,10 +12,10 @@ export function MyCoursesEmptyState() {
       variant="card"
       icon={Icons.library}
       title="У вас пока нет курсов"
-      description="Выберите курс, с которого хотите начать."
+      description="Здесь появятся курсы, к которым вам выдан доступ."
       action={
         <Button asChild>
-          <Link href={routes.pricing}>Посмотреть доступ</Link>
+          <Link href={routes.myPlans}>Мои доступы</Link>
         </Button>
       }
     />

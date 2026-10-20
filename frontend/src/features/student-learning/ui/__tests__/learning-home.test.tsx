@@ -64,12 +64,9 @@ describe("My learning", () => {
       ).toBe(true);
     expect(screen.queryByText("Каталог курсов")).not.toBeInTheDocument();
   });
-  it("offers pricing when the learner has no covered courses", () => {
+  it("offers existing access overview when the learner has no covered courses", () => {
     render(<AuthenticatedHome />);
-    expect(screen.getByRole("link", { name: "Посмотреть доступ" })).toHaveAttribute(
-      "href",
-      "/pricing",
-    );
+    expect(screen.getByRole("link", { name: "Мои доступы" })).toHaveAttribute("href", "/my-plans");
   });
   it("lets the learner load remaining covered courses", () => {
     state.courses = [course("DevOps", "devops", "COURSE")];

@@ -1,10 +1,6 @@
-import { permanentRedirect } from "next/navigation";
+import { redirect } from "next/navigation";
+import { routes } from "@/shared/config/routes";
 
-interface SpacePricingDetailPageProps {
-  params: Promise<{ slug: string }>;
-}
-
-export default async function SpacePricingDetailPage({ params }: SpacePricingDetailPageProps) {
-  const { slug } = await params;
-  permanentRedirect(`/pricing#${encodeURIComponent(slug)}`);
+export default function RetiredPricingPage() {
+  redirect(routes.home);
 }

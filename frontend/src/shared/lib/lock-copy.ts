@@ -23,11 +23,7 @@ export interface LockCopy {
   subtitle: string;
   /** CTA button label. */
   cta: string;
-  /**
-   * Optional secondary CTA — currently used only for `anonymous` to offer
-   * "Войти" (primary) + "Посмотреть планы" (secondary). Other reasons rely on
-   * a single CTA because the unlock action has no fork.
-   */
+  /** Retained for existing callout consumers; sales closure provides no secondary action. */
   secondaryCta?: string;
   /** One-liner for tooltips / `aria-label` — no course title interpolation. */
   shortHint: string;
@@ -37,53 +33,22 @@ export function resolveLockCopy(
   reason: LockReason | null | undefined,
   courseTitle?: string | null,
 ): LockCopy {
-  switch (reason) {
-    case "anonymous":
-      return {
-        title: "Войдите, чтобы открыть",
-        subtitle: "Контент доступен после авторизации или выбора плана",
-        cta: "Войти",
-        secondaryCta: "Посмотреть планы",
-        shortHint: "Войдите, чтобы открыть",
-      };
-    case "trial_required":
-      return {
-        title: "Доступно по плану",
-        subtitle: courseTitle
-          ? `Откройте курс «${courseTitle}» по подходящему плану`
-          : "Откройте курс по подходящему плану",
-        cta: "Выбрать план",
-        shortHint: "Нужен план доступа к курсу",
-      };
-    case "standard_required":
-      return {
-        title: "Доступно после полной записи",
-        subtitle: courseTitle
-          ? `Откройте курс «${courseTitle}» по подходящему плану`
-          : "Откройте курс по подходящему плану",
-        cta: "Выбрать план",
-        shortHint: "Нужна полная запись на курс",
-      };
-    case "plan_required":
-      return {
-        title: "Нужен план доступа",
-        subtitle: courseTitle
-          ? `Откроется по плану, покрывающему курс «${courseTitle}»`
-          : "Откроется по подходящему плану доступа",
-        cta: "Выбрать план",
-        shortHint: "Нужен план доступа",
-      };
-    case "not_enrolled":
-    default:
-      return {
-        title: "Доступно ученикам курса",
-        subtitle: courseTitle
-          ? `Откройте курс «${courseTitle}» по подходящему плану`
-          : "Откройте курс по подходящему плану",
-        cta: "Выбрать план",
-        shortHint: "Нужен план доступа к курсу",
-      };
+  if (reason === "anonymous") {
+    return {
+      title: "Войдите, чтобы продолжить",
+      subtitle: "Войдите, чтобы использовать ранее выданный доступ",
+      cta: "Войти",
+      shortHint: "Требуется вход",
+    };
   }
+  return {
+    title: "Доступ ограничен",
+    subtitle: courseTitle
+      ? `Для курса «${courseTitle}» нужен ранее выданный доступ. Новые покупки закрыты.`
+      : "Нужен ранее выданный доступ. Новые покупки закрыты.",
+    cta: "Мои доступы",
+    shortHint: "Нужен доступ к материалам",
+  };
 }
 
 export interface UnlockHrefContext {
@@ -97,7 +62,7 @@ export interface UnlockHrefContext {
 
 /**
  * Единый резолвер unlock-URL: куда вести пользователя при клике по замку.
- * `anonymous` → /login, остальное — в глобальный каталог планов (`/pricing`).
+ * `anonymous` → /login, остальное — в обзор существующих доступов.
  * Используется MaterialCard, CollectionCard, SearchItem, CurriculumItem и
  * любыми новыми locked-карточками. Зачисление на курсы — только через план,
  * никаких Telegram-консультаций в lock-flow.
@@ -111,15 +76,10 @@ export function resolveUnlockHref({ lockReason, returnTo }: UnlockHrefContext): 
     }
     return "/login";
   }
-  return routes.pricing;
+  return routes.myPlans;
 }
 
-/**
- * Secondary unlock URL — нужен только для `anonymous`, чтобы предложить два
- * пути: "Войти" (primary, `resolveUnlockHref`) и "Посмотреть планы" (secondary,
- * этот резолвер). Для остальных reasons возвращает `null`.
- */
-export function resolveSecondaryUnlockHref({ lockReason }: UnlockHrefContext): string | null {
-  if (lockReason !== "anonymous") return null;
-  return routes.pricing;
+/** Sales are closed; locked content has no purchase action. */
+export function resolveSecondaryUnlockHref(_context: UnlockHrefContext): string | null {
+  return null;
 }

@@ -131,14 +131,9 @@ export function decodeFromContext(raw: string | null): DecodedFromContext | null
 export const routes = {
   /**
    * Authenticated dashboard. Bottom-nav «Моё обучение» tab on mobile and the
-   * post-login destination. The public landing page lives at {@link routes.landing}.
+   * post-login destination and the entrypoint for former marketing links.
    */
   home: "/home",
-  /**
-   * Public marketing landing — reachable from the logo, search engines, and
-   * legacy bookmarks. Authenticated users hitting `/` are redirected to /home.
-   */
-  landing: "/",
   login: "/login",
   forgotPassword: "/login/forgot-password",
   resetPassword: "/login/reset-password",

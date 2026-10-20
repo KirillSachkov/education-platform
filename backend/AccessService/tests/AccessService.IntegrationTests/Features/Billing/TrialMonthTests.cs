@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using AccessService.Contracts.Billing;
 using AccessService.Contracts.PlanGrants.Dtos;
@@ -119,7 +119,7 @@ public sealed class TrialMonthTests : AccessServiceTestsBase
     // ──────────────────── AC#1 (cont.) — promo snapshot on the trial path (#580 follow-up) ────────────────────
 
     [Fact]
-    public async Task TrialPurchaseDuringPromotion_SnapshotsDiscountedPrice()
+    public async Task HistoricalTrialOrder_SettlesAtDiscountedSnapshot()
     {
         // #580 follow-up: buying a trial plan WHILE it has an ACTIVE promotion must snapshot the
         // EFFECTIVE (discounted) price into Order.AmountCents (the existing #348 promo-snapshot
@@ -140,27 +140,14 @@ public sealed class TrialMonthTests : AccessServiceTestsBase
             new SetPromotionRequest(PromotionPercent, now.AddDays(-1), now.AddDays(10)));
         promo.EnsureSuccessStatusCode();
 
-        // Drive a real purchase through POST /access/orders/ (billing enabled in the test env,
-        // FakeTBankClient) as the buyer.
-        AuthenticateAs("platform-participant", buyerId);
-        HttpResponseMessage orderResp = await AppHttpClient.PostAsJsonAsync(
-            "/access/orders/", new CreateOrderRequest(trialPlanId));
-        Assert.Equal(HttpStatusCode.OK, orderResp.StatusCode);
-        CreateOrderResponse orderBody =
-            (await orderResp.Content.ReadFromJsonAsync<Envelope<CreateOrderResponse>>())!.Result!;
-
-        // The Order snapshots the DISCOUNTED effective price, not the 1 500 000 list price.
-        await ExecuteInDbAsync(async db =>
-        {
-            Order order = await db.Orders.AsNoTracking().FirstAsync(o => o.Id == orderBody.OrderId);
-            Assert.Equal(TrialDiscountedPriceCents, order.AmountCents); // 1 200 000, NOT 1 500 000
-        });
+        // A pending order created before sales closed must still settle at its historical price.
+        Guid orderId = await SeedOrderAsync(buyerId, trialPlanId, TrialDiscountedPriceCents);
 
         // Webhook PAID → time-bounded PURCHASE grant priced at the discounted snapshot.
         DateTimeOffset before = DateTimeOffset.UtcNow;
         PaymentWebhookHandler handler = ResolveWebhookHandler();
         UnitResult<Error> result = await handler.Handle(
-            new PaymentWebhookRequest(orderBody.OrderId, "ext-trial-promo-1", "PAID", null),
+            new PaymentWebhookRequest(orderId, "ext-trial-promo-1", "PAID", null),
             CancellationToken.None);
         Assert.True(result.IsSuccess);
         DateTimeOffset after = DateTimeOffset.UtcNow;
@@ -262,10 +249,10 @@ public sealed class TrialMonthTests : AccessServiceTestsBase
         HttpResponseMessage response = await AppHttpClient.PostAsJsonAsync(
             "/access/orders/", new CreateOrderRequest(trialPlanId));
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         Envelope? envelope = await response.Content.ReadFromJsonAsync<Envelope>();
         Assert.Contains(envelope!.Error!.Messages,
-            m => string.Equals(m.Code, "order.trial.already_used", StringComparison.Ordinal));
+            m => string.Equals(m.Code, "billing.sales_closed", StringComparison.Ordinal));
 
         // No new order row was created for the buyer on this trial plan.
         await ExecuteInDbAsync(async db =>

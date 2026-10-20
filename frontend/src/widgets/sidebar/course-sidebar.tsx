@@ -391,7 +391,6 @@ function ProgressCard({
     accessLevel === "admin" || accessLevel === "standard"
       ? "Полный доступ"
       : "Доступ не активирован";
-  const showUpgrade = accessLevel === "authenticated";
 
   return (
     <div className="mx-1 rounded-xl bg-gradient-to-br from-primary/8 to-primary/3 border border-primary/10 px-3 py-2.5">
@@ -415,14 +414,6 @@ function ProgressCard({
       <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-sidebar-foreground/55">
         <Icons.locked className="size-3 shrink-0" />
         <span className="truncate">{accessLabel}</span>
-        {showUpgrade && (
-          <Link
-            href={routes.pricing}
-            className="ml-auto shrink-0 font-medium text-primary hover:underline"
-          >
-            Тарифы
-          </Link>
-        )}
       </div>
       {hasActiveEnrollment && summary && (
         <>

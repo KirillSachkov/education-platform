@@ -156,7 +156,7 @@ export default function PaymentSuccessPage() {
                 </p>
               ) : null}
               <Button asChild variant="outline" className="w-full">
-                <Link href={routes.pricing}>Попробовать снова</Link>
+                <Link href={routes.myPlans}>Мои доступы</Link>
               </Button>
             </>
           ) : pollingTimedOut ? (

@@ -11,10 +11,6 @@ describe("routes", () => {
       expect(routes.home).toBe("/home");
     });
 
-    it("has correct landing route", () => {
-      expect(routes.landing).toBe("/");
-    });
-
     it("has correct myCourses route", () => {
       expect(routes.myCourses).toBe("/home");
     });

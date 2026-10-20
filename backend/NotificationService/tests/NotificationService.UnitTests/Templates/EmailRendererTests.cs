@@ -9,6 +9,43 @@ public sealed class EmailRendererTests
 {
     private readonly EmailRenderer _renderer = new();
 
+    [Theory]
+    [InlineData("trial.expiry_approaching")]
+    [InlineData("access.expired")]
+    [InlineData("subscription.renewal_retry_scheduled")]
+    [InlineData("subscription.renewal_terminal_failure")]
+    [InlineData("subscription.renewal_cancelled")]
+    public void Render_HistoricalBillingEvent_DoesNotOfferNewPurchaseOrAnotherCharge(string templateId)
+    {
+        NotificationTemplate template = templateId switch
+        {
+            "trial.expiry_approaching" => NotificationTemplates.TrialExpiryApproaching,
+            "access.expired" => NotificationTemplates.AccessExpired,
+            "subscription.renewal_retry_scheduled" => NotificationTemplates.SubscriptionRenewalRetryScheduled,
+            "subscription.renewal_terminal_failure" => NotificationTemplates.SubscriptionRenewalTerminalFailure,
+            _ => NotificationTemplates.SubscriptionRenewalCancelled,
+        };
+        TemplateArgs args = TemplateArgs.Of(
+            ("planName", "Исторический план"),
+            ("expiresAt", "20.11.2026"),
+            ("accessEndsAt", "20.11.2026"),
+            ("graceEndsAt", "20.11.2026"),
+            ("accessSummary", "Срок доступа"),
+            ("nextRetryAt", "21.11.2026"),
+            ("openUrl", "https://example.test/my-plans"),
+            ("frontendUrl", "https://example.test"));
+        RenderedMessage rendered = _renderer.Render(template, args);
+        if (!string.Equals(templateId, "access.expired", StringComparison.Ordinal))
+            Assert.Contains("20.11.2026", rendered.Body, StringComparison.Ordinal);
+        Assert.DoesNotContain("21.11.2026", rendered.Body, StringComparison.Ordinal);
+        Assert.DoesNotContain("Оформить полный доступ", rendered.Body, StringComparison.Ordinal);
+        Assert.DoesNotContain("Продлить доступ", rendered.Body, StringComparison.Ordinal);
+        Assert.DoesNotContain("Возобновить подписку", rendered.Body, StringComparison.Ordinal);
+        Assert.DoesNotContain("Повторим попытку", rendered.Body, StringComparison.Ordinal);
+        Assert.DoesNotContain("Возобновить подписку", rendered.PlainTextBody!, StringComparison.Ordinal);
+        Assert.DoesNotContain("Повторим попытку", rendered.PlainTextBody!, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void Render_TemplateWithoutEmailPart_Throws()
     {

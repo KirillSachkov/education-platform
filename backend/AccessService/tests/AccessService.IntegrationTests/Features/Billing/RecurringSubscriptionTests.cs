@@ -35,13 +35,13 @@ public sealed class RecurringSubscriptionTests : AccessServiceTestsBase
         HttpResponseMessage response = await AppHttpClient.PostAsJsonAsync(
             "/access/orders/", new CreateOrderRequest(planId));
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         Assert.Empty(Factory.TBankClient.InitCalls);
         await ExecuteInDbAsync(async db => Assert.Empty(await db.Orders.ToListAsync()));
     }
 
     [Fact]
-    public async Task POST_orders_NonSubscriptionPlan_DoesNotSendRecurrent()
+    public async Task POST_orders_NonSubscriptionPlan_CannotInitiatePayment()
     {
         // Regression guard: ordinary (FULL_ALL) plans must NOT become recurrent.
         Guid planId = await SeedPublicFullAccessPlanAsync(slug: "non-recurrent", priceCents: 500_000);
@@ -49,12 +49,9 @@ public sealed class RecurringSubscriptionTests : AccessServiceTestsBase
 
         HttpResponseMessage response = await AppHttpClient.PostAsJsonAsync(
             "/access/orders/", new CreateOrderRequest(planId));
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-        var initCall = Assert.Single(Factory.TBankClient.InitCalls);
-        Assert.Null(initCall.Recurrent);
-        Assert.Null(initCall.CustomerKey);
-        Assert.Equal("0", initCall.DATA!["OperationInitiatorType"]);
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Empty(Factory.TBankClient.InitCalls);
+        Assert.Empty(Factory.TBankClient.ChargeCalls);
     }
 
     [Fact]

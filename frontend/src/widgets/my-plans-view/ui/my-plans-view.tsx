@@ -13,13 +13,11 @@ import {
 } from "@/entities/access-plan";
 import { planOnboardingApi } from "@/entities/plan-onboarding";
 import { getErrorMessage } from "@/shared/api";
-import { routes } from "@/shared/config/routes";
 import { Badge } from "@/shared/ui/kit/badge";
 import { Button } from "@/shared/ui/kit/button";
 import { EmptyState } from "@/shared/ui/kit/empty-state";
 import { Icons } from "@/shared/ui/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
 import { toast } from "sonner";
 import {
   hasSubscriptionLifecycle,
@@ -106,12 +104,7 @@ export function MyPlansView() {
           variant="card"
           icon={Icons.crown}
           title="Активных планов нет"
-          description="Выберите тариф, чтобы открыть доступ к материалам, заданиям и сообществу."
-          action={
-            <Button asChild>
-              <Link href={routes.pricing}>Посмотреть планы</Link>
-            </Button>
-          }
+          description="Здесь отображаются ранее выданные доступы. Новые покупки закрыты."
         />
       ) : (
         <div>

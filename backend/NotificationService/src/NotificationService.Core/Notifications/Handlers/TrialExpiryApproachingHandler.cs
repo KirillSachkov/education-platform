@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using NotificationService.Core.Dispatching;
 using NotificationService.Core.Templates;
 using NotificationService.Core.Templates.Catalog;
@@ -6,16 +6,7 @@ using Shared.Messaging.IntegrationEvents.Access.Events;
 
 namespace NotificationService.Core.Notifications.Handlers;
 
-/// <summary>
-/// <c>access.events / trial.expiry_approaching</c> → самому пользователю (#580).
-///
-/// Пробный (trial) доступ скоро истекает: AccessService (фоновый <c>TrialExpiryReminderSweeper</c>)
-/// шлёт напоминание доплатить до полного доступа — уплаченное за пробный месяц засчитывается в
-/// grace-окне. Событие самодостаточно (<c>PlanName</c> + <c>ExpiresAt</c> в payload), внешних
-/// lookup'ов не требует. correlation = <c>GrantId</c> — повторная доставка по тому же гранту не
-/// создаёт дубль. Клик ведёт на каталог планов (через <c>PlatformLinkBuilder</c>), где оформляется
-/// апгрейд. Каналы InApp + Telegram (мягкое напоминание, без почтового спама).
-/// </summary>
+/// <summary>Existing trial expiry reminder. Purchases are closed; the notification preserves the original expiry date.</summary>
 public sealed class TrialExpiryApproachingHandler
 {
     private readonly INotificationDispatcher _dispatcher;

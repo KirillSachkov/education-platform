@@ -3,18 +3,7 @@ import { legacyRedirect } from "@/shared/config/legacy-redirect";
 import { ROLES } from "@/shared/auth/roles";
 
 /** Public learning content keeps backend per-item entitlement checks. */
-const publicRoutes = [
-  "/",
-  "/login",
-  "/legal",
-  "/pricing",
-  "/c-sharp",
-  "/dotnet",
-  "/asp-net-core",
-  "/offline",
-  "/llms.txt",
-  "/yandex_3d24ffdd8bed9484.html",
-];
+const publicRoutes = ["/login", "/legal", "/offline", "/llms.txt", "/yandex_3d24ffdd8bed9484.html"];
 const publicPrefixes = [
   "/login/",
   "/knowledge-base/",
@@ -22,7 +11,6 @@ const publicPrefixes = [
   "/legal/",
   "/courses/",
   "/collections/",
-  "/pricing/",
 ];
 const authRequiredPatterns = [/^\/courses\/[^/]+\/bookmarks(?:\/|$)/];
 

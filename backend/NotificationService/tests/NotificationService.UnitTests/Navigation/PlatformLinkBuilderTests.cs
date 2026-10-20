@@ -1,4 +1,4 @@
-using Shared.Navigation;
+﻿using Shared.Navigation;
 
 namespace NotificationService.UnitTests.Navigation;
 
@@ -125,7 +125,7 @@ public sealed class PlatformLinkBuilderTests
     {
         // #687 — доступ истёк: клик ведёт в каталог планов для продления.
         string url = PlatformLinkBuilder.BuildTargetUrl(BaseUrl, NotificationTypes.ACCESS_EXPIRED, "{}");
-        Assert.Equal($"{BaseUrl}/pricing", url);
+        Assert.Equal($"{BaseUrl}/my-plans", url);
     }
 
     [Theory]
