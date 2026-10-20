@@ -95,7 +95,8 @@ def retain(root, env_file, recipient_file):
             raise ValueError("versioned private runtime backup required")
         head = json.loads(command(base + ["head-object", "--bucket", bucket, "--key", key,
                                          "--version-id", version], env=environment))
-        if head.get("ContentLength") != len(encrypted) or head.get("Metadata", {}).get("sha256") != checksum:
+        checksums = [value for key, value in head.get("Metadata", {}).items() if key.lower() == "sha256"]
+        if head.get("ContentLength") != len(encrypted) or checksums != [checksum]:
             raise ValueError("runtime backup metadata mismatch")
         restored = Path(directory) / "readback.age"
         response = json.loads(command(base + ["get-object", "--bucket", bucket, "--key", key,

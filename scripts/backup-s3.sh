@@ -117,7 +117,8 @@ python3 - "$HEAD_FILE" "$BYTES" "$CHECKSUM" "${BACKUP_RECEIPT_FILE:-/var/lib/edu
 import json, os, sys, tempfile, time
 from pathlib import Path
 head = json.loads(Path(sys.argv[1]).read_text())
-if head.get("ContentLength") != int(sys.argv[2]) or head.get("Metadata", {}).get("sha256") != sys.argv[3]:
+checksums = [value for key, value in head.get("Metadata", {}).items() if key.lower() == "sha256"]
+if head.get("ContentLength") != int(sys.argv[2]) or checksums != [sys.argv[3]]:
     raise SystemExit("Backup remote size or checksum metadata mismatch; local dump retained")
 receipt = Path(sys.argv[4])
 receipt.parent.mkdir(parents=True, exist_ok=True, mode=0o700)

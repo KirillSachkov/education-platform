@@ -37,9 +37,11 @@ a=sys.argv[1:]; store=pathlib.Path(os.environ['FAKE_HEAD'])
 if a[:2] == ['s3','cp']:
     assert '--acl' in a and a[a.index('--acl')+1] == 'private'
     data=pathlib.Path(a[2]).read_bytes()
-    head={'ContentLength':len(data),'Metadata':{'sha256':hashlib.sha256(data).hexdigest()},'VersionId':'synthetic-version'}
+    head={'ContentLength':len(data),'Metadata':{os.environ.get('METADATA_KEY','sha256'):hashlib.sha256(data).hexdigest()},'VersionId':'synthetic-version'}
+    if os.environ.get('BACKUP_FAULT') == 'duplicate': head['Metadata']['SHA256']='bad'
+    if os.environ.get('BACKUP_FAULT') == 'missing-checksum': head['Metadata']={}
     if os.environ.get('BACKUP_FAULT') == 'size': head['ContentLength'] += 1
-    if os.environ.get('BACKUP_FAULT') == 'checksum': head['Metadata']['sha256']='bad'
+    if os.environ.get('BACKUP_FAULT') == 'checksum': head['Metadata'][os.environ.get('METADATA_KEY','sha256')]='bad'
     store.write_text(json.dumps(head))
 elif a[:2] == ['s3api','head-object']:
     if os.environ.get('BACKUP_FAULT') == 'read': raise SystemExit(1)
@@ -67,9 +69,20 @@ elif a[:2] != ['s3','ls']: raise SystemExit(1)
         self.assertFalse(list((self.root / "dumps").glob('*.gz')))
         self.assertNotIn(b"PRIVATE_PASSWORD", result.stdout + result.stderr)
 
+    def test_checksum_metadata_names_are_case_insensitive(self):
+        for key in ["Sha256", "SHA256", "sHa256"]:
+            with self.subTest(key=key):
+                result = subprocess.run(["bash", str(SCRIPT)], env={**self.env, "METADATA_KEY": key}, capture_output=True)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                previous = self.receipt.read_bytes()
+                result = subprocess.run(["bash", str(SCRIPT)], env={**self.env, "METADATA_KEY": key, "BACKUP_FAULT": "checksum"}, capture_output=True)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(self.receipt.read_bytes(), previous)
+                self.assertTrue(list((self.root / "dumps").glob('*.gz')))
+
     def test_readback_mismatch_preserves_dump_and_prior_receipt(self):
         self.receipt.parent.mkdir(); self.receipt.write_text('prior receipt')
-        for fault in ["size", "checksum", "read"]:
+        for fault in ["size", "checksum", "read", "duplicate", "missing-checksum"]:
             with self.subTest(fault=fault):
                 result = subprocess.run(["bash", str(SCRIPT)], env={**self.env, "BACKUP_FAULT": fault}, capture_output=True)
                 self.assertNotEqual(result.returncode, 0)
