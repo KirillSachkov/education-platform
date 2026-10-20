@@ -8,7 +8,9 @@ describe("resolveNextPath — open-redirect защита ?next=", () => {
   });
 
   it("accepts an internal path with query and hash", () => {
-    expect(resolveNextPath("/knowledge-base?tag=dotnet#top")).toBe("/knowledge-base?tag=dotnet#top");
+    expect(resolveNextPath("/knowledge-base/existing-material?tag=dotnet#top")).toBe(
+      "/knowledge-base/existing-material?tag=dotnet#top",
+    );
   });
 
   it.each([null, undefined, ""])("falls back to home when next is %s", (value) => {

@@ -111,14 +111,14 @@ describe("ConnectionsView — /onboarding/connections", () => {
     expect(push).toHaveBeenCalledWith("/courses/net-fullstack");
   });
 
-  it("preserves the exact pricing checkout callback in next", () => {
+  it("finishes a legacy checkout next in the workspace", () => {
     const next =
       "/pricing?plan=dotnet-fullstack&intent=0190f4d8-8f6e-7a30-9d8f-4d76f8f86d61&resume=checkout";
     renderView(next);
 
     fireEvent.click(screen.getByRole("button", { name: /Пропустить/ }));
 
-    expect(push).toHaveBeenCalledWith(next);
+    expect(push).toHaveBeenCalledWith("/home");
   });
 
   it.each(["https://evil.com", "//evil.com", "javascript:alert(1)"])(

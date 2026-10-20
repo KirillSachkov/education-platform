@@ -12,12 +12,10 @@ describe("EmailStep auth copy", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows generic purchase context without echoing the plan slug", () => {
-    render(<EmailStep onSubmit={vi.fn()} isPending={false} hasPricingIntent />);
+  it("does not offer a checkout continuation", () => {
+    render(<EmailStep onSubmit={vi.fn()} isPending={false} />);
 
-    expect(
-      screen.getByText("После входа вернём вас к оформлению выбранного плана."),
-    ).toBeInTheDocument();
+    expect(screen.queryByText(/оформлению выбранного плана/)).not.toBeInTheDocument();
     expect(screen.queryByText(/dotnet-fullstack/i)).not.toBeInTheDocument();
   });
 });

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { LoginForm } from "@/features/auth-login";
 import { auth } from "@/shared/auth/auth";
-import { sanitizeCallbackUrl } from "@/shared/lib/sanitize-callback-url";
+import { resolveWorkspaceCallback } from "@/shared/lib/workspace-callback";
 import { LogoMark } from "@/shared/ui/kit/logo";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
@@ -35,7 +35,7 @@ export default async function LoginPage({
   // is mid-logout. Do NOT redirect it back to the app, or SessionGuard bounces it
   // straight here again → infinite reload. Show the login form so they can re-auth.
   if (session && !session.error) {
-    redirect(sanitizeCallbackUrl(callbackUrl, "/home"));
+    redirect(resolveWorkspaceCallback(callbackUrl));
   }
   const errorMessage = error ? GITHUB_ERROR_MESSAGES[error] : null;
 

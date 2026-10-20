@@ -1,5 +1,4 @@
-import { sanitizeCallbackUrl } from "./sanitize-callback-url";
-
+/** Read and clear legacy checkout context only for already-created payment settlement. */
 export const PRICING_INTENT_STORAGE_KEY = "growth.pricingIntent.v1";
 export const PRICING_INTENT_TTL_MS = 30 * 60 * 1000;
 
@@ -16,11 +15,6 @@ export interface PricingIntent {
   createdAt: string;
 }
 
-export interface PricingCheckoutSearchParams {
-  get(name: string): string | null;
-  entries(): IterableIterator<[string, string]>;
-}
-
 function isValidPlanSlug(value: unknown): value is string {
   return (
     typeof value === "string" &&
@@ -31,51 +25,6 @@ function isValidPlanSlug(value: unknown): value is string {
 
 function isCanonicalUuid(value: unknown): value is string {
   return typeof value === "string" && UUID_PATTERN.test(value);
-}
-
-export function createPricingIntent(planSlug: string, now = Date.now()): PricingIntent | null {
-  if (!isValidPlanSlug(planSlug) || !Number.isFinite(now)) return null;
-  return {
-    intentId: crypto.randomUUID(),
-    planSlug,
-    createdAt: new Date(now).toISOString(),
-  };
-}
-
-export function buildPricingCheckoutCallback(intent: PricingIntent): string {
-  const query = new URLSearchParams({
-    plan: intent.planSlug,
-    intent: intent.intentId,
-    resume: "checkout",
-  });
-  return sanitizeCallbackUrl(`/pricing?${query.toString()}`, "/pricing");
-}
-
-export function isMatchingPricingCheckoutIntent(
-  searchParams: PricingCheckoutSearchParams,
-  intent: PricingIntent,
-): boolean {
-  const entries = Array.from(searchParams.entries());
-  if (entries.length !== 3 || new Set(entries.map(([key]) => key)).size !== 3) return false;
-  return (
-    searchParams.get("plan") === intent.planSlug &&
-    searchParams.get("intent") === intent.intentId &&
-    searchParams.get("resume") === "checkout"
-  );
-}
-
-export function readPricingIntentForCallback(
-  callbackUrl: string,
-  now = Date.now(),
-): PricingIntent | null {
-  const safeCallback = sanitizeCallbackUrl(callbackUrl, "");
-  if (!safeCallback) return null;
-
-  const url = new URL(safeCallback, "https://pricing-intent.invalid");
-  if (url.pathname !== "/pricing" || url.hash) return null;
-
-  const intent = readPricingIntent(now);
-  return intent && isMatchingPricingCheckoutIntent(url.searchParams, intent) ? intent : null;
 }
 
 export function parsePricingIntent(raw: string | null, now = Date.now()): PricingIntent | null {
@@ -113,34 +62,11 @@ export function parsePricingIntent(raw: string | null, now = Date.now()): Pricin
   };
 }
 
-export function storePricingIntent(planSlug: string, now = Date.now()): PricingIntent | null {
-  const intent = createPricingIntent(planSlug, now);
-  if (!intent) return null;
-  try {
-    sessionStorage.setItem(PRICING_INTENT_STORAGE_KEY, JSON.stringify(intent));
-    return intent;
-  } catch {
-    return null;
-  }
-}
-
 export function readPricingIntent(now = Date.now()): PricingIntent | null {
   try {
     return parsePricingIntent(sessionStorage.getItem(PRICING_INTENT_STORAGE_KEY), now);
   } catch {
     return null;
-  }
-}
-
-export function claimPricingAutoResume(intentId: string): boolean {
-  if (!isCanonicalUuid(intentId)) return false;
-  const key = `${AUTO_RESUME_KEY_PREFIX}${intentId}`;
-  try {
-    if (sessionStorage.getItem(key) === "1") return false;
-    sessionStorage.setItem(key, "1");
-    return true;
-  } catch {
-    return false;
   }
 }
 

@@ -1,11 +1,6 @@
-import { routes } from "@/shared/config/routes";
-import { sanitizeCallbackUrl } from "@/shared/lib/sanitize-callback-url";
+import { resolveWorkspaceCallback } from "@/shared/lib/workspace-callback";
 
-/**
- * Валидирует `?next=` как ВНУТРЕННИЙ путь платформы — защита от open redirect.
- * Единственный источник правил — {@link sanitizeCallbackUrl} (shared), здесь
- * только fallback на {@link routes.home}.
- */
+/** Resume an existing content destination after account linking. */
 export function resolveNextPath(raw: string | null | undefined): string {
-  return sanitizeCallbackUrl(raw, routes.home);
+  return resolveWorkspaceCallback(raw);
 }

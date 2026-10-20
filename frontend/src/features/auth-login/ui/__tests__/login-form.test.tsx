@@ -120,7 +120,7 @@ describe("LoginForm", () => {
     window.sessionStorage.clear();
   });
 
-  it("preserves a validated pricing callback and correlates completed auth", async () => {
+  it("sends a legacy checkout callback to the workspace without checkout tracking", async () => {
     storePricingIntent();
     const verifyOtp = vi.fn().mockResolvedValue(undefined);
     setup({ callbackUrl: PRICING_CALLBACK, verifyOtp });
@@ -128,24 +128,14 @@ describe("LoginForm", () => {
     await goThroughEmailAndCode();
     await screen.findByText("Выполняется вход...");
 
-    expect(trackGrowthEvent).toHaveBeenCalledWith(
-      {
-        name: "auth_completed",
-        properties: {
-          flow: "checkout",
-          new_account: false,
-          correlation_id: PRICING_INTENT_ID,
-        },
-      },
-      { once: `pricing-auth:${PRICING_INTENT_ID}` },
-    );
+    expect(trackGrowthEvent).not.toHaveBeenCalled();
     expect(mockSignIn).toHaveBeenCalledWith("auth-service", {
-      redirectTo: PRICING_CALLBACK,
+      redirectTo: "/home",
     });
     expect(window.sessionStorage.getItem(PRICING_INTENT_STORAGE_KEY)).not.toBeNull();
   });
 
-  it("preserves pricing intent through new-account consents and onboarding next", async () => {
+  it("finishes legacy checkout registration in the workspace after account linking", async () => {
     storePricingIntent();
     const verifyOtp = vi
       .fn()
@@ -157,19 +147,9 @@ describe("LoginForm", () => {
     fireEvent.click(await screen.findByText("submit-consents"));
     await screen.findByText("Выполняется вход...");
 
-    expect(trackGrowthEvent).toHaveBeenCalledWith(
-      {
-        name: "auth_completed",
-        properties: {
-          flow: "checkout",
-          new_account: true,
-          correlation_id: PRICING_INTENT_ID,
-        },
-      },
-      { once: `pricing-auth:${PRICING_INTENT_ID}` },
-    );
+    expect(trackGrowthEvent).not.toHaveBeenCalled();
     expect(mockSignIn).toHaveBeenCalledWith("auth-service", {
-      redirectTo: `/onboarding/connections?next=${encodeURIComponent(PRICING_CALLBACK)}`,
+      redirectTo: "/onboarding/connections?next=%2Fhome",
     });
     expect(window.sessionStorage.getItem(PRICING_INTENT_STORAGE_KEY)).not.toBeNull();
   });
