@@ -1,4 +1,4 @@
-using System.Data.Common;
+﻿using System.Data.Common;
 using Amazon.S3;
 using Core.Database;
 using CSharpFunctionalExtensions;
