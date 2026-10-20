@@ -285,10 +285,10 @@ Tempo: фильтр по `service.name=AssignmentReviewService` → span `iterat
 
 - [ ] Создан **prod** GitHub App (отдельный от dev) с теми же permissions и events.
 - [ ] Webhook URL у prod App'а: `https://<prod-domain>/api/assignment-review/webhooks/github/`.
-- [ ] Все 5 `ASSIGNMENT_REVIEW__GITHUB__*` залиты в Infisical (prod env).
+- [ ] Все 5 `ASSIGNMENT_REVIEW__GITHUB__*` сохранены в защищённом production `runtime.env` согласно [процедуре секретов](production-secrets.md).
 - [ ] Хотя бы один `ProjectReviewContext.GuidelinesMarkdown` + `IssueReviewSpec` создан на prod ECS.
-- [ ] Ref-repo индексация прошла (метрика `assignment_review_indexing_runs_total{outcome="success"}` ≥ 1).
-- [ ] Grafana dashboard `assignment-review-pipeline` доступен на prod Grafana.
+- [ ] Успешная ref-repo индексация и получение актуального контекста подтверждены логами сервиса и smoke review.
+- [ ] Ограниченные логи `assignment-review-service` доступны, [host health check](production-maintenance.md) проходит; Grafana используется только для опциональной локальной отладки.
 - [ ] End-to-end smoke на staging или dev с production-симуляцией: реальный PR → submission → AiReview → inline comments в PR.
 
 После выполнения — см. `backend/AssignmentReviewService/CLAUDE.md` § «Чтобы снять hold» для механики revert'а.

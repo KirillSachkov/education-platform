@@ -125,8 +125,9 @@ jobs:
           persist-credentials: false
       - run: |
           sudo apt-get update -qq
-          sudo apt-get install -y age
+          sudo apt-get install -y age logrotate
           bash scripts/ci/validate-compose-contracts.sh
+          logrotate --debug --state /tmp/platform-logrotate.state docker/logrotate/education-platform
           systemd-analyze verify docker/systemd/education-platform-health.service docker/systemd/education-platform-health.timer
           bash scripts/ci/validate-nginx-contracts.sh
           bash scripts/ci/test-run-production-migrations.sh

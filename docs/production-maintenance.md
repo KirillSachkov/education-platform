@@ -9,7 +9,7 @@ Production backend containers explicitly set `OTEL_SDK_DISABLED=true` and clear
 the OTLP endpoint. OpenTelemetry .NET 1.15+ supports this switch for all signals;
 the application uses 1.16. Serilog continues writing error and application logs to
 stdout. Compose rotates Docker logs at 10 MB with three files. nginx host logs
-need the host retention procedure before the migration.
+use the [host retention procedure](production-retention.md) before the migration.
 
 ## Lightweight checks
 

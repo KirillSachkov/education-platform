@@ -8,7 +8,8 @@ PUBLIC_REGISTRY = "ghcr.io/kirillsachkov/education-platform"
 LEGACY_REGISTRY = "ghcr.io/kirillsachkov/education-platform-legacy"
 MAINTENANCE_SCRIPTS = ("scripts/backup-s3.sh", "scripts/ops/production/check_health.py",
                        "scripts/ops/production/environment_file.py", "scripts/ops/production/backup_runtime.py",
-                       "scripts/ops/production/daily_backup.py")
+                       "scripts/ops/production/daily_backup.py", "scripts/ops/production/cleanup_disk.py",
+                       "scripts/ops/production/release_model.py")
 LEGACY_SERVICES = (
     "auth-service", "education-service", "file-service", "progress-service",
     "comment-service", "tag-service", "search-service", "access-service",
