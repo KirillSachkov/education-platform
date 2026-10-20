@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.56.0] — 2026-10-20
+
+### Changed
+- The signed-in workspace is the platform entry point; new purchases and recurring
+  charges are closed while existing grants and historical payment settlement remain.
+- The application runtime no longer includes retired search, tag, trainer, media-processing
+  and monitoring services. Retained transcript export is served by FileService.
+- Production uses a protected environment file, verified runtime recovery and bounded
+  backup, health and log maintenance. Health checks report locally without external alerts.
+- Legal document registries retain the currently deployed versions; this release does
+  not publish revised terms.
+
 ## [1.55.4] — 2026-09-28
 
 ### Fixed
