@@ -125,6 +125,7 @@ jobs:
           persist-credentials: false
       - run: |
           bash scripts/ci/validate-compose-contracts.sh
+          systemd-analyze verify docker/systemd/education-platform-health.service docker/systemd/education-platform-health.timer
           bash scripts/ci/validate-nginx-contracts.sh
           bash scripts/ci/test-run-production-migrations.sh
           bash scripts/ci/test-production-rollback-guard.sh
