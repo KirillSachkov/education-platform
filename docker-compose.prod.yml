@@ -66,7 +66,7 @@ services:
     restart: always
 
   # ─── Assignment Review Service ───
-  # Activated for prod (#334). GitHub App + LLM secrets live in Infisical; the
+  # Activated for prod (#334). GitHub App + LLM secrets use the protected runtime environment; the
   # assignment_review schema + tables are created by the InitialCreate migration
   # (EnsureSchema). Included in EXPECTED_SERVICES in .gitlab-ci.yml: nginx routes
   # /api/assignment-review/* directly here, so a stopped container breaks student
@@ -405,36 +405,6 @@ services:
           "fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
         ]
     logging: *logging
-    restart: always
-    networks:
-      - platform-network
-
-  # ─── Infisical (secret management) ───
-  infisical:
-    container_name: infisical
-    image: infisical/infisical:latest
-    environment:
-      DB_CONNECTION_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/infisical
-      REDIS_URL: redis://redis-platform:6379
-      ENCRYPTION_KEY: ${INFISICAL_ENCRYPTION_KEY}
-      AUTH_SECRET: ${INFISICAL_AUTH_SECRET}
-      SITE_URL: http://localhost:8080
-      HTTPS_ENABLED: "false"
-    ports:
-      - "127.0.0.1:8080:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
-    logging: *logging
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-          cpus: "0.50"
-        reservations:
-          memory: 512M
     restart: always
     networks:
       - platform-network

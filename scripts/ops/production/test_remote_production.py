@@ -70,8 +70,14 @@ class RemoteFixture(unittest.TestCase):
         self.packet = {"private_roles": private, "operation": "deploy", "release": "current",
                        "adapter_source_sha": "f" * 40, "run_id": "123", "run_attempt": "1", "credentials": {}}
         (self.root / "releases/current.env").write_text(metadata_text(private["roles"]["current"]["metadata"]))
+        (self.root / "releases/current.env").chmod(0o600)
         (self.root / ".env").write_text("".join(key + "=example-secret\n" for key in LEGACY_CRITICAL))
+        (self.root / ".env").chmod(0o600)
         self.host = FixtureHost(self.packet, self.run, self.root)
+        self.host.runtime_root = self.root / "private-runtime"
+        self.host.runtime_root.mkdir()
+        desired = self.host.runtime_root / "runtime.env"
+        desired.write_bytes((self.root / ".env").read_bytes()); desired.chmod(0o600)
 
 
 class RemoteProduction(RemoteFixture):
@@ -90,27 +96,17 @@ class RemoteProduction(RemoteFixture):
         with self.assertRaisesRegex(ValueError, "baseline critical secret missing"):
             self.baseline()
 
-    def test_source_export_needs_no_typesense_secret_and_preserves_common_secrets(self):
+    def test_source_snapshot_needs_no_typesense_secret_and_preserves_common_secrets(self):
         self.baseline()
         self.host.target = {"registry": PUBLIC_REGISTRY, "postgres_image": self.host.roles["postgres_image"], "metadata": {}}
         self.host.inputs = {**self.host.inputs, "release": "normal"}
-        self.host.packet["credentials"] = {"INFISICAL_CLIENT_ID": "fixture", "INFISICAL_CLIENT_SECRET": "fixture", "INFISICAL_PROJECT_ID": "fixture"}
-        original_command = self.host.command
-        exported = "".join(key + "=example-secret\n" for key in CRITICAL)
-
-        def command(arguments, **kwargs):
-            if arguments[:2] == ["infisical", "login"]:
-                return b"fixture-token"
-            if arguments[:2] == ["infisical", "export"]:
-                return exported.encode()
-            return original_command(arguments, **kwargs)
-
-        self.host.command = command
-        self.host.export_env()
+        desired = self.host.runtime_root / "runtime.env"
+        desired.write_text("".join(key + "=example-secret\n" for key in CRITICAL))
+        self.host.prepare_env()
         self.assertNotIn("TYPESENSE_API_KEY", dotenv(self.host.candidate_env_text))
-        exported = exported.replace("POSTGRES_PASSWORD=example-secret", "POSTGRES_PASSWORD=rotated")
+        desired.write_text(desired.read_text().replace("POSTGRES_PASSWORD=example-secret", "POSTGRES_PASSWORD=rotated"))
         with self.assertRaisesRegex(ValueError, "unexpected critical secret rotation"):
-            self.host.export_env()
+            self.host.prepare_env()
 
     def test_probe_is_readonly_and_requires_exact_health(self):
         self.host.inputs = {**self.host.inputs, "operation": "probe"}
@@ -169,7 +165,7 @@ class RemoteProduction(RemoteFixture):
             host.choose_target = lambda: setattr(host, "target", {"registry": LEGACY_REGISTRY, "metadata": {}, "source_sha": "a" * 40})
             host.baseline_env_text = "EXAMPLE=original\n"; host.candidate_env_text = "EXAMPLE=candidate\n"
             host.pending_path = self.root / "releases/pending.env"
-            for method, event in [("export_env", "export"), ("prepare_configuration", "configuration"), ("backup", "backup"),
+            for method, event in [("prepare_env", "export"), ("prepare_configuration", "configuration"), ("backup", "backup"),
                                   ("pull", "pull"), ("apply_configuration", "apply"), ("migrate_and_start", "migrations"),
                                   ("smoke", "smoke"), ("verify_release", "verify"), ("promote", "promote")]:
                 setattr(host, method, lambda event=event: host.event(event))

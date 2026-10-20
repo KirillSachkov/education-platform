@@ -26,6 +26,8 @@ import urllib.parse
 import urllib.request
 import uuid
 
+from environment_file import dotenv, private_environment
+
 from release_model import (
     LEGACY_REGISTRY, PUBLIC_REGISTRY, services_for_registry,
     dispatch_inputs, full_sha, image_manifest, private_roles, strict_json,
@@ -33,9 +35,9 @@ from release_model import (
 
 CRITICAL = (
     "POSTGRES_USER", "POSTGRES_PASSWORD", "RABBITMQ_DEFAULT_USER", "RABBITMQ_DEFAULT_PASS",
-    "BOT__TOKEN", "INFISICAL_AUTH_SECRET", "INFISICAL_ENCRYPTION_KEY",
+    "BOT__TOKEN",
 )
-LEGACY_CRITICAL = (*CRITICAL, "TYPESENSE_API_KEY")
+LEGACY_CRITICAL = (*CRITICAL, "INFISICAL_AUTH_SECRET", "INFISICAL_ENCRYPTION_KEY", "TYPESENSE_API_KEY")
 
 
 def critical_secrets(registry):
@@ -64,37 +66,6 @@ def write_private(path, content):
 def write_json(path, value):
     write_private(path, json.dumps(value, indent=2) + "\n")
 
-
-def dotenv(text):
-    """Read single-line dotenv and release metadata without shell evaluation.
-
-    Actual service values use Compose's parser through environment_values; this
-    parser also checks the complete key inventory before Compose sees the file.
-    """
-    result = {}
-    for line in text.splitlines():
-        if not line.strip() or line.lstrip().startswith("#"):
-            continue
-        key, separator, value = line.partition("=")
-        key = key.strip()
-        if not separator or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", key) or key in result:
-            raise ValueError("invalid or duplicate environment key")
-        value = value.strip()
-        if value.startswith('"'):
-            match = re.fullmatch(r'"((?:\\.|[^"\\])*)"(?:\s+#.*)?\s*', value)
-            if not match:
-                raise ValueError("unsupported quoted environment value")
-            escapes = {"n": "\n", "r": "\r", "t": "\t", "\\": "\\", '"': '"', "$": "$"}
-            value = re.sub(r'\\([nrt\\"$])', lambda item: escapes[item.group(1)], match.group(1))
-        elif value.startswith("'"):
-            match = re.fullmatch(r"'([^']*)'(?:\s+#.*)?\s*", value)
-            if not match:
-                raise ValueError("unsupported quoted environment value")
-            value = match.group(1)
-        else:
-            value = re.split(r"\s+#", value, maxsplit=1)[0].rstrip()
-        result[key] = value
-    return result
 
 
 def metadata_text(metadata):
@@ -194,7 +165,7 @@ class HostOperation:
         return values
 
     def baseline(self):
-        for tool in ["docker", "bash", "infisical", "aws", "gzip", "setpriv"]:
+        for tool in ["docker", "bash", "age", "aws", "gzip", "setpriv"]:
             if not shutil.which(tool):
                 raise ValueError("required host tool missing")
         self.command(["docker", "version", "--format", "{{.Server.Version}}"])
@@ -238,7 +209,7 @@ class HostOperation:
         original = self.state / "approved-legacy.json"
         if original.exists() and strict_json(original.read_bytes()) != self.roles:
             raise ValueError("approved original legacy roles changed")
-        self.baseline_env_text = (self.root / ".env").read_text()
+        self.baseline_env_text = private_environment(self.root / ".env")
         self.baseline_env = self.environment_values(self.root / ".env")
         baseline_release = self.current_record or {**self.roles["roles"]["current"], "registry": LEGACY_REGISTRY}
         if any(not self.baseline_env.get(key) for key in critical_secrets(baseline_release["registry"])):
@@ -344,17 +315,10 @@ class HostOperation:
         self.command(["bash", str(self.run / "check-production-rollback.sh"), str(self.releases / "current.env"),
                       str(self.run / "target.env"), str(self.releases / "pending.env")])
 
-    def export_env(self):
-        credentials = self.packet["credentials"]
-        export_env = {**self.env, "INFISICAL_API_URL": "http://localhost:8080",
-                      "INFISICAL_UNIVERSAL_AUTH_CLIENT_ID": credentials["INFISICAL_CLIENT_ID"],
-                      "INFISICAL_UNIVERSAL_AUTH_CLIENT_SECRET": credentials["INFISICAL_CLIENT_SECRET"]}
-        token = self.command(["infisical", "login", "--method=universal-auth", "--silent", "--plain"], env=export_env).decode().strip()
-        if not token or "\n" in token:
-            raise ValueError("Infisical login returned invalid token")
-        export_env["INFISICAL_TOKEN"] = token
-        body = self.command(["infisical", "export", "--projectId=" + credentials["INFISICAL_PROJECT_ID"],
-                             "--env=prod", "--format=dotenv"], env=export_env).decode()
+    def prepare_env(self):
+        body = private_environment(self.runtime_root / "runtime.env")
+        # Keep the exact desired input for the encrypted recovery backup.
+        write_private(self.run / "source-runtime.env", body)
         candidate = self.run / "candidate.env"
         write_private(candidate, body)
         parsed = self.environment_values(candidate)
@@ -721,7 +685,7 @@ class HostOperation:
         # Validate normal legal/runtime approval before any live-file mutation.
         if self.target["registry"] == PUBLIC_REGISTRY:
             self.normal_runtime()
-        self.export_env()
+        self.prepare_env()
         self.prepare_configuration()
         self.backup()
         self.pull()
