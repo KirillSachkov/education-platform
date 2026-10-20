@@ -38,7 +38,14 @@ prints a small PASS/FAIL report; the explicit flag enables failure notifications
 It never sends inspect output, environment values or private URLs. A failed
 notification remains a failed check. Persistent failures notify every five minutes.
 
-After the first successful normal deployment and daily backup, the authorized
+Normal release delivery installs `scripts/backup-s3.sh` and
+`scripts/ops/production/check_health.py` from the exact accepted source SHA with
+content hashes and root-only executable permissions. Existing helper bytes are
+retained with the release's pre-operation configuration for recovery. A deployment
+does not enable the timer or send an alert automatically.
+
+After verifying those installed hashes, the first successful normal deployment
+and daily backup, the authorized
 operator installs the two unit files from `docker/systemd/` into
 `/etc/systemd/system/`, runs `systemctl daemon-reload`, checks the service once,
 and enables `education-platform-health.timer`. These host paths assume the

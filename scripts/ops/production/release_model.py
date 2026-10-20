@@ -6,6 +6,7 @@ import re
 REPOSITORY = "KirillSachkov/education-platform"
 PUBLIC_REGISTRY = "ghcr.io/kirillsachkov/education-platform"
 LEGACY_REGISTRY = "ghcr.io/kirillsachkov/education-platform-legacy"
+MAINTENANCE_SCRIPTS = ("scripts/backup-s3.sh", "scripts/ops/production/check_health.py")
 LEGACY_SERVICES = (
     "auth-service", "education-service", "file-service", "progress-service",
     "comment-service", "tag-service", "search-service", "access-service",
