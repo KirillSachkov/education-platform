@@ -113,8 +113,12 @@ do not silently weaken the root contract. Verify shared review procedures agains
 review profile before accepting the package.
 
 The source package's `manifest.json` and `SOURCE.md` must record per-skill source identities,
-retained Inside pins, approved adaptations, and the two workspace corrections:
-`glab mr list -F json` (issues use `-O json`) and wizard `${e}` Readline marker.
+retained Inside pins, approved adaptations, and which workspace corrections are adopted.
+The canonical wizard `${e}` Readline marker is eligible for adoption. The retained setup
+directory already uses `glab mr list -F json`, but still has incorrect `glab issue list -F json`
+references; the workspace issue-list correction to `-O json` remains explicitly deferred with
+that directory under this exact-copy option. Fixing just those references would require a
+disclosed source-package adaptation instead of claiming an exact retained Inside directory.
 Do not label this mixed distribution a clean Matt upstream pin. Package tests and a source review
 must pass, then merge the package and record its full published SHA.
 
